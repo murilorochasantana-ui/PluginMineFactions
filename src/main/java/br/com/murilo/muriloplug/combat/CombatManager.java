@@ -44,6 +44,12 @@ public final class CombatManager implements Listener {
         return remaining <= 0 ? 0 : (int) Math.ceil(remaining / 1000.0);
     }
 
+    /** Coloca os dois jogadores em combate (habilidades que contam como interação de combate, sem golpe). */
+    public void engage(Player a, Player b) {
+        mark(a);
+        mark(b);
+    }
+
     /** Chamado quando um jogador passa de "fora de combate" para "em combate". */
     public void setEnterListener(Consumer<Player> enterListener) {
         this.enterListener = enterListener;

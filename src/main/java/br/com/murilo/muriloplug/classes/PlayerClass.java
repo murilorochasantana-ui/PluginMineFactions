@@ -30,8 +30,11 @@ public enum PlayerClass {
             "§7Guarda construções em Livros de Estrutura",
             "§7e coloca elas prontas no mundo depois.",
             "§7Ex: canhões de TNT."),
-    SUPORTE("Suporte", "§b", Material.GOLDEN_APPLE, false,
-            "§7Especialista em ajudar os aliados.");
+    SUPORTE("Suporte", "§b", Material.GOLDEN_APPLE, true,
+            "§7Vincula-se a um aliado e divide o dano.",
+            "§7Prende inimigos, cura e acelera o clan.",
+            "§7Voa por alguns segundos com a pena.",
+            "§cFraqueza: vida máxima de 8 corações.");
 
     private final String displayName;
     private final String color;

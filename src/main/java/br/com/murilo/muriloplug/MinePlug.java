@@ -49,6 +49,17 @@ import br.com.murilo.muriloplug.classes.mago.SpellTargets;
 import br.com.murilo.muriloplug.classes.mago.StaffItems;
 import br.com.murilo.muriloplug.classes.mago.StaffListener;
 import br.com.murilo.muriloplug.classes.mago.StaffService;
+import br.com.murilo.muriloplug.classes.suporte.FlightManager;
+import br.com.murilo.muriloplug.classes.suporte.LinkManager;
+import br.com.murilo.muriloplug.classes.suporte.NightVisionManager;
+import br.com.murilo.muriloplug.classes.suporte.RootManager;
+import br.com.murilo.muriloplug.classes.suporte.SuporteAssists;
+import br.com.murilo.muriloplug.classes.suporte.SuporteCooldowns;
+import br.com.murilo.muriloplug.classes.suporte.SuporteHealth;
+import br.com.murilo.muriloplug.classes.suporte.SuporteItems;
+import br.com.murilo.muriloplug.classes.suporte.SuporteListener;
+import br.com.murilo.muriloplug.classes.suporte.SuporteSettings;
+import br.com.murilo.muriloplug.classes.suporte.SuporteTargets;
 import br.com.murilo.muriloplug.combat.CombatManager;
 import br.com.murilo.muriloplug.economy.EconomyManager;
 import br.com.murilo.muriloplug.economy.MoneyCommand;
@@ -113,6 +124,9 @@ public final class MinePlug extends JavaPlugin {
     private FuryManager furyManager;
     private BuildManager buildManager;
     private PlacementManager placementManager;
+    private SuporteHealth suporteHealth;
+    private FlightManager flightManager;
+    private NightVisionManager nightVision;
 
     @Override
     public void onEnable() {
@@ -271,7 +285,31 @@ public final class MinePlug extends JavaPlugin {
         getServer().getPluginManager().registerEvents(
                 new BuildListener(buildManager, structureBooks, engenheiroSettings, authManager, placementManager), this);
         getServer().getPluginManager().registerEvents(new EngenheiroMenusListener(this, buildManager, placementManager), this);
-        ClassItems classItems = new ClassItems(staffItems, arrowItems, structureBooks);
+        SuporteSettings suporteSettings = new SuporteSettings(this);
+        SuporteItems suporteItems = new SuporteItems(this, suporteSettings);
+        SuporteCooldowns suporteCooldowns = new SuporteCooldowns();
+        SuporteTargets suporteTargets = new SuporteTargets(authManager, clanManager);
+        SuporteAssists suporteAssists = new SuporteAssists();
+        statsManager.setExtraAssistants(suporteAssists::supportersOf);
+        suporteHealth = new SuporteHealth(this, classManager, suporteSettings);
+        getServer().getPluginManager().registerEvents(suporteHealth, this);
+        suporteHealth.applyOnline();
+        LinkManager linkManager = new LinkManager(this, classManager, clanManager, authManager, suporteSettings,
+                suporteTargets, suporteAssists);
+        getServer().getPluginManager().registerEvents(linkManager, this);
+        linkManager.start();
+        RootManager rootManager = new RootManager(this, suporteSettings, suporteTargets, combatManager, damageTracker);
+        getServer().getPluginManager().registerEvents(rootManager, this);
+        rootManager.start();
+        flightManager = new FlightManager(this, classManager, suporteSettings, suporteCooldowns);
+        getServer().getPluginManager().registerEvents(flightManager, this);
+        flightManager.start();
+        nightVision = new NightVisionManager(this, classManager, authManager);
+        getServer().getPluginManager().registerEvents(nightVision, this);
+        getServer().getPluginManager().registerEvents(new SuporteListener(classManager, authManager, suporteItems,
+                suporteSettings, suporteCooldowns, suporteTargets, suporteAssists, linkManager, rootManager,
+                flightManager), this);
+        ClassItems classItems = new ClassItems(staffItems, arrowItems, structureBooks, suporteItems);
         ClassCommand classCommand = new ClassCommand(classManager, combatManager, classItems, manaManager);
         getCommand("classe").setExecutor(classCommand);
         getCommand("classe").setTabCompleter(classCommand);
@@ -368,6 +406,15 @@ public final class MinePlug extends JavaPlugin {
         if (buildManager != null) {
             buildManager.cancelAll();
         }
+        if (flightManager != null) {
+            flightManager.endAll();
+        }
+        if (nightVision != null) {
+            nightVision.removeAll();
+        }
+        if (suporteHealth != null) {
+            suporteHealth.removeAll();
+        }
         if (furyManager != null) {
             furyManager.endAll();
         }
@@ -461,6 +508,7 @@ public final class MinePlug extends JavaPlugin {
         changed |= ArqueiroSettings.addMissing(config);
         changed |= CombatenteSettings.addMissing(config);
         changed |= EngenheiroSettings.addMissing(config);
+        changed |= SuporteSettings.addMissing(config);
         if (changed) {
             saveConfig();
         }

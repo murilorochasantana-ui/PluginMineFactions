@@ -4,6 +4,8 @@ import br.com.murilo.muriloplug.classes.arqueiro.ArrowItems;
 import br.com.murilo.muriloplug.classes.engenheiro.StructureBooks;
 import br.com.murilo.muriloplug.classes.mago.StaffItems;
 import br.com.murilo.muriloplug.classes.mago.StaffType;
+import br.com.murilo.muriloplug.classes.suporte.SuporteItem;
+import br.com.murilo.muriloplug.classes.suporte.SuporteItems;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
@@ -22,6 +24,11 @@ public final class ClassItems {
     public static final String STAFF_PREFIX = "mago.staff_";
     public static final String EXPLOSIVE_ARROW = "arqueiro.flecha_explosiva";
     public static final String STRUCTURE_BOOK = "engenheiro.livro_estrutura";
+    public static final String SUPPORT_LINK = "suporte.nucleo_vinculo";
+    public static final String SUPPORT_ROOT = "suporte.estrela_prender";
+    public static final String SUPPORT_HEAL = "suporte.coracao_cura";
+    public static final String SUPPORT_SCROLL = "suporte.pergaminho_velocidade";
+    public static final String SUPPORT_FLIGHT = "suporte.pena_voo";
 
     private static final int KIT_ARROWS = 16;
     private static final int KIT_BOOKS = 3;
@@ -44,12 +51,22 @@ public final class ClassItems {
 
     private final Map<String, Entry> entries = new LinkedHashMap<>();
 
-    public ClassItems(StaffItems staffs, ArrowItems arrows, StructureBooks books) {
+    public ClassItems(StaffItems staffs, ArrowItems arrows, StructureBooks books, SuporteItems support) {
         for (StaffType type : StaffType.values()) {
             register(new Entry(STAFF_PREFIX + type.id(), PlayerClass.MAGO, 1, 1, amount -> staffs.create(type)));
         }
         register(new Entry(EXPLOSIVE_ARROW, PlayerClass.ARQUEIRO, 1, KIT_ARROWS, arrows::createExplosive));
         register(new Entry(STRUCTURE_BOOK, PlayerClass.ENGENHEIRO, KIT_BOOKS, 1, amount -> books.createEmpty()));
+        registerSupport(SUPPORT_LINK, SuporteItem.VINCULO, support);
+        registerSupport(SUPPORT_ROOT, SuporteItem.PRENDER, support);
+        registerSupport(SUPPORT_HEAL, SuporteItem.CURA, support);
+        registerSupport(SUPPORT_SCROLL, SuporteItem.PERGAMINHO, support);
+        registerSupport(SUPPORT_FLIGHT, SuporteItem.VOO, support);
+    }
+
+    /** Item do Suporte: 1 de cada no kit (os de usos limitados saem cada um com o seu UUID). */
+    private void registerSupport(String id, SuporteItem type, SuporteItems support) {
+        register(new Entry(id, PlayerClass.SUPORTE, 1, 1, amount -> support.create(type)));
     }
 
     private void register(Entry entry) {

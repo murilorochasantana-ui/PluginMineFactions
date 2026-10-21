@@ -7,12 +7,14 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 /** Kills, mortes e assistências de cada jogador. */
 public final class StatsManager {
@@ -27,6 +29,7 @@ public final class StatsManager {
     private final File file;
     private final Map<UUID, Stats> stats = new HashMap<>();
     private Consumer<UUID> changeListener = id -> { };
+    private Function<UUID, List<UUID>> extraAssistants = killer -> List.of();
 
     public StatsManager(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -36,6 +39,14 @@ public final class StatsManager {
     /** Chamado para cada jogador cujos números mudaram (para atualizar o sidebar). */
     public void setChangeListener(Consumer<UUID> changeListener) {
         this.changeListener = changeListener;
+    }
+
+    /**
+     * Quem mais ganha assistência quando o jogador dado faz uma kill (ex: o Suporte que o ajudou). Consultado em
+     * {@link #recordKill}, antes do evento, então o dinheiro da assistência já sai junto.
+     */
+    public void setExtraAssistants(Function<UUID, List<UUID>> extraAssistants) {
+        this.extraAssistants = extraAssistants;
     }
 
     public int getKills(UUID player) {
@@ -65,6 +76,12 @@ public final class StatsManager {
 
     /** Conta a kill, a morte da vítima e as assistências, e depois dispara o {@link PlayerKillEvent}. */
     public void recordKill(UUID killer, UUID victim, List<UUID> assistants) {
+        assistants = new ArrayList<>(assistants);
+        for (UUID extra : extraAssistants.apply(killer)) {
+            if (!extra.equals(killer) && !extra.equals(victim) && !assistants.contains(extra)) {
+                assistants.add(extra);
+            }
+        }
         entry(killer).kills++;
         entry(victim).deaths++;
         for (UUID assistant : assistants) {
