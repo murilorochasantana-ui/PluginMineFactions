@@ -1,0 +1,80 @@
+name: MinePlug
+version: '1.0-SNAPSHOT'
+main: br.com.murilo.muriloplug.MinePlug
+api-version: '1.21'
+
+commands:
+  claim:
+    description: Pré-visualiza, confirma (com nome), remove, lista e compartilha (trust) os seus claims (até 9, de até 50x50 blocos).
+    usage: /claim <tamanho> | <nome> | cancelar | remover <nome> | trust <jogador> <claim> | untrust <jogador> <claim> | info
+  meuclaim:
+    description: Abre o menu com os seus claims.
+    usage: /meuclaim
+  sethome:
+    description: Salva a sua posição atual como uma home (até 5).
+    usage: /sethome <nome>
+  home:
+    description: Teleporta para uma home (com contagem de 5s) ou abre o menu das suas homes.
+    usage: /home [nome]
+  delhome:
+    description: Apaga uma home, escolhendo no menu e confirmando em um segundo menu.
+    usage: /delhome [nome]
+
+  kda:
+    description: Mostra o seu K/D/A e KDA, ou o de outro jogador.
+    usage: /kda [jogador]
+  tpa:
+    description: Pede para ir até um jogador, ou aceita, nega, cancela e bloqueia pedidos de TPA.
+    usage: /tpa <jogador> | aceitar [jogador] | negar [jogador] | cancelar | bloquear
+  tpaqui:
+    description: Pede para um jogador vir até você.
+    usage: /tpaqui <jogador>
+  money:
+    description: Mostra o seu saldo ou o de outro jogador, ou envia dinheiro para alguém (administradores também podem dar, tirar e definir saldo).
+    usage: /money [jogador] | pay <jogador> <valor> | admin <dar|tirar|definir> <jogador> <valor>
+  loja:
+    description: Abre a loja do servidor (administradores também podem gerenciar os itens).
+    usage: /loja [admin]
+  mercado:
+    description: Abre o mercado entre jogadores (comprar, vender e gerenciar seus anúncios pelo menu).
+    usage: /mercado
+  clan:
+    description: Cria e gerencia clans (convites, membros, liderança e chat do clan).
+    usage: /clan [criar|convidar|aceitar|negar|sair|expulsar|lider|desfazer|chat|info]
+  classe:
+    description: Abre o menu de classes (escolher) ou troca a sua classe atual.
+    usage: /classe [trocar] | admin staff <tipo> | admin mana <definir|dar> <jogador> <valor> | admin manamaxima <definir|resetar> <jogador> [valor] | admin flecha <quantidade> | admin livro <quantidade>
+  c:
+    description: Chat do clan (só os membros online do seu clan recebem).
+    usage: /c <mensagem>
+  register:
+    description: Registra a sua conta no servidor com uma senha.
+    usage: /register <senha> <senha>
+    aliases: [registrar]
+  login:
+    description: Entra na sua conta.
+    usage: /login <senha>
+    aliases: [logar]
+  trocarsenha:
+    description: Troca a senha da sua conta.
+    usage: /trocarsenha <senha antiga> <senha nova>
+  auth:
+    description: Administração do login (resetar o registro de um jogador).
+    usage: /auth admin resetar <jogador>
+
+permissions:
+  mineplug.claim.bypass:
+    description: Permite construir em claims de outros jogadores.
+    default: op
+  mineplug.money.admin:
+    description: Permite usar /money admin (dar, tirar e definir saldo).
+    default: op
+  mineplug.loja.admin:
+    description: Permite gerenciar os itens da loja (/loja admin).
+    default: op
+  mineplug.classe.admin:
+    description: Permite pegar as staffs do Mago as Flechas Explosivas do Arqueiro e os Livros de Estrutura do Engenheiro (/classe admin).
+    default: op
+  mineplug.auth.admin:
+    description: Permite usar /auth admin resetar.
+    default: op

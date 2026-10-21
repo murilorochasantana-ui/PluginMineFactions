@@ -1,0 +1,145 @@
+# Economia: valores pagos em dinheiro.
+economia:
+  # Recompensa para quem ganha a kill (inclui kill por combat log).
+  recompensa-kill: 100
+  # Recompensa para cada jogador que ganha assistência.
+  recompensa-assistencia: 30
+
+# Clans.
+clan:
+  # Máximo de membros por clan (incluindo o líder).
+  max-membros: 2
+
+# PvP estilo 1.8.
+pvp:
+  # Tira a recarga de ataque: todo golpe sai com dano cheio, mesmo clicando rápido.
+  sem-recarga-de-ataque: true
+  # Remove o ataque em área (sweep) da espada.
+  remover-ataque-em-area: true
+  # Machado com o dano da 1.8 (madeira 3, ouro 3, pedra 4, ferro 5, diamante 6, netherite 7).
+  dano-machado-1-8: true
+  # Impede de levantar o escudo.
+  desativar-escudo: false
+
+# Login (o servidor roda em modo offline).
+login:
+  # Tempo para fazer login/registro antes de ser expulso.
+  tempo-para-logar-segundos: 60
+  # Senhas erradas seguidas até ser expulso.
+  tentativas-maximas: 5
+  # Sessão: quem sai e volta com o MESMO IP dentro do prazo entra já logado.
+  sessao:
+    ativada: false
+    minutos: 10
+
+# Classe Mago (staffs, mana e fraqueza).
+mago:
+  # true: as staffs usam o item_model "mineplug:staff_<tipo>" (resource pack). false: aparência normal.
+  textura-personalizada: false
+  mana-maxima: 10
+  mana-segundos-por-ponto: 15
+  # Dano a mais que o Mago leva em cada golpe de outra entidade.
+  dano-extra-recebido: 1.5
+  # dano = antes da Proteção. recarga e durações em segundos, raio/alcance em blocos.
+  staffs:
+    fogo:
+      mana: 2
+      recarga: 5
+      dano: 4
+      raio: 3
+      alcance: 30
+      fogo-segundos: 3
+      cegueira-segundos: 2
+    gelo:
+      mana: 2
+      recarga: 10
+      dano: 2
+      raio: 2
+      alcance: 30
+      efeito-segundos: 5
+    raio:
+      mana: 3
+      recarga: 5
+      dano: 6
+      alcance: 25
+      saltos: 2
+      distancia-salto: 5
+    teleporte:
+      mana: 5
+      recarga: 30
+      alcance: 30
+      carga-segundos: 3
+      distancia-acompanhantes: 3
+      max-acompanhantes: 2
+    vento:
+      mana: 2
+      recarga: 20
+      dano: 3
+      raio: 5
+      forca-horizontal: 1.5
+      forca-vertical: 0.5
+
+# Classe Arqueiro (rajada, velocidade, Flecha Explosiva e fraqueza).
+arqueiro:
+  # false: tudo vale só para ARCO. true: a besta também conta.
+  incluir-besta: false
+  # +20% de velocidade de movimento com o arco na mão principal (0 desliga).
+  bonus-velocidade: 0.2
+  rajada:
+    # Ticks entre uma flecha e a seguinte da rajada (20 ticks = 1 segundo).
+    intervalo-ticks: 4
+    # Segundos entre uma rajada e outra (0 = sem recarga).
+    recarga-segundos: 3
+  flecha-explosiva:
+    multiplicador-dano: 3
+    # 3.0 = a mesma força de um creeper normal.
+    forca-explosao: 3.0
+    # false: a explosão não machuca o próprio Arqueiro.
+    dano-proprio: false
+  # Dano a menos nos golpes de espada e machado (0.4 = 40% menos).
+  reducao-dano-corpo-a-corpo: 0.4
+
+# Classe Combatente (vida extra, menos dano, Grito de Fúria e fraqueza).
+combatente:
+  # Vida a mais (6 = 3 corações: 13 corações no total).
+  vida-extra: 6
+  # Dano a menos de todas as origens (0.3 = 30% menos). Não vale para void, /kill e borda do mundo.
+  reducao-dano: 0.3
+  furia:
+    duracao-segundos: 8
+    recarga-segundos: 30
+    # Nível da Lentidão durante a fúria (1 = Lentidão I; 0 desliga).
+    nivel-lentidao: 1
+    # Quanto mais rápido os golpes saem (encurta a imunidade do alvo depois de cada golpe).
+    multiplicador-velocidade: 1.5
+  # false: só o arco é bloqueado. true: a besta também.
+  bloquear-besta: false
+
+# Classe Engenheiro (Livros de Estrutura).
+engenheiro:
+  # Lado da área de construção (blocos) e altura acima do chão de concreto branco.
+  area-tamanho: 20
+  area-altura: 20
+  # Depois de sair de combate, espera isto para marcar área ou salvar (cancelar pode a qualquer hora).
+  espera-apos-combate-segundos: 60
+  # Uma construção aberta por mais tempo que isto é cancelada sozinha (os blocos ficam, o chão volta).
+  tempo-maximo-minutos: 120
+  # Blocos que não podem entrar na estrutura. "*_BED" vale para qualquer material que termina em _BED.
+  blocos-proibidos:
+    - BEDROCK
+    - SPAWNER
+    - TRIAL_SPAWNER
+    - VAULT
+    - COMMAND_BLOCK
+    - CHAIN_COMMAND_BLOCK
+    - REPEATING_COMMAND_BLOCK
+    - STRUCTURE_BLOCK
+    - JIGSAW
+    - BARRIER
+    - LIGHT
+    - END_PORTAL_FRAME
+    - END_PORTAL
+    - NETHER_PORTAL
+    - END_GATEWAY
+    - REINFORCED_DEEPSLATE
+    - "*_BED"
