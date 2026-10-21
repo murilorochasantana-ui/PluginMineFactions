@@ -32,21 +32,29 @@ public final class StaffService {
     private final LightningSpell lightning;
     private final WindSpell wind;
     private final TeleportSpell teleport;
+    private final ArcaneMissile missiles;
+    private final ArcanePower arcane;
+    private final MagoCombos combos;
+    /** Momento (ms) do último Míssil Arcano de cada jogador. */
+    private final Map<UUID, Long> lastMissile = new HashMap<>();
     /** Fim da recarga (ms) de cada staff de cada jogador. */
     private final Map<UUID, Map<StaffType, Long>> cooldowns = new HashMap<>();
     private final Map<UUID, BukkitRunnable> charges = new HashMap<>();
     private final Map<UUID, Long> lastWarning = new HashMap<>();
 
     public StaffService(JavaPlugin plugin, ManaManager mana, AuthManager auth, StaffItems items,
-                        MagoSettings settings, SpellTargets targets) {
+                        MagoSettings settings, SpellTargets targets, ArcanePower arcane) {
         this.plugin = plugin;
+        this.arcane = arcane;
+        this.missiles = new ArcaneMissile(plugin, targets, mana, settings);
         this.mana = mana;
         this.auth = auth;
         this.items = items;
         this.settings = settings;
-        this.bolts = new BoltSpells(plugin, targets, settings);
-        this.lightning = new LightningSpell(targets, settings);
-        this.wind = new WindSpell(targets, settings);
+        this.combos = new MagoCombos(plugin, settings);
+        this.bolts = new BoltSpells(plugin, targets, settings, combos);
+        this.lightning = new LightningSpell(targets, settings, combos);
+        this.wind = new WindSpell(targets, settings, combos);
         this.teleport = new TeleportSpell(settings, other -> auth.isLoggedIn(other.getUniqueId()));
     }
 
@@ -73,6 +81,21 @@ public final class StaffService {
     }
 
     // ------------------------------------------------------------ lançamento
+
+    /** Míssil Arcano (clique esquerdo): sem mana nem recarga, só o intervalo mínimo entre um tiro e outro. */
+    public void missile(Player player) {
+        UUID id = player.getUniqueId();
+        if (!auth.isLoggedIn(id) || !isMage(player)) {
+            return;
+        }
+        long now = System.currentTimeMillis();
+        Long last = lastMissile.get(id);
+        if (last != null && now - last < settings.missileIntervalSeconds() * 1000) {
+            return;
+        }
+        lastMissile.put(id, now);
+        missiles.fire(player);
+    }
 
     /** Lança a magia (teleporte normal, só o Mago). */
     public void cast(Player player, StaffType type) {
@@ -109,7 +132,8 @@ public final class StaffService {
             actionBar(player, "§cRecarga: " + (int) Math.ceil(remaining / 1000.0) + "s");
             return false;
         }
-        int cost = settings.manaCost(type);
+        // Passo Arcano: a magia logo depois do teleporte não gasta mana.
+        int cost = combos.hasFreeCast(player.getUniqueId()) ? 0 : settings.manaCost(type);
         if (!mana.has(player.getUniqueId(), cost)) {
             actionBar(player, "§cMana insuficiente (" + mana.get(player.getUniqueId()) + "/" + cost + ")");
             return false;
@@ -120,8 +144,10 @@ public final class StaffService {
     /** Cobra a mana, inicia a recarga (e a animação no item) e mostra o gasto. */
     private void commit(Player player, StaffType type) {
         UUID id = player.getUniqueId();
-        int cost = settings.manaCost(type);
+        boolean free = combos.consumeFreeCast(id);
+        int cost = free ? 0 : settings.manaCost(type);
         mana.spend(id, cost);
+        arcane.gain(id); // depois do dano da magia: ela usa os acúmulos que já existiam
         double seconds = settings.cooldownSeconds(type);
         cooldowns.computeIfAbsent(id, k -> new EnumMap<>(StaffType.class))
                 .put(type, System.currentTimeMillis() + (long) (seconds * 1000));
@@ -129,7 +155,10 @@ public final class StaffService {
         if (items.read(held) == type) {
             player.setCooldown(held, (int) Math.ceil(seconds * 20));
         }
-        actionBar(player, "§b-" + cost + " mana (" + mana.get(id) + "/" + mana.max(id) + ")");
+        String spent = free ? "§bMagia grátis!" : "§b-" + cost + " mana";
+        // Depois de consumir a mana grátis: o teleporte abre a janela da próxima.
+        String next = type == StaffType.TELEPORTE && combos.armFreeCast(id) ? " §8| §bPróxima magia grátis!" : "";
+        actionBar(player, spent + " (" + mana.get(id) + "/" + mana.max(id) + ")" + next + arcane.label(id));
     }
 
     private long cooldownRemainingMillis(Player player, StaffType type) {
@@ -213,6 +242,8 @@ public final class StaffService {
         stop(id);
         cooldowns.remove(id);
         lastWarning.remove(id);
+        lastMissile.remove(id);
+        combos.forget(id);
         teleport.forget(id);
     }
 }

@@ -14,6 +14,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
 
+import java.util.List;
 import java.util.function.Consumer;
 
 /**
@@ -28,24 +29,34 @@ final class BoltSpells {
     private final JavaPlugin plugin;
     private final SpellTargets targets;
     private final MagoSettings settings;
+    private final MagoCombos combos;
 
-    BoltSpells(JavaPlugin plugin, SpellTargets targets, MagoSettings settings) {
+    BoltSpells(JavaPlugin plugin, SpellTargets targets, MagoSettings settings, MagoCombos combos) {
         this.plugin = plugin;
         this.targets = targets;
         this.settings = settings;
+        this.combos = combos;
     }
 
     boolean fire(Player mage) {
         StaffType type = StaffType.FOGO;
-        double radius = settings.staff(type, "raio");
+        double baseRadius = settings.staff(type, "raio");
         double damage = settings.staff(type, "dano");
         int burnTicks = (int) (settings.staff(type, "fogo-segundos") * 20);
         int blindTicks = (int) (settings.staff(type, "cegueira-segundos") * 20);
 
         launch(mage, settings.staff(type, "alcance"), Particle.FLAME, impact -> {
-            for (LivingEntity target : targets.nearby(mage, impact, radius)) {
-                targets.damage(mage, target, damage);
-                target.setFireTicks(burnTicks);
+            List<LivingEntity> hit = targets.nearby(mage, impact, baseRadius);
+            double radius = baseRadius;
+            // Tempestade de Fogo (Vento -> Fogo): alvo empurrado pelo Vento aumenta a explosão.
+            if (combos.stormPending(hit)) {
+                radius = Math.max(baseRadius, combos.stormRadius());
+                hit = targets.nearby(mage, impact, radius);
+            }
+            for (LivingEntity target : hit) {
+                // Choque Térmico (Gelo -> Fogo): o dano dobra e o efeito de gelo sai.
+                targets.damage(mage, target, combos.thermalShock(mage, target, damage));
+                target.setFireTicks(combos.stormHit(mage, target) ? Math.max(burnTicks, combos.stormBurnTicks()) : burnTicks);
                 target.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, blindTicks, 0));
             }
             World world = impact.getWorld();
@@ -67,6 +78,7 @@ final class BoltSpells {
                 targets.damage(mage, target, damage);
                 target.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, effectTicks, 1));
                 target.addPotionEffect(new PotionEffect(PotionEffectType.MINING_FATIGUE, effectTicks, 0));
+                combos.markIce(target);
             }
             World world = impact.getWorld();
             world.spawnParticle(Particle.SNOWFLAKE, impact, 80, radius / 2, radius / 2, radius / 2, 0.05);

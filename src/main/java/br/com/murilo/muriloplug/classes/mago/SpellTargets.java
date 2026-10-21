@@ -24,10 +24,12 @@ public final class SpellTargets {
 
     private final AuthManager auth;
     private final ClanManager clans;
+    private final ArcanePower arcane;
 
-    public SpellTargets(AuthManager auth, ClanManager clans) {
+    public SpellTargets(AuthManager auth, ClanManager clans, ArcanePower arcane) {
         this.auth = auth;
         this.clans = clans;
+        this.arcane = arcane;
     }
 
     /** Só jogadores e mobs; nunca o Mago, nem o clan dele, nem jogadores não logados. */
@@ -44,8 +46,9 @@ public final class SpellTargets {
         return true;
     }
 
-    /** Dano mágico indireto (ignora armadura, respeita Proteção) causado pelo Mago. */
-    public void damage(Player mage, LivingEntity target, double amount) {
+    /** Dano mágico indireto (ignora armadura, respeita Proteção) causado pelo Mago, com o bônus do Poder Arcano. */
+    public void damage(Player mage, LivingEntity target, double baseAmount) {
+        double amount = baseAmount * arcane.multiplier(mage.getUniqueId());
         DamageSource source = DamageSource.builder(DamageType.INDIRECT_MAGIC)
                 .withCausingEntity(mage)
                 .withDirectEntity(mage)

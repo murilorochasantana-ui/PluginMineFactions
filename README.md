@@ -180,9 +180,18 @@ Usa staffs (compradas na `/loja`), lançadas com **clique direito**:
 | Teleporte | Teleporta até 30 blocos (não atravessa parede). Segurando 3s leva até 2 jogadores a até 3 blocos | 5 | 30s |
 | Vento | Empurra quem está perto, 3 de dano | 2 | 20s |
 
-- Mana máxima 10, recupera 1 a cada 15 segundos (aparece na barra lateral)
+- **Míssil Arcano (clique esquerdo com a staff):** projétil rápido de 2.5 de dano, sem mana e sem recarga (0.6s entre mísseis); cada acerto devolve +1 de mana. O clique esquerdo não dá golpe corpo a corpo
+- Mana máxima 10 (aparece na barra lateral): recupera 1 a cada 2s fora de combate e 1 a cada 6s em combate; kill dá +3 e assistência +1
+- **Poder Arcano:** cada magia dá 1 acúmulo por 5s (máx. 3); cada acúmulo dá +10% de dano nas magias e no míssil. Bater com arma zera
+- **Escudo de Mana:** 20% do dano que leva é absorvido pela mana (1 de mana a cada 2 de dano)
+- **Combos** (cada um liga/desliga em `mago.combos.*`):
+  - **Choque Térmico** (Gelo → Fogo): alvo congelado leva o dobro do Fogo e perde a lentidão e a fadiga
+  - **Condutor** (Gelo → Raio): se o primeiro alvo está congelado, o raio pula até 4 vezes e a 7 blocos
+  - **Tempestade de Fogo** (Vento → Fogo): alvo empurrado pelo Vento queima por 6s e a explosão tem raio 4
+  - **Passo Arcano** (Teleporte → qualquer magia): a próxima magia em 4s não gasta mana
 - As magias não acertam membros do seu clan e não quebram blocos
-- **Fraqueza:** leva +1.5 de dano por golpe
+- **Fraqueza:** leva +15% de dano de golpes e projéteis, e dá 60% menos dano com espada, machado, maça, tridente, lança e flechas de arco/besta (mão vazia não tem penalidade)
+- Tudo ajustável em `mago.*` no `config.yml`
 
 ### 🏹 Arqueiro
 

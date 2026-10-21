@@ -31,6 +31,13 @@ public final class StaffItems {
         lore.add("§7Dano: " + (type.dealsDamage() ? MagoSettings.format(settings.staff(type, "dano")) : "nenhum"));
         lore.add("§7Custo: " + settings.manaCost(type) + " mana");
         lore.add("§7Recarga: " + MagoSettings.format(settings.cooldownSeconds(type)) + "s");
+        lore.addAll(comboLore(type));
+        lore.add("");
+        lore.add("§7Clique esquerdo: Míssil Arcano (devolve mana).");
+        lore.add("§7Clique direito: lança a magia.");
+        lore.add("§7Passivas: Poder Arcano e Escudo de Mana.");
+        lore.add("§cFraqueza: +" + percent(settings.extraDamage()) + "% de dano recebido e");
+        lore.add("§c" + percent(settings.weaponPenalty()) + "% menos dano com armas.");
         lore.add("§5Somente Magos podem usar");
 
         ItemStack item = ShopUi.button(StaffType.MATERIAL, type.displayName(), lore.toArray(new String[0]));
@@ -48,6 +55,57 @@ public final class StaffItems {
         meta.setUseCooldown(cooldown);
         item.setItemMeta(meta);
         return item;
+    }
+
+    /** Linhas de combo da staff (só dos combos ligados no config). */
+    private List<String> comboLore(StaffType type) {
+        String base = "mago.combos.";
+        List<String> lines = new ArrayList<>();
+        switch (type) {
+            case GELO -> {
+                if (settings.flag(base + "choque-termico.ativado")) {
+                    lines.add("§3Combo: alvos congelados levam "
+                            + MagoSettings.format(settings.number(base + "choque-termico.multiplicador-dano"))
+                            + "x do Fogo");
+                }
+                if (settings.flag(base + "condutor.ativado")) {
+                    lines.add("§3Combo: o Raio pula mais em alvos congelados");
+                }
+            }
+            case FOGO -> {
+                if (settings.flag(base + "choque-termico.ativado")) {
+                    lines.add("§6Combo: alvos congelados levam dano em dobro");
+                }
+                if (settings.flag(base + "tempestade-fogo.ativado")) {
+                    lines.add("§6Combo: alvos empurrados pelo Vento queimam mais e a explosão cresce");
+                }
+            }
+            case RAIO -> {
+                if (settings.flag(base + "condutor.ativado")) {
+                    lines.add("§eCombo: alvo congelado = o raio pula para mais alvos");
+                }
+            }
+            case VENTO -> {
+                if (settings.flag(base + "tempestade-fogo.ativado")) {
+                    lines.add("§fCombo: alvos empurrados queimam mais com o Fogo");
+                }
+            }
+            case TELEPORTE -> {
+                if (settings.flag(base + "passo-arcano.ativado")) {
+                    lines.add("§bCombo: a próxima magia em "
+                            + MagoSettings.format(settings.number(base + "passo-arcano.segundos"))
+                            + "s não gasta mana");
+                }
+            }
+        }
+        if (!lines.isEmpty()) {
+            lines.add(0, "");
+        }
+        return lines;
+    }
+
+    private static String percent(double fraction) {
+        return MagoSettings.format(Math.round(fraction * 1000) / 10.0);
     }
 
     /** Tipo da staff, ou null se o item não for uma staff. */

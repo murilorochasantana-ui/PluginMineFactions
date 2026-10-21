@@ -18,8 +18,8 @@ public enum StaffType {
             "§7Raio na mira que pula em cadeia",
             "§7entre até 3 alvos próximos."),
     TELEPORTE("teleporte", "§5Staff de Teleporte", false,
-            "§7Clique: teleporta na direção da mira.",
-            "§7SHIFT + clique (segure 3s): leva",
+            "§7Teleporta na direção da mira.",
+            "§7SHIFT + clique direito (segure 3s): leva",
             "§7até 2 jogadores próximos junto."),
     VENTO("vento", "§fStaff de Vento", true,
             "§7Empurra para longe tudo ao redor.");

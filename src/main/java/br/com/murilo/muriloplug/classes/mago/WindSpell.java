@@ -15,10 +15,12 @@ final class WindSpell {
 
     private final SpellTargets targets;
     private final MagoSettings settings;
+    private final MagoCombos combos;
 
-    WindSpell(SpellTargets targets, MagoSettings settings) {
+    WindSpell(SpellTargets targets, MagoSettings settings, MagoCombos combos) {
         this.targets = targets;
         this.settings = settings;
+        this.combos = combos;
     }
 
     boolean cast(Player mage) {
@@ -38,6 +40,7 @@ final class WindSpell {
             }
             // Depois do dano, que também aplica um empurrão próprio.
             target.setVelocity(push.normalize().multiply(horizontal).setY(vertical));
+            combos.markWind(target);
         }
 
         World world = mage.getWorld();

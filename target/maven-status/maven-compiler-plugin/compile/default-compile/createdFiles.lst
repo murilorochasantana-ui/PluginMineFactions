@@ -60,6 +60,7 @@ br\com\murilo\muriloplug\classes\suporte\SuporteItems.class
 br\com\murilo\muriloplug\classes\engenheiro\BuildConfirmMenu$Kind.class
 br\com\murilo\muriloplug\home\DeleteMenusListener.class
 br\com\murilo\muriloplug\classes\ClassItems.class
+br\com\murilo\muriloplug\classes\mago\MagoWeaponListener.class
 br\com\murilo\muriloplug\stats\StatsManager$Stats.class
 br\com\murilo\muriloplug\clan\ClanChatListener.class
 br\com\murilo\muriloplug\classes\combatente\CombatenteHealth.class
@@ -67,6 +68,7 @@ br\com\murilo\muriloplug\home\DelHomeCommand.class
 br\com\murilo\muriloplug\classes\KitMenu.class
 br\com\murilo\muriloplug\classes\engenheiro\StructureBooks.class
 br\com\murilo\muriloplug\classes\suporte\SuporteListener.class
+br\com\murilo\muriloplug\classes\mago\MagoCombos.class
 br\com\murilo\muriloplug\claim\ClaimListener.class
 br\com\murilo\muriloplug\classes\suporte\SuporteItems$1.class
 br\com\murilo\muriloplug\classes\mago\StaffService$1.class
@@ -75,6 +77,7 @@ br\com\murilo\muriloplug\stats\StatsListener.class
 br\com\murilo\muriloplug\classes\ClassMenusListener.class
 br\com\murilo\muriloplug\classes\suporte\LinkManager.class
 br\com\murilo\muriloplug\shop\ShopItem.class
+br\com\murilo\muriloplug\classes\mago\StaffItems$1.class
 br\com\murilo\muriloplug\classes\engenheiro\EngenheiroSettings.class
 br\com\murilo\muriloplug\classes\arqueiro\ExplosiveArrowListener.class
 br\com\murilo\muriloplug\shop\PurchaseConfirmMenu.class
@@ -99,6 +102,7 @@ br\com\murilo\muriloplug\home\HomeManager.class
 br\com\murilo\muriloplug\claim\ClaimsMenuListener.class
 br\com\murilo\muriloplug\clan\ClanInvites.class
 br\com\murilo\muriloplug\shop\PriceButtons.class
+br\com\murilo\muriloplug\classes\mago\ArcaneMissile.class
 br\com\murilo\muriloplug\economy\MoneyCommand.class
 br\com\murilo\muriloplug\scoreboard\ScoreboardListener.class
 br\com\murilo\muriloplug\classes\ClassManager.class
@@ -108,6 +112,7 @@ br\com\murilo\muriloplug\pvp\PvpSettings.class
 br\com\murilo\muriloplug\home\HomeManager$SetResult.class
 br\com\murilo\muriloplug\auth\PasswordHasher$Hashed.class
 br\com\murilo\muriloplug\claim\ClaimCommand$PendingRemoval.class
+br\com\murilo\muriloplug\classes\mago\ArcanePower.class
 br\com\murilo\muriloplug\classes\arqueiro\ArrowItems.class
 br\com\murilo\muriloplug\clan\ClanMenusListener$1.class
 br\com\murilo\muriloplug\classes\engenheiro\PlacementManager.class
@@ -143,6 +148,7 @@ br\com\murilo\muriloplug\scoreboard\CombatDisplayTask.class
 br\com\murilo\muriloplug\shop\ShopMenu.class
 br\com\murilo\muriloplug\auth\CommandPasswordFilter.class
 br\com\murilo\muriloplug\clan\ClanInvites$Invite.class
+br\com\murilo\muriloplug\classes\mago\ManaShieldListener.class
 br\com\murilo\muriloplug\classes\engenheiro\OpenBuild.class
 br\com\murilo\muriloplug\classes\engenheiro\BuildListener.class
 br\com\murilo\muriloplug\classes\suporte\SuporteCooldowns.class
@@ -150,6 +156,7 @@ br\com\murilo\muriloplug\claim\Claim.class
 br\com\murilo\muriloplug\classes\engenheiro\BuildManager$1.class
 br\com\murilo\muriloplug\market\ListingRemoveMenu.class
 br\com\murilo\muriloplug\market\MarketHolder.class
+br\com\murilo\muriloplug\classes\mago\ArcaneMissile$1.class
 br\com\murilo\muriloplug\market\MarketMenu.class
 br\com\murilo\muriloplug\pvp\ShieldListener.class
 br\com\murilo\muriloplug\shop\ShopHolder.class

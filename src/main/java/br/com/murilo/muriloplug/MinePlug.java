@@ -42,7 +42,10 @@ import br.com.murilo.muriloplug.classes.engenheiro.EngenheiroSettings;
 import br.com.murilo.muriloplug.classes.engenheiro.PlacementManager;
 import br.com.murilo.muriloplug.classes.engenheiro.StructureBooks;
 import br.com.murilo.muriloplug.classes.engenheiro.StructureStore;
+import br.com.murilo.muriloplug.classes.mago.ArcanePower;
 import br.com.murilo.muriloplug.classes.mago.MagoSettings;
+import br.com.murilo.muriloplug.classes.mago.MagoWeaponListener;
+import br.com.murilo.muriloplug.classes.mago.ManaShieldListener;
 import br.com.murilo.muriloplug.classes.mago.MagoWeaknessListener;
 import br.com.murilo.muriloplug.classes.mago.ManaManager;
 import br.com.murilo.muriloplug.classes.mago.SpellTargets;
@@ -242,13 +245,18 @@ public final class MinePlug extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new ClanFriendlyFireListener(clanManager), this);
 
         MagoSettings magoSettings = new MagoSettings(this);
-        manaManager = new ManaManager(this, classManager, magoSettings);
+        manaManager = new ManaManager(this, classManager, magoSettings, combatManager);
         getServer().getPluginManager().registerEvents(manaManager, this);
         manaManager.start();
         manaManager.initOnline();
+        ArcanePower arcanePower = new ArcanePower(this, manaManager, magoSettings);
+        getServer().getPluginManager().registerEvents(arcanePower, this);
+        arcanePower.start();
         StaffItems staffItems = new StaffItems(this, magoSettings);
-        SpellTargets spellTargets = new SpellTargets(authManager, clanManager);
-        StaffService staffService = new StaffService(this, manaManager, authManager, staffItems, magoSettings, spellTargets);
+        SpellTargets spellTargets = new SpellTargets(authManager, clanManager, arcanePower);
+        StaffService staffService = new StaffService(this, manaManager, authManager, staffItems, magoSettings,
+                spellTargets, arcanePower);
+        getServer().getPluginManager().registerEvents(new MagoWeaponListener(classManager, magoSettings, arcanePower), this);
         getServer().getPluginManager().registerEvents(new StaffListener(staffItems, staffService, authManager), this);
         getServer().getPluginManager().registerEvents(new MagoWeaknessListener(classManager, magoSettings), this);
 
@@ -338,6 +346,8 @@ public final class MinePlug extends JavaPlugin {
 
         // Depois do PvP 1.8: o HIGH do Combatente roda depois do ajuste do machado.
         getServer().getPluginManager().registerEvents(new CombatenteListener(classManager, combatenteSettings), this);
+        // Por último entre os listeners de dano em HIGHEST: o Escudo de Mana mede o dano final já ajustado pelos outros.
+        getServer().getPluginManager().registerEvents(new ManaShieldListener(manaManager, magoSettings), this);
 
         PlayerScoreboards scoreboards = new PlayerScoreboards();
         NametagManager nametagManager = new NametagManager(scoreboards, combatManager, clanManager);

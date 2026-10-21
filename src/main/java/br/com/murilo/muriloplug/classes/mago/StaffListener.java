@@ -2,19 +2,24 @@ package br.com.murilo.muriloplug.classes.mago;
 
 import br.com.murilo.muriloplug.auth.AuthManager;
 import org.bukkit.block.Block;
+import org.bukkit.damage.DamageType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.EquipmentSlot;
 
-/** Clique direito com a staff lança a magia; o comportamento normal do item é sempre cancelado. */
+/**
+ * Clique direito com a staff lança a magia (o comportamento normal do item é sempre cancelado); clique esquerdo
+ * dispara o Míssil Arcano.
+ */
 public final class StaffListener implements Listener {
 
     private final StaffItems items;
@@ -31,6 +36,10 @@ public final class StaffListener implements Listener {
     @EventHandler(priority = EventPriority.HIGH)
     public void onInteract(PlayerInteractEvent event) {
         Action action = event.getAction();
+        if (action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK) {
+            leftClick(event, action);
+            return;
+        }
         if (action != Action.RIGHT_CLICK_AIR && action != Action.RIGHT_CLICK_BLOCK) {
             return;
         }
@@ -56,6 +65,34 @@ public final class StaffListener implements Listener {
             service.startCharge(player);
         } else {
             service.cast(player, type);
+        }
+    }
+
+    /**
+     * Clique esquerdo do Mago com a staff dispara o Míssil Arcano. Quebrar bloco com a staff é negado, para o
+     * clique não minerar e atirar ao mesmo tempo.
+     */
+    private void leftClick(PlayerInteractEvent event, Action action) {
+        if (event.getHand() != EquipmentSlot.HAND || items.read(event.getItem()) == null
+                || !service.isMage(event.getPlayer())) {
+            return;
+        }
+        if (action == Action.LEFT_CLICK_BLOCK) {
+            event.setUseInteractedBlock(Event.Result.DENY);
+        }
+        service.missile(event.getPlayer());
+    }
+
+    /** O golpe corpo a corpo do Mago com a staff não causa dano: o clique vira míssil (um só por intervalo). */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onStaffHit(EntityDamageByEntityEvent event) {
+        if (event.getDamager() instanceof Player player
+                && (event.getCause() == EntityDamageEvent.DamageCause.ENTITY_ATTACK
+                || event.getCause() == EntityDamageEvent.DamageCause.ENTITY_SWEEP_ATTACK)
+                && DamageType.PLAYER_ATTACK.equals(event.getDamageSource().getDamageType())
+                && items.read(player.getInventory().getItemInMainHand()) != null && service.isMage(player)) {
+            event.setCancelled(true);
+            service.missile(player); // se o clique também gerou LEFT_CLICK_AIR, o intervalo evita o tiro duplo
         }
     }
 

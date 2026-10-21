@@ -11,16 +11,42 @@ public final class MagoSettings {
 
     public static final String TEXTURE = "mago.textura-personalizada";
     public static final String MANA_MAX = "mago.mana-maxima";
-    public static final String MANA_SECONDS = "mago.mana-segundos-por-ponto";
-    public static final String EXTRA_DAMAGE = "mago.dano-extra-recebido";
+    public static final String WEAPON_PENALTY = "mago.penalidade-arma";
+    public static final String EXTRA_DAMAGE = "mago.dano-extra-recebido-porcentagem";
 
     private static final Map<String, Object> DEFAULTS = new LinkedHashMap<>();
 
     static {
         DEFAULTS.put(TEXTURE, false);
         DEFAULTS.put(MANA_MAX, 10);
-        DEFAULTS.put(MANA_SECONDS, 15);
-        DEFAULTS.put(EXTRA_DAMAGE, 1.5);
+        DEFAULTS.put(WEAPON_PENALTY, 0.6);
+        DEFAULTS.put(EXTRA_DAMAGE, 0.15);
+        DEFAULTS.put("mago.mana.regen-fora-combate", 2);
+        DEFAULTS.put("mago.mana.regen-em-combate", 6);
+        DEFAULTS.put("mago.mana.por-kill", 3);
+        DEFAULTS.put("mago.mana.por-assistencia", 1);
+        DEFAULTS.put("mago.missil.intervalo-segundos", 0.6);
+        DEFAULTS.put("mago.missil.mana-por-acerto", 1);
+        DEFAULTS.put("mago.missil.dano", 2.5);
+        DEFAULTS.put("mago.missil.alcance", 30);
+        DEFAULTS.put("mago.missil.velocidade", 2);
+        DEFAULTS.put("mago.poder-arcano.bonus-por-acumulo", 0.1);
+        DEFAULTS.put("mago.poder-arcano.maximo", 3);
+        DEFAULTS.put("mago.poder-arcano.segundos", 5);
+        DEFAULTS.put("mago.escudo-mana.porcentagem", 0.2);
+        DEFAULTS.put("mago.escudo-mana.dano-por-mana", 2);
+        DEFAULTS.put("mago.combos.gelo-marca-segundos", 5);
+        DEFAULTS.put("mago.combos.vento-marca-segundos", 3);
+        DEFAULTS.put("mago.combos.choque-termico.ativado", true);
+        DEFAULTS.put("mago.combos.choque-termico.multiplicador-dano", 2);
+        DEFAULTS.put("mago.combos.condutor.ativado", true);
+        DEFAULTS.put("mago.combos.condutor.saltos", 4);
+        DEFAULTS.put("mago.combos.condutor.distancia-salto", 7);
+        DEFAULTS.put("mago.combos.tempestade-fogo.ativado", true);
+        DEFAULTS.put("mago.combos.tempestade-fogo.fogo-segundos", 6);
+        DEFAULTS.put("mago.combos.tempestade-fogo.raio", 4);
+        DEFAULTS.put("mago.combos.passo-arcano.ativado", true);
+        DEFAULTS.put("mago.combos.passo-arcano.segundos", 4);
 
         staff(StaffType.FOGO, "mana", 2);
         staff(StaffType.FOGO, "recarga", 5);
@@ -90,6 +116,12 @@ public final class MagoSettings {
         return plugin.getConfig().getDouble(path, fallback instanceof Number n ? n.doubleValue() : 0);
     }
 
+    /** Opção ligada/desligada (padrão do DEFAULTS, ou ligada se não houver). */
+    public boolean flag(String path) {
+        Object fallback = DEFAULTS.get(path);
+        return plugin.getConfig().getBoolean(path, !(fallback instanceof Boolean b) || b);
+    }
+
     public double staff(StaffType type, String key) {
         return number(path(type, key));
     }
@@ -106,8 +138,70 @@ public final class MagoSettings {
         return Math.max(1, (int) Math.round(number(MANA_MAX)));
     }
 
+    /** Fração de dano a mais que o Mago leva de golpes e projéteis (0.15 = +15%). */
     public double extraDamage() {
-        return number(EXTRA_DAMAGE);
+        return Math.max(0, number(EXTRA_DAMAGE));
+    }
+
+    /** Fração de dano perdida com armas (0.6 = 60% menos), entre 0 e 1. */
+    public double weaponPenalty() {
+        return Math.min(1, Math.max(0, number(WEAPON_PENALTY)));
+    }
+
+    /** Segundos para recuperar 1 de mana, fora ou dentro de combate. */
+    public double manaRegenSeconds(boolean inCombat) {
+        return Math.max(0.5, number(inCombat ? "mago.mana.regen-em-combate" : "mago.mana.regen-fora-combate"));
+    }
+
+    public int manaPerKill() {
+        return Math.max(0, (int) Math.round(number("mago.mana.por-kill")));
+    }
+
+    public int manaPerAssist() {
+        return Math.max(0, (int) Math.round(number("mago.mana.por-assistencia")));
+    }
+
+    public double missileIntervalSeconds() {
+        return Math.max(0, number("mago.missil.intervalo-segundos"));
+    }
+
+    public int missileManaPerHit() {
+        return Math.max(0, (int) Math.round(number("mago.missil.mana-por-acerto")));
+    }
+
+    public double missileDamage() {
+        return Math.max(0, number("mago.missil.dano"));
+    }
+
+    public double missileRange() {
+        return Math.max(1, number("mago.missil.alcance"));
+    }
+
+    /** Blocos andados pelo míssil por tick. */
+    public double missileSpeed() {
+        return Math.max(0.25, number("mago.missil.velocidade"));
+    }
+
+    public double arcaneBonus() {
+        return Math.max(0, number("mago.poder-arcano.bonus-por-acumulo"));
+    }
+
+    public int arcaneMax() {
+        return Math.max(0, (int) Math.round(number("mago.poder-arcano.maximo")));
+    }
+
+    public double arcaneSeconds() {
+        return Math.max(0.5, number("mago.poder-arcano.segundos"));
+    }
+
+    /** Fração do dano levado que a mana absorve (0.2 = 20%), entre 0 e 1. */
+    public double shieldFraction() {
+        return Math.min(1, Math.max(0, number("mago.escudo-mana.porcentagem")));
+    }
+
+    /** Pontos de dano absorvidos por 1 de mana. */
+    public double shieldDamagePerMana() {
+        return Math.max(0.1, number("mago.escudo-mana.dano-por-mana"));
     }
 
     public int manaCost(StaffType type) {

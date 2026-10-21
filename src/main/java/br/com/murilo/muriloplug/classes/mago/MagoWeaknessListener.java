@@ -12,8 +12,8 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import java.util.Set;
 
 /**
- * Fraqueza do Mago: leva um dano extra a cada golpe de outra entidade (jogador, mob, projétil ou magia).
- * Só vale para golpes, nunca para dano por tick (queda, fogo, veneno, afogamento...).
+ * Fraqueza do Mago: leva uma porcentagem a mais de dano de golpes e projéteis de outras entidades (jogador, mob,
+ * projétil ou magia). Só vale para golpes, nunca para dano por tick (queda, fogo, veneno, afogamento...).
  */
 public final class MagoWeaknessListener implements Listener {
 
@@ -37,7 +37,7 @@ public final class MagoWeaknessListener implements Listener {
         }
         double extra = settings.extraDamage();
         if (extra > 0) {
-            event.setDamage(event.getDamage() + extra);
+            event.setDamage(event.getDamage() * (1 + extra));
         }
     }
 }

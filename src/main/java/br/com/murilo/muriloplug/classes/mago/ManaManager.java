@@ -3,6 +3,8 @@ package br.com.murilo.muriloplug.classes.mago;
 import br.com.murilo.muriloplug.classes.ClassManager;
 import br.com.murilo.muriloplug.classes.PlayerClass;
 import br.com.murilo.muriloplug.classes.PlayerClassChangeEvent;
+import br.com.murilo.muriloplug.combat.CombatManager;
+import br.com.murilo.muriloplug.stats.PlayerKillEvent;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -16,21 +18,29 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
 
-/** Mana dos Magos, só em memória: começa cheia ao entrar ou virar Mago e recupera 1 ponto por intervalo. */
+/**
+ * Mana dos Magos, só em memória: começa cheia ao entrar ou virar Mago e recupera 1 ponto por intervalo (mais
+ * curto fora de combate). Kill e assistência também dão mana, e o míssil devolve mana por acerto.
+ */
 public final class ManaManager implements Listener {
+
+    /** A recuperação confere os Magos a cada 10 ticks. */
+    private static final long REGEN_CHECK_TICKS = 10L;
 
     private final JavaPlugin plugin;
     private final ClassManager classes;
     private final MagoSettings settings;
+    private final CombatManager combat;
     private final Map<UUID, Integer> mana = new HashMap<>();
-    /** Momento (ms) do próximo ponto de mana de cada Mago que não está com a mana cheia. */
-    private final Map<UUID, Long> nextRegen = new HashMap<>();
+    /** Momento (ms) em que começou a contagem do próximo ponto de mana de cada Mago que não está com a mana cheia. */
+    private final Map<UUID, Long> regenFrom = new HashMap<>();
     private Consumer<UUID> changeListener = id -> { };
 
-    public ManaManager(JavaPlugin plugin, ClassManager classes, MagoSettings settings) {
+    public ManaManager(JavaPlugin plugin, ClassManager classes, MagoSettings settings, CombatManager combat) {
         this.plugin = plugin;
         this.classes = classes;
         this.settings = settings;
+        this.combat = combat;
     }
 
     public void setChangeListener(Consumer<UUID> changeListener) {
@@ -53,11 +63,18 @@ public final class ManaManager implements Listener {
         int clamped = Math.max(0, Math.min(value, max));
         mana.put(player, clamped);
         if (clamped < max) {
-            nextRegen.putIfAbsent(player, System.currentTimeMillis() + intervalMillis());
+            regenFrom.putIfAbsent(player, System.currentTimeMillis());
         } else {
-            nextRegen.remove(player);
+            regenFrom.remove(player);
         }
         changeListener.accept(player);
+    }
+
+    /** Soma mana (sem passar do máximo). */
+    public void add(UUID player, int amount) {
+        if (amount > 0) {
+            set(player, get(player) + amount);
+        }
     }
 
     /** Muda a mana máxima só deste jogador (null = volta ao valor do config) e baixa a atual se passar do novo máximo. */
@@ -79,7 +96,7 @@ public final class ManaManager implements Listener {
     public void spend(UUID player, int cost) {
         int current = get(player);
         if (current >= max(player)) {
-            nextRegen.put(player, System.currentTimeMillis() + intervalMillis());
+            regenFrom.put(player, System.currentTimeMillis());
         }
         mana.put(player, Math.max(0, current - cost));
         changeListener.accept(player);
@@ -87,7 +104,7 @@ public final class ManaManager implements Listener {
 
     public void fill(UUID player) {
         mana.put(player, max(player));
-        nextRegen.remove(player);
+        regenFrom.remove(player);
         changeListener.accept(player);
     }
 
@@ -100,9 +117,9 @@ public final class ManaManager implements Listener {
         }
     }
 
-    /** Inicia a recuperação de mana (verifica a cada segundo). */
+    /** Inicia a recuperação de mana. */
     public void start() {
-        plugin.getServer().getScheduler().runTaskTimer(plugin, this::regenerate, 20L, 20L);
+        plugin.getServer().getScheduler().runTaskTimer(plugin, this::regenerate, REGEN_CHECK_TICKS, REGEN_CHECK_TICKS);
     }
 
     private void regenerate() {
@@ -112,16 +129,31 @@ public final class ManaManager implements Listener {
             if (!isMage(id) || get(id) >= max(id)) {
                 continue;
             }
-            if (now >= nextRegen.getOrDefault(id, 0L)) {
-                mana.put(id, get(id) + 1);
-                nextRegen.put(id, now + intervalMillis());
-                changeListener.accept(id);
+            long from = regenFrom.computeIfAbsent(id, k -> now);
+            // O intervalo vale o do estado atual: entrar em combate no meio da contagem deixa o ponto mais lento.
+            long interval = (long) (settings.manaRegenSeconds(combat.isInCombat(player)) * 1000);
+            if (now - from >= interval) {
+                set(id, get(id) + 1);
+                if (get(id) < max(id)) {
+                    regenFrom.put(id, now);
+                }
             }
         }
     }
 
-    private long intervalMillis() {
-        return (long) (Math.max(1, settings.number(MagoSettings.MANA_SECONDS)) * 1000);
+    /** Kill dá mana ao killer e, menos, a cada assistente (só para Magos online). */
+    @EventHandler
+    public void onKill(PlayerKillEvent event) {
+        reward(event.getKiller(), settings.manaPerKill());
+        for (UUID assistant : event.getAssistants()) {
+            reward(assistant, settings.manaPerAssist());
+        }
+    }
+
+    private void reward(UUID id, int amount) {
+        if (amount > 0 && isMage(id) && Bukkit.getPlayer(id) != null) {
+            add(id, amount);
+        }
     }
 
     @EventHandler
@@ -135,7 +167,7 @@ public final class ManaManager implements Listener {
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
         mana.remove(event.getPlayer().getUniqueId());
-        nextRegen.remove(event.getPlayer().getUniqueId());
+        regenFrom.remove(event.getPlayer().getUniqueId());
     }
 
     @EventHandler
@@ -145,7 +177,7 @@ public final class ManaManager implements Listener {
             fill(id);
         } else {
             mana.remove(id);
-            nextRegen.remove(id);
+            regenFrom.remove(id);
         }
     }
 }

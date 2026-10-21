@@ -16,10 +16,12 @@ final class LightningSpell {
 
     private final SpellTargets targets;
     private final MagoSettings settings;
+    private final MagoCombos combos;
 
-    LightningSpell(SpellTargets targets, MagoSettings settings) {
+    LightningSpell(SpellTargets targets, MagoSettings settings, MagoCombos combos) {
         this.targets = targets;
         this.settings = settings;
+        this.combos = combos;
     }
 
     /** Retorna false (sem gastar nada) se não houver alvo na mira. */
@@ -37,6 +39,12 @@ final class LightningSpell {
                 entity -> targets.canAffect(mage, entity));
         if (hit == null || !(hit.getHitEntity() instanceof LivingEntity first)) {
             return false;
+        }
+
+        // Condutor (Gelo -> Raio): primeiro alvo marcado pelo Gelo = mais saltos e mais longe.
+        if (combos.conductor(mage, first)) {
+            jumps = Math.max(jumps, combos.conductorJumps());
+            jumpDistance = Math.max(jumpDistance, combos.conductorDistance());
         }
 
         List<LivingEntity> chain = new ArrayList<>();

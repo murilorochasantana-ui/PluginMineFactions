@@ -32,14 +32,63 @@ login:
     ativada: false
     minutos: 10
 
-# Classe Mago (staffs, mana e fraqueza).
+# Classe Mago (staffs, míssil, mana, passivas e fraqueza).
 mago:
   # true: as staffs usam o item_model "mineplug:staff_<tipo>" (resource pack). false: aparência normal.
   textura-personalizada: false
   mana-maxima: 10
-  mana-segundos-por-ponto: 15
-  # Dano a mais que o Mago leva em cada golpe de outra entidade.
-  dano-extra-recebido: 1.5
+  mana:
+    # Segundos para recuperar 1 ponto de mana.
+    regen-fora-combate: 2
+    regen-em-combate: 6
+    # Mana ganha ao matar um jogador / ao dar assistência.
+    por-kill: 3
+    por-assistencia: 1
+  # Míssil Arcano (clique esquerdo com a staff): sem mana, sem recarga.
+  missil:
+    intervalo-segundos: 0.6
+    mana-por-acerto: 1
+    dano: 2.5
+    alcance: 30
+    # Blocos por tick.
+    velocidade: 2
+  # Fração do dano perdida com espada, machado, maça, tridente, lança e flechas de arco/besta (0.6 = 60%).
+  penalidade-arma: 0.6
+  # Fração a mais de dano que o Mago leva de golpes e projéteis (0.15 = +15%).
+  dano-extra-recebido-porcentagem: 0.15
+  # Poder Arcano: cada magia (não o míssil) dá 1 acúmulo; cada acúmulo aumenta o dano das magias e do míssil.
+  poder-arcano:
+    bonus-por-acumulo: 0.1
+    maximo: 3
+    segundos: 5
+  # Escudo de Mana: parte do dano levado é paga com mana.
+  escudo-mana:
+    porcentagem: 0.2
+    # Pontos de dano absorvidos por 1 de mana.
+    dano-por-mana: 2
+  # Combos entre magias. Cada um se liga/desliga com "ativado".
+  combos:
+    # Quanto tempo o alvo fica marcado pela Staff de Gelo / de Vento.
+    gelo-marca-segundos: 5
+    vento-marca-segundos: 3
+    # Gelo -> Fogo: o Fogo causa mais dano no alvo congelado e tira a lentidão e a fadiga dele.
+    choque-termico:
+      ativado: true
+      multiplicador-dano: 2
+    # Gelo -> Raio: se o primeiro alvo está congelado, o raio pula mais vezes e mais longe.
+    condutor:
+      ativado: true
+      saltos: 4
+      distancia-salto: 7
+    # Vento -> Fogo: alvos empurrados queimam por mais tempo e a explosão do Fogo cresce.
+    tempestade-fogo:
+      ativado: true
+      fogo-segundos: 6
+      raio: 4
+    # Teleporte -> qualquer magia: a próxima magia dentro do prazo não gasta mana (a recarga continua).
+    passo-arcano:
+      ativado: true
+      segundos: 4
   # dano = antes da Proteção. recarga e durações em segundos, raio/alcance em blocos.
   staffs:
     fogo:
