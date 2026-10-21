@@ -35,6 +35,10 @@ public final class StaffService {
     private final ArcaneMissile missiles;
     private final ArcanePower arcane;
     private final MagoCombos combos;
+    private final GrimoireItems grimoireItems;
+    private final GrimoireManager grimoire;
+    /** Momento (ms) da última troca de magia do Grimório de cada jogador (um clique pode gerar dois eventos). */
+    private final Map<UUID, Long> lastCycle = new HashMap<>();
     /** Momento (ms) do último Míssil Arcano de cada jogador. */
     private final Map<UUID, Long> lastMissile = new HashMap<>();
     /** Fim da recarga (ms) de cada staff de cada jogador. */
@@ -43,8 +47,11 @@ public final class StaffService {
     private final Map<UUID, Long> lastWarning = new HashMap<>();
 
     public StaffService(JavaPlugin plugin, ManaManager mana, AuthManager auth, StaffItems items,
-                        MagoSettings settings, SpellTargets targets, ArcanePower arcane) {
+                        MagoSettings settings, SpellTargets targets, ArcanePower arcane,
+                        GrimoireItems grimoireItems, GrimoireManager grimoire) {
         this.plugin = plugin;
+        this.grimoireItems = grimoireItems;
+        this.grimoire = grimoire;
         this.arcane = arcane;
         this.missiles = new ArcaneMissile(plugin, targets, mana, settings);
         this.mana = mana;
@@ -70,13 +77,61 @@ public final class StaffService {
         return charges.containsKey(player);
     }
 
+    // ------------------------------------------------------------ staff ou Grimório
+
+    /** True se o item é uma staff ou o Grimório (os itens que lançam magia). */
+    public boolean isCaster(ItemStack item) {
+        return items.read(item) != null || grimoireItems.isGrimoire(item);
+    }
+
+    public boolean isGrimoire(ItemStack item) {
+        return grimoireItems.isGrimoire(item);
+    }
+
+    /** Magia que o item lança: a da staff, ou a selecionada do Grimório do jogador (null se não há nenhuma). */
+    public StaffType spellOf(Player player, ItemStack item) {
+        StaffType staff = items.read(item);
+        if (staff != null) {
+            return staff;
+        }
+        return grimoireItems.isGrimoire(item) ? grimoire.selected(player.getUniqueId()) : null;
+    }
+
+    public void warnNoSpell(Player player) {
+        actionBar(player, "§cNenhuma magia equipada. Use /grimorio.");
+    }
+
+    /** Shift + clique esquerdo com o Grimório: passa para a próxima magia equipada e mostra a recarga dela. */
+    public void cycleSpell(Player player) {
+        UUID id = player.getUniqueId();
+        if (!auth.isLoggedIn(id) || !isMage(player)) {
+            return;
+        }
+        long now = System.currentTimeMillis();
+        Long last = lastCycle.get(id);
+        if (last != null && now - last < 300) {
+            return;
+        }
+        lastCycle.put(id, now);
+        StaffType spell = grimoire.cycle(id);
+        if (spell == null) {
+            warnNoSpell(player);
+            return;
+        }
+        grimoire.refresh(player);
+        long remaining = cooldownRemainingMillis(player, spell);
+        String state = remaining > 0 ? (int) Math.ceil(remaining / 1000.0) + "s" : "pronta";
+        actionBar(player, "§5Magia: " + spell.coloredSpellName() + " §7(" + state + ")");
+        player.playSound(player.getLocation(), org.bukkit.Sound.UI_BUTTON_CLICK, 0.5f, 1.6f);
+    }
+
     /** Avisa que só Magos usam a staff, no máximo uma vez a cada 2s. */
     public void warnNotMage(Player player) {
         long now = System.currentTimeMillis();
         Long last = lastWarning.get(player.getUniqueId());
         if (last == null || now - last >= WARNING_COOLDOWN_MILLIS) {
             lastWarning.put(player.getUniqueId(), now);
-            player.sendMessage("§cSomente Magos podem usar esta staff.");
+            player.sendMessage("§cSomente Magos podem usar este item.");
         }
     }
 
@@ -151,10 +206,9 @@ public final class StaffService {
         double seconds = settings.cooldownSeconds(type);
         cooldowns.computeIfAbsent(id, k -> new EnumMap<>(StaffType.class))
                 .put(type, System.currentTimeMillis() + (long) (seconds * 1000));
-        ItemStack held = player.getInventory().getItemInMainHand();
-        if (items.read(held) == type) {
-            player.setCooldown(held, (int) Math.ceil(seconds * 20));
-        }
+        // Um modelo da staff leva o grupo de recarga dela: a animação vale para todas as staffs da magia, seja a magia
+        // lançada pela staff ou pelo Grimório.
+        player.setCooldown(items.create(type), (int) Math.ceil(seconds * 20));
         String spent = free ? "§bMagia grátis!" : "§b-" + cost + " mana";
         // Depois de consumir a mana grátis: o teleporte abre a janela da próxima.
         String next = type == StaffType.TELEPORTE && combos.armFreeCast(id) ? " §8| §bPróxima magia grátis!" : "";
@@ -217,8 +271,9 @@ public final class StaffService {
         task.runTaskTimer(plugin, CHARGE_PERIOD, CHARGE_PERIOD);
     }
 
+    /** Segurando a Staff de Teleporte ou o Grimório com o Teleporte selecionado. */
     private boolean holdsTeleportStaff(Player player) {
-        return items.read(player.getInventory().getItemInMainHand()) == StaffType.TELEPORTE;
+        return spellOf(player, player.getInventory().getItemInMainHand()) == StaffType.TELEPORTE;
     }
 
     /** Cancela a carga sem gastar nada (dano recebido, morte, saída). */
@@ -243,6 +298,7 @@ public final class StaffService {
         cooldowns.remove(id);
         lastWarning.remove(id);
         lastMissile.remove(id);
+        lastCycle.remove(id);
         combos.forget(id);
         teleport.forget(id);
     }

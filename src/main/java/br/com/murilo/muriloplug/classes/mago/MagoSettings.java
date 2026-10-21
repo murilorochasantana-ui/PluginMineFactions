@@ -35,6 +35,7 @@ public final class MagoSettings {
         DEFAULTS.put("mago.poder-arcano.segundos", 5);
         DEFAULTS.put("mago.escudo-mana.porcentagem", 0.2);
         DEFAULTS.put("mago.escudo-mana.dano-por-mana", 2);
+        DEFAULTS.put("mago.grimorio.max-equipadas", 4);
         DEFAULTS.put("mago.combos.gelo-marca-segundos", 5);
         DEFAULTS.put("mago.combos.vento-marca-segundos", 3);
         DEFAULTS.put("mago.combos.choque-termico.ativado", true);
@@ -114,6 +115,11 @@ public final class MagoSettings {
     public double number(String path) {
         Object fallback = DEFAULTS.get(path);
         return plugin.getConfig().getDouble(path, fallback instanceof Number n ? n.doubleValue() : 0);
+    }
+
+    /** Quantas magias cabem equipadas no Grimório (1 a 9, a linha de baixo do menu). */
+    public int maxEquipped() {
+        return Math.min(9, Math.max(1, (int) Math.round(number("mago.grimorio.max-equipadas"))));
     }
 
     /** Opção ligada/desligada (padrão do DEFAULTS, ou ligada se não houver). */

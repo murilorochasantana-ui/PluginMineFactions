@@ -2,6 +2,7 @@ package br.com.murilo.muriloplug.classes;
 
 import br.com.murilo.muriloplug.classes.arqueiro.ArrowItems;
 import br.com.murilo.muriloplug.classes.engenheiro.StructureBooks;
+import br.com.murilo.muriloplug.classes.mago.GrimoireItems;
 import br.com.murilo.muriloplug.classes.mago.StaffItems;
 import br.com.murilo.muriloplug.classes.mago.StaffType;
 import br.com.murilo.muriloplug.classes.suporte.SuporteItem;
@@ -22,6 +23,7 @@ import java.util.function.IntFunction;
 public final class ClassItems {
 
     public static final String STAFF_PREFIX = "mago.staff_";
+    public static final String GRIMOIRE = "mago.grimorio";
     public static final String EXPLOSIVE_ARROW = "arqueiro.flecha_explosiva";
     public static final String STRUCTURE_BOOK = "engenheiro.livro_estrutura";
     public static final String SUPPORT_LINK = "suporte.nucleo_vinculo";
@@ -51,10 +53,12 @@ public final class ClassItems {
 
     private final Map<String, Entry> entries = new LinkedHashMap<>();
 
-    public ClassItems(StaffItems staffs, ArrowItems arrows, StructureBooks books, SuporteItems support) {
+    public ClassItems(StaffItems staffs, GrimoireItems grimoire, ArrowItems arrows, StructureBooks books,
+                      SuporteItems support) {
         for (StaffType type : StaffType.values()) {
             register(new Entry(STAFF_PREFIX + type.id(), PlayerClass.MAGO, 1, 1, amount -> staffs.create(type)));
         }
+        register(new Entry(GRIMOIRE, PlayerClass.MAGO, 1, 1, amount -> grimoire.create()));
         register(new Entry(EXPLOSIVE_ARROW, PlayerClass.ARQUEIRO, 1, KIT_ARROWS, arrows::createExplosive));
         register(new Entry(STRUCTURE_BOOK, PlayerClass.ENGENHEIRO, KIT_BOOKS, 1, amount -> books.createEmpty()));
         registerSupport(SUPPORT_LINK, SuporteItem.VINCULO, support);

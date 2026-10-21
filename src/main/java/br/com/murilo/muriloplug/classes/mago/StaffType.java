@@ -48,6 +48,16 @@ public enum StaffType {
         return displayName;
     }
 
+    /** Nome da magia sem cor ("Fogo"). */
+    public String spellName() {
+        return displayName.substring(2).replace("Staff de ", "");
+    }
+
+    /** Nome da magia com a cor da staff ("§6Fogo"). */
+    public String coloredSpellName() {
+        return displayName.substring(0, 2) + spellName();
+    }
+
     public boolean dealsDamage() {
         return dealsDamage;
     }

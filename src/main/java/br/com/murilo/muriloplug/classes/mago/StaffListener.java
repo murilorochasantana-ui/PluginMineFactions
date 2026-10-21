@@ -15,6 +15,7 @@ import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.EquipmentSlot;
+import org.bukkit.inventory.ItemStack;
 
 /**
  * Clique direito com a staff lança a magia (o comportamento normal do item é sempre cancelado); clique esquerdo
@@ -22,12 +23,10 @@ import org.bukkit.inventory.EquipmentSlot;
  */
 public final class StaffListener implements Listener {
 
-    private final StaffItems items;
     private final StaffService service;
     private final AuthManager auth;
 
-    public StaffListener(StaffItems items, StaffService service, AuthManager auth) {
-        this.items = items;
+    public StaffListener(StaffService service, AuthManager auth) {
         this.service = service;
         this.auth = auth;
     }
@@ -43,8 +42,7 @@ public final class StaffListener implements Listener {
         if (action != Action.RIGHT_CLICK_AIR && action != Action.RIGHT_CLICK_BLOCK) {
             return;
         }
-        StaffType type = items.read(event.getItem());
-        if (type == null) {
+        if (!service.isCaster(event.getItem())) {
             return;
         }
         Player player = event.getPlayer();
@@ -61,7 +59,10 @@ public final class StaffListener implements Listener {
             service.warnNotMage(player);
             return;
         }
-        if (type == StaffType.TELEPORTE && player.isSneaking()) {
+        StaffType type = service.spellOf(player, event.getItem());
+        if (type == null) {
+            service.warnNoSpell(player); // Grimório sem magia equipada
+        } else if (type == StaffType.TELEPORTE && player.isSneaking()) {
             service.startCharge(player);
         } else {
             service.cast(player, type);
@@ -73,14 +74,23 @@ public final class StaffListener implements Listener {
      * clique não minerar e atirar ao mesmo tempo.
      */
     private void leftClick(PlayerInteractEvent event, Action action) {
-        if (event.getHand() != EquipmentSlot.HAND || items.read(event.getItem()) == null
+        if (event.getHand() != EquipmentSlot.HAND || !service.isCaster(event.getItem())
                 || !service.isMage(event.getPlayer())) {
             return;
         }
         if (action == Action.LEFT_CLICK_BLOCK) {
             event.setUseInteractedBlock(Event.Result.DENY);
         }
-        service.missile(event.getPlayer());
+        leftAction(event.getPlayer(), event.getItem());
+    }
+
+    /** Shift + esquerdo com o Grimório troca de magia; nos demais casos dispara o Míssil Arcano. */
+    private void leftAction(Player player, ItemStack item) {
+        if (player.isSneaking() && service.isGrimoire(item)) {
+            service.cycleSpell(player);
+        } else {
+            service.missile(player);
+        }
     }
 
     /** O golpe corpo a corpo do Mago com a staff não causa dano: o clique vira míssil (um só por intervalo). */
@@ -90,9 +100,10 @@ public final class StaffListener implements Listener {
                 && (event.getCause() == EntityDamageEvent.DamageCause.ENTITY_ATTACK
                 || event.getCause() == EntityDamageEvent.DamageCause.ENTITY_SWEEP_ATTACK)
                 && DamageType.PLAYER_ATTACK.equals(event.getDamageSource().getDamageType())
-                && items.read(player.getInventory().getItemInMainHand()) != null && service.isMage(player)) {
+                && service.isCaster(player.getInventory().getItemInMainHand()) && service.isMage(player)) {
             event.setCancelled(true);
-            service.missile(player); // se o clique também gerou LEFT_CLICK_AIR, o intervalo evita o tiro duplo
+            // Se o clique também gerou LEFT_CLICK_AIR, o intervalo do míssil e da troca evita a ação dupla.
+            leftAction(player, player.getInventory().getItemInMainHand());
         }
     }
 

@@ -44,6 +44,9 @@ commands:
   classe:
     description: Abre o menu de classes (escolher) ou troca a sua classe atual.
     usage: /classe [trocar] | admin staff <tipo> | admin mana <definir|dar> <jogador> <valor> | admin manamaxima <definir|resetar> <jogador> [valor] | admin flecha <quantidade> | admin livro <quantidade>
+  grimorio:
+    description: Abre o Grimório do Mago (aprender magias consumindo staffs e equipar até 4 magias).
+    usage: /grimorio
   kit:
     description: Administração de kits (pega todos os itens de uma classe pelo menu).
     usage: /kit admin classe

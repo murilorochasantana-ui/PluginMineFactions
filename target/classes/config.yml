@@ -10,6 +10,11 @@ clan:
   # Máximo de membros por clan (incluindo o líder).
   max-membros: 2
 
+# Combate: comandos que não podem ser usados enquanto o jogador está em combate (sem a barra).
+combate:
+  comandos-bloqueados:
+    - grimorio
+
 # PvP estilo 1.8.
 pvp:
   # Tira a recarga de ataque: todo golpe sai com dano cheio, mesmo clicando rápido.
@@ -66,6 +71,9 @@ mago:
     porcentagem: 0.2
     # Pontos de dano absorvidos por 1 de mana.
     dano-por-mana: 2
+  # Grimório: quantas magias podem ficar equipadas (1 a 9).
+  grimorio:
+    max-equipadas: 4
   # Combos entre magias. Cada um se liga/desliga com "ativado".
   combos:
     # Quanto tempo o alvo fica marcado pela Staff de Gelo / de Vento.

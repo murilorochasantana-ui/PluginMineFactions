@@ -43,6 +43,11 @@ import br.com.murilo.muriloplug.classes.engenheiro.PlacementManager;
 import br.com.murilo.muriloplug.classes.engenheiro.StructureBooks;
 import br.com.murilo.muriloplug.classes.engenheiro.StructureStore;
 import br.com.murilo.muriloplug.classes.mago.ArcanePower;
+import br.com.murilo.muriloplug.classes.mago.GrimoireCommand;
+import br.com.murilo.muriloplug.classes.mago.GrimoireItems;
+import br.com.murilo.muriloplug.classes.mago.GrimoireManager;
+import br.com.murilo.muriloplug.classes.mago.GrimoireMenusListener;
+import br.com.murilo.muriloplug.classes.mago.GrimoireRestrictionsListener;
 import br.com.murilo.muriloplug.classes.mago.MagoSettings;
 import br.com.murilo.muriloplug.classes.mago.MagoWeaponListener;
 import br.com.murilo.muriloplug.classes.mago.ManaShieldListener;
@@ -63,6 +68,7 @@ import br.com.murilo.muriloplug.classes.suporte.SuporteItems;
 import br.com.murilo.muriloplug.classes.suporte.SuporteListener;
 import br.com.murilo.muriloplug.classes.suporte.SuporteSettings;
 import br.com.murilo.muriloplug.classes.suporte.SuporteTargets;
+import br.com.murilo.muriloplug.combat.CombatCommandListener;
 import br.com.murilo.muriloplug.combat.CombatManager;
 import br.com.murilo.muriloplug.economy.EconomyManager;
 import br.com.murilo.muriloplug.economy.MoneyCommand;
@@ -167,6 +173,7 @@ public final class MinePlug extends JavaPlugin {
 
         CombatManager combatManager = new CombatManager();
         getServer().getPluginManager().registerEvents(combatManager, this);
+        getServer().getPluginManager().registerEvents(new CombatCommandListener(this, combatManager), this);
 
         homeManager = new HomeManager(this);
         homeManager.load();
@@ -254,10 +261,18 @@ public final class MinePlug extends JavaPlugin {
         arcanePower.start();
         StaffItems staffItems = new StaffItems(this, magoSettings);
         SpellTargets spellTargets = new SpellTargets(authManager, clanManager, arcanePower);
+        GrimoireItems grimoireItems = new GrimoireItems(this);
+        GrimoireManager grimoireManager = new GrimoireManager(this, magoSettings, classManager, grimoireItems);
+        grimoireManager.load();
+        getServer().getPluginManager().registerEvents(grimoireManager, this);
+        getServer().getPluginManager().registerEvents(new GrimoireRestrictionsListener(grimoireItems), this);
+        getServer().getPluginManager().registerEvents(
+                new GrimoireMenusListener(this, grimoireManager, staffItems, manaManager, combatManager, magoSettings), this);
+        getCommand("grimorio").setExecutor(new GrimoireCommand(manaManager, grimoireManager, magoSettings));
         StaffService staffService = new StaffService(this, manaManager, authManager, staffItems, magoSettings,
-                spellTargets, arcanePower);
+                spellTargets, arcanePower, grimoireItems, grimoireManager);
         getServer().getPluginManager().registerEvents(new MagoWeaponListener(classManager, magoSettings, arcanePower), this);
-        getServer().getPluginManager().registerEvents(new StaffListener(staffItems, staffService, authManager), this);
+        getServer().getPluginManager().registerEvents(new StaffListener(staffService, authManager), this);
         getServer().getPluginManager().registerEvents(new MagoWeaknessListener(classManager, magoSettings), this);
 
         ArqueiroSettings arqueiroSettings = new ArqueiroSettings(this);
@@ -321,7 +336,7 @@ public final class MinePlug extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new SuporteListener(classManager, authManager, suporteItems,
                 suporteSettings, suporteCooldowns, suporteTargets, suporteAssists, linkManager, rootManager,
                 flightManager), this);
-        ClassItems classItems = new ClassItems(staffItems, arrowItems, structureBooks, suporteItems);
+        ClassItems classItems = new ClassItems(staffItems, grimoireItems, arrowItems, structureBooks, suporteItems);
         ClassCommand classCommand = new ClassCommand(classManager, combatManager, classItems, manaManager);
         getCommand("classe").setExecutor(classCommand);
         getCommand("classe").setTabCompleter(classCommand);
@@ -518,6 +533,7 @@ public final class MinePlug extends JavaPlugin {
         changed |= addMissing(config, AuthManager.ATTEMPTS_PATH, 5);
         changed |= addMissing(config, AuthManager.SESSION_ENABLED_PATH, false);
         changed |= addMissing(config, AuthManager.SESSION_MINUTES_PATH, 10);
+        changed |= addMissing(config, CombatCommandListener.PATH, java.util.List.of("grimorio"));
         changed |= MagoSettings.addMissing(config);
         changed |= ArqueiroSettings.addMissing(config);
         changed |= CombatenteSettings.addMissing(config);

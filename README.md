@@ -180,6 +180,9 @@ Usa staffs (compradas na `/loja`), lançadas com **clique direito**:
 | Teleporte | Teleporta até 30 blocos (não atravessa parede). Segurando 3s leva até 2 jogadores a até 3 blocos | 5 | 30s |
 | Vento | Empurra quem está perto, 3 de dano | 2 | 20s |
 
+- **Grimório** (`/grimorio`): um livro que reúne as magias e libera a hotbar. Quem vira Mago pela primeira vez ganha um Grimório com a magia de Fogo. As outras magias são aprendidas **consumindo a staff** (no menu `/grimorio`, clique numa staff do seu inventário e confirme); a magia fica aprendida para sempre, salva em `mago.yml`. Dá para equipar até 4 magias (`mago.grimorio.max-equipadas`); trocar as equipadas fica bloqueado em combate
+  - Clique direito: lança a magia selecionada (mesmos custo, dano, recarga e combos da staff). Clique esquerdo: Míssil Arcano. Shift + clique esquerdo: próxima magia equipada. Teleporte em grupo: Shift + clique direito
+  - A recarga é por magia e compartilhada entre o Grimório e a staff. O Grimório não vai em bigorna, mesa de encantamento nem rebolo
 - **Míssil Arcano (clique esquerdo com a staff):** projétil rápido de 2.5 de dano, sem mana e sem recarga (0.6s entre mísseis); cada acerto devolve +1 de mana. O clique esquerdo não dá golpe corpo a corpo
 - Mana máxima 10 (aparece na barra lateral): recupera 1 a cada 2s fora de combate e 1 a cada 6s em combate; kill dá +3 e assistência +1
 - **Poder Arcano:** cada magia dá 1 acúmulo por 5s (máx. 3); cada acúmulo dá +10% de dano nas magias e no míssil. Bater com arma zera
