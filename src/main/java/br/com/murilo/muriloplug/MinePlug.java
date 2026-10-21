@@ -287,6 +287,10 @@ public final class MinePlug extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new EngenheiroMenusListener(this, buildManager, placementManager), this);
         SuporteSettings suporteSettings = new SuporteSettings(this);
         SuporteItems suporteItems = new SuporteItems(this, suporteSettings);
+        int oldScrolls = shopManager.migrate(suporteItems::upgradeLegacy) + marketManager.migrate(suporteItems::upgradeLegacy);
+        if (oldScrolls > 0) {
+            getLogger().info("Pergaminhos antigos trocados na loja e no mercado: " + oldScrolls);
+        }
         SuporteCooldowns suporteCooldowns = new SuporteCooldowns();
         SuporteTargets suporteTargets = new SuporteTargets(authManager, clanManager);
         SuporteAssists suporteAssists = new SuporteAssists();

@@ -11,6 +11,7 @@ import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.UnaryOperator;
 
 /** Itens da loja do servidor, salvos em loja.yml (cada ItemStack em bytes Base64, sem perder dados customizados). */
 public final class ShopManager {
@@ -87,6 +88,27 @@ public final class ShopManager {
             }
         }
         nextId = Math.max(nextId, yaml.getInt("next-id", 1));
+    }
+
+    /**
+     * Passa cada item por {@code upgrade} (que devolve a mesma instância se não há o que trocar) e salva se algum
+     * mudou. Retorna quantos mudaram.
+     */
+    public int migrate(UnaryOperator<ItemStack> upgrade) {
+        int[] changed = {0};
+        items.replaceAll((id, shopItem) -> {
+            ItemStack original = shopItem.item();
+            ItemStack updated = upgrade.apply(original);
+            if (updated == original) {
+                return shopItem;
+            }
+            changed[0]++;
+            return new ShopItem(id, updated, shopItem.price());
+        });
+        if (changed[0] > 0) {
+            save();
+        }
+        return changed[0];
     }
 
     public void save() {

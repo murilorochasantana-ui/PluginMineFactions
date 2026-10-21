@@ -14,6 +14,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.UnaryOperator;
 
 /** Anúncios do mercado entre jogadores, salvos em mercado.yml a cada mudança (itens em Base64). */
 public final class MarketManager {
@@ -114,6 +115,28 @@ public final class MarketManager {
             }
         }
         nextId = Math.max(nextId, yaml.getLong("next-id", 1));
+    }
+
+    /**
+     * Passa cada anúncio por {@code upgrade} (que devolve a mesma instância se não há o que trocar) e salva se algum
+     * mudou. Retorna quantos mudaram.
+     */
+    public int migrate(UnaryOperator<ItemStack> upgrade) {
+        int[] changed = {0};
+        listings.replaceAll((id, listing) -> {
+            ItemStack original = listing.item();
+            ItemStack updated = upgrade.apply(original);
+            if (updated == original) {
+                return listing;
+            }
+            changed[0]++;
+            return new Listing(id, listing.seller(), listing.sellerName(), updated, listing.price(),
+                    listing.createdAt());
+        });
+        if (changed[0] > 0) {
+            save();
+        }
+        return changed[0];
     }
 
     public void save() {

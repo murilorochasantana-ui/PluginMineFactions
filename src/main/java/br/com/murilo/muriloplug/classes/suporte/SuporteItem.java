@@ -8,7 +8,7 @@ public enum SuporteItem {
     VINCULO("vinculo", Material.HEAVY_CORE, "§5Núcleo do Vínculo"),
     PRENDER("prender", Material.NETHER_STAR, "§8Estrela das Correntes"),
     CURA("cura", Material.HEART_OF_THE_SEA, "§bCoração da Cura"),
-    PERGAMINHO("pergaminho", Material.WRITABLE_BOOK, "§ePergaminho da Velocidade"),
+    PERGAMINHO("pergaminho", Material.PAPER, "§ePergaminho da Velocidade"),
     VOO("voo", Material.FEATHER, "§fPena do Voo");
 
     private final String id;

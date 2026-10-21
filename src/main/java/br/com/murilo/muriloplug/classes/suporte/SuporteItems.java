@@ -6,6 +6,7 @@ import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
@@ -21,6 +22,8 @@ import java.util.UUID;
  * nome. Os itens de usos limitados guardam os usos restantes no próprio item e levam um UUID, então não empilham.
  */
 public final class SuporteItems {
+
+    private static final NamespacedKey SCROLL_MODEL = NamespacedKey.minecraft("writable_book");
 
     private final SuporteSettings settings;
     private final NamespacedKey itemKey;
@@ -43,6 +46,9 @@ public final class SuporteItems {
         meta.addItemFlags(ItemFlag.HIDE_ADDITIONAL_TOOLTIP);
         PersistentDataContainer data = meta.getPersistentDataContainer();
         data.set(itemKey, PersistentDataType.STRING, type.id());
+        if (type == SuporteItem.PERGAMINHO) {
+            meta.setItemModel(SCROLL_MODEL); // papel com cara de livro com pena, sem a tela de escrever
+        }
         if (uses > 0) {
             meta.setMaxStackSize(1);
             data.set(usesKey, PersistentDataType.INTEGER, uses);
@@ -61,6 +67,55 @@ public final class SuporteItems {
         SuporteItem type = SuporteItem.byId(
                 item.getItemMeta().getPersistentDataContainer().get(itemKey, PersistentDataType.STRING));
         return type != null && item.getType() == type.material() ? type : null;
+    }
+
+    /** Pergaminho antigo: livro com pena (WRITABLE_BOOK) com a marca do Pergaminho no PersistentDataContainer. */
+    public boolean isLegacyScroll(ItemStack item) {
+        if (item == null || item.getType() != Material.WRITABLE_BOOK || !item.hasItemMeta()) {
+            return false;
+        }
+        return SuporteItem.PERGAMINHO.id().equals(
+                item.getItemMeta().getPersistentDataContainer().get(itemKey, PersistentDataType.STRING));
+    }
+
+    /**
+     * Pergaminho novo no lugar do antigo, com a mesma quantidade (e os mesmos usos e UUID, se o antigo tinha).
+     * Qualquer outro item volta como veio, a mesma instância.
+     */
+    public ItemStack upgradeLegacy(ItemStack item) {
+        if (!isLegacyScroll(item)) {
+            return item;
+        }
+        PersistentDataContainer old = item.getItemMeta().getPersistentDataContainer();
+        ItemStack fresh = create(SuporteItem.PERGAMINHO);
+        fresh.setAmount(item.getAmount());
+        Integer left = old.get(usesKey, PersistentDataType.INTEGER);
+        Integer max = old.get(maxUsesKey, PersistentDataType.INTEGER);
+        if (left != null && max != null && max > 0) {
+            ItemMeta meta = fresh.getItemMeta();
+            PersistentDataContainer data = meta.getPersistentDataContainer();
+            meta.setMaxStackSize(1);
+            data.set(usesKey, PersistentDataType.INTEGER, left);
+            data.set(maxUsesKey, PersistentDataType.INTEGER, max);
+            String uuid = old.get(uuidKey, PersistentDataType.STRING);
+            data.set(uuidKey, PersistentDataType.STRING, uuid != null ? uuid : UUID.randomUUID().toString());
+            setLore(meta, SuporteItem.PERGAMINHO, left, max);
+            fresh.setItemMeta(meta);
+        }
+        return fresh;
+    }
+
+    /** Troca os Pergaminhos antigos do inventário (inclui armadura e mão secundária). Retorna quantos trocou. */
+    public int migrateInventory(PlayerInventory inventory) {
+        int replaced = 0;
+        ItemStack[] contents = inventory.getContents();
+        for (int slot = 0; slot < contents.length; slot++) {
+            if (isLegacyScroll(contents[slot])) {
+                inventory.setItem(slot, upgradeLegacy(contents[slot]));
+                replaced++;
+            }
+        }
+        return replaced;
     }
 
     /**
@@ -86,13 +141,17 @@ public final class SuporteItems {
             return;
         }
         data.set(usesKey, PersistentDataType.INTEGER, left);
+        setLore(meta, type, left, max);
+        hand.setItemMeta(meta);
+        player.getInventory().setItemInMainHand(hand);
+    }
+
+    private void setLore(ItemMeta meta, SuporteItem type, int usesLeft, int usesMax) {
         List<net.kyori.adventure.text.Component> lines = new ArrayList<>();
-        for (String line : lore(type, left, max)) {
+        for (String line : lore(type, usesLeft, usesMax)) {
             lines.add(ShopUi.text(line));
         }
         meta.lore(lines);
-        hand.setItemMeta(meta);
-        player.getInventory().setItemInMainHand(hand);
     }
 
     private String[] lore(SuporteItem type, int usesLeft, int usesMax) {

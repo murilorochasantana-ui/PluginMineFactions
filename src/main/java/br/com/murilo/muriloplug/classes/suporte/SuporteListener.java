@@ -16,7 +16,10 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.entity.EntityPickupItemEvent;
+import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.potion.PotionEffect;
@@ -69,20 +72,25 @@ public final class SuporteListener implements Listener {
         if (action != Action.RIGHT_CLICK_AIR && action != Action.RIGHT_CLICK_BLOCK) {
             return;
         }
-        SuporteItem type = items.read(event.getItem());
+        Player player = event.getPlayer();
+        SuporteItem type;
+        if (items.isLegacyScroll(event.getItem())) {
+            // Pergaminho antigo (livro com pena): troca pelo novo na hora e segue com a habilidade.
+            player.getInventory().setItem(event.getHand(), items.upgradeLegacy(event.getItem()));
+            event.setCancelled(true); // não deixa a tela de escrever do livro abrir neste clique
+            type = SuporteItem.PERGAMINHO;
+        } else {
+            type = items.read(event.getItem());
+        }
         if (type == null) {
             return;
         }
-        Player player = event.getPlayer();
         Block clicked = event.getClickedBlock();
         if (clicked != null && clicked.getType().isInteractable() && !player.isSneaking()) {
             return; // deixa abrir baú, porta etc. normalmente
         }
         event.setUseItemInHand(Event.Result.DENY);
         event.setUseInteractedBlock(Event.Result.DENY);
-        if (type == SuporteItem.PERGAMINHO) {
-            event.setCancelled(true); // não abre a tela de escrever do livro
-        }
         if (event.getHand() != EquipmentSlot.HAND || !auth.isLoggedIn(player.getUniqueId())) {
             return;
         }
@@ -174,6 +182,27 @@ public final class SuporteListener implements Listener {
         }
         support.getWorld().playSound(support.getLocation(), Sound.ENTITY_EVOKER_CAST_SPELL, 1f, 1.4f);
         support.sendActionBar(ShopUi.text("§eVelocidade em " + group.size() + " jogador(es)."));
+    }
+
+    // ------------------------------------------------------------ Pergaminhos antigos
+
+    @EventHandler
+    public void onJoin(PlayerJoinEvent event) {
+        items.migrateInventory(event.getPlayer().getInventory());
+    }
+
+    @EventHandler
+    public void onInventoryOpen(InventoryOpenEvent event) {
+        if (event.getPlayer() instanceof Player player) {
+            items.migrateInventory(player.getInventory());
+        }
+    }
+
+    @EventHandler
+    public void onPickup(EntityPickupItemEvent event) {
+        if (event.getEntity() instanceof Player && items.isLegacyScroll(event.getItem().getItemStack())) {
+            event.getItem().setItemStack(items.upgradeLegacy(event.getItem().getItemStack()));
+        }
     }
 
     // ------------------------------------------------------------ estado
