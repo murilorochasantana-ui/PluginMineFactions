@@ -44,6 +44,9 @@ commands:
   classe:
     description: Abre o menu de classes (escolher) ou troca a sua classe atual.
     usage: /classe [trocar] | admin staff <tipo> | admin mana <definir|dar> <jogador> <valor> | admin manamaxima <definir|resetar> <jogador> [valor] | admin flecha <quantidade> | admin livro <quantidade>
+  kit:
+    description: Administração de kits (pega todos os itens de uma classe pelo menu).
+    usage: /kit admin classe
   c:
     description: Chat do clan (só os membros online do seu clan recebem).
     usage: /c <mensagem>
@@ -74,6 +77,9 @@ permissions:
     default: op
   mineplug.classe.admin:
     description: Permite pegar as staffs do Mago as Flechas Explosivas do Arqueiro e os Livros de Estrutura do Engenheiro (/classe admin).
+    default: op
+  mineplug.kit.admin:
+    description: Permite usar /kit admin classe (pegar o kit de itens de uma classe).
     default: op
   mineplug.auth.admin:
     description: Permite usar /auth admin resetar.

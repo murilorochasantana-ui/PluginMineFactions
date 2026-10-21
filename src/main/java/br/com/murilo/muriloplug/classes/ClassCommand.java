@@ -1,9 +1,6 @@
 package br.com.murilo.muriloplug.classes;
 
-import br.com.murilo.muriloplug.classes.arqueiro.ArrowItems;
-import br.com.murilo.muriloplug.classes.engenheiro.StructureBooks;
 import br.com.murilo.muriloplug.classes.mago.ManaManager;
-import br.com.murilo.muriloplug.classes.mago.StaffItems;
 import br.com.murilo.muriloplug.classes.mago.StaffType;
 import br.com.murilo.muriloplug.combat.CombatManager;
 import org.bukkit.Bukkit;
@@ -31,19 +28,14 @@ public final class ClassCommand implements CommandExecutor, TabCompleter {
     private static final int MAX_ARROWS_GIVEN = 64;
     private static final int MAX_BOOKS_GIVEN = 36;
 
-    private final StaffItems staffItems;
+    private final ClassItems items;
     private final ManaManager mana;
-    private final ArrowItems arrowItems;
-    private final StructureBooks structureBooks;
 
-    public ClassCommand(ClassManager classes, CombatManager combat, StaffItems staffItems, ManaManager mana,
-                        ArrowItems arrowItems, StructureBooks structureBooks) {
-        this.structureBooks = structureBooks;
-        this.arrowItems = arrowItems;
+    public ClassCommand(ClassManager classes, CombatManager combat, ClassItems items, ManaManager mana) {
+        this.items = items;
         this.mana = mana;
         this.classes = classes;
         this.combat = combat;
-        this.staffItems = staffItems;
     }
 
     @Override
@@ -103,7 +95,7 @@ public final class ClassCommand implements CommandExecutor, TabCompleter {
             player.sendMessage("§cUso: /classe admin staff <" + String.join("|", staffIds()) + ">");
             return;
         }
-        var leftover = player.getInventory().addItem(staffItems.create(type));
+        var leftover = player.getInventory().addItem(items.create(ClassItems.STAFF_PREFIX + type.id(), 1));
         if (leftover.isEmpty()) {
             player.sendMessage("§aVocê recebeu a " + type.displayName() + "§a.");
         } else {
@@ -127,7 +119,7 @@ public final class ClassCommand implements CommandExecutor, TabCompleter {
         }
         int given = 0;
         for (int i = 0; i < amount; i++) {
-            if (!player.getInventory().addItem(structureBooks.createEmpty()).isEmpty()) {
+            if (!player.getInventory().addItem(items.create(ClassItems.STRUCTURE_BOOK, 1)).isEmpty()) {
                 break;
             }
             given++;
@@ -150,7 +142,7 @@ public final class ClassCommand implements CommandExecutor, TabCompleter {
             player.sendMessage("§cUso: /classe admin flecha <quantidade de 1 a " + MAX_ARROWS_GIVEN + ">");
             return;
         }
-        var leftover = player.getInventory().addItem(arrowItems.createExplosive(amount));
+        var leftover = player.getInventory().addItem(items.create(ClassItems.EXPLOSIVE_ARROW, amount));
         if (leftover.isEmpty()) {
             player.sendMessage("§aVocê recebeu " + amount + " Flecha(s) Explosiva(s)§a.");
         } else {

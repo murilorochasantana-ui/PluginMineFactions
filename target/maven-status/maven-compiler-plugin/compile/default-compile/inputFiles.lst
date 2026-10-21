@@ -33,6 +33,7 @@ C:\Users\muril\IdeaProjects\MinePlug\src\main\java\br\com\murilo\muriloplug\clas
 C:\Users\muril\IdeaProjects\MinePlug\src\main\java\br\com\murilo\muriloplug\classes\ClassCommand.java
 C:\Users\muril\IdeaProjects\MinePlug\src\main\java\br\com\murilo\muriloplug\classes\ClassConfirmMenu.java
 C:\Users\muril\IdeaProjects\MinePlug\src\main\java\br\com\murilo\muriloplug\classes\ClassHolder.java
+C:\Users\muril\IdeaProjects\MinePlug\src\main\java\br\com\murilo\muriloplug\classes\ClassItems.java
 C:\Users\muril\IdeaProjects\MinePlug\src\main\java\br\com\murilo\muriloplug\classes\ClassManager.java
 C:\Users\muril\IdeaProjects\MinePlug\src\main\java\br\com\murilo\muriloplug\classes\ClassMenu.java
 C:\Users\muril\IdeaProjects\MinePlug\src\main\java\br\com\murilo\muriloplug\classes\ClassMenusListener.java
@@ -52,6 +53,9 @@ C:\Users\muril\IdeaProjects\MinePlug\src\main\java\br\com\murilo\muriloplug\clas
 C:\Users\muril\IdeaProjects\MinePlug\src\main\java\br\com\murilo\muriloplug\classes\engenheiro\PlacementManager.java
 C:\Users\muril\IdeaProjects\MinePlug\src\main\java\br\com\murilo\muriloplug\classes\engenheiro\StructureBooks.java
 C:\Users\muril\IdeaProjects\MinePlug\src\main\java\br\com\murilo\muriloplug\classes\engenheiro\StructureStore.java
+C:\Users\muril\IdeaProjects\MinePlug\src\main\java\br\com\murilo\muriloplug\classes\KitCommand.java
+C:\Users\muril\IdeaProjects\MinePlug\src\main\java\br\com\murilo\muriloplug\classes\KitMenu.java
+C:\Users\muril\IdeaProjects\MinePlug\src\main\java\br\com\murilo\muriloplug\classes\KitMenusListener.java
 C:\Users\muril\IdeaProjects\MinePlug\src\main\java\br\com\murilo\muriloplug\classes\mago\BoltSpells.java
 C:\Users\muril\IdeaProjects\MinePlug\src\main\java\br\com\murilo\muriloplug\classes\mago\LightningSpell.java
 C:\Users\muril\IdeaProjects\MinePlug\src\main\java\br\com\murilo\muriloplug\classes\mago\MagoSettings.java

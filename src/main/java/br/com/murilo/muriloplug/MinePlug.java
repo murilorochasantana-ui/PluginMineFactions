@@ -18,8 +18,11 @@ import br.com.murilo.muriloplug.clan.ClanInvites;
 import br.com.murilo.muriloplug.clan.ClanManager;
 import br.com.murilo.muriloplug.clan.ClanMenusListener;
 import br.com.murilo.muriloplug.classes.ClassCommand;
+import br.com.murilo.muriloplug.classes.ClassItems;
 import br.com.murilo.muriloplug.classes.ClassManager;
 import br.com.murilo.muriloplug.classes.ClassMenusListener;
+import br.com.murilo.muriloplug.classes.KitCommand;
+import br.com.murilo.muriloplug.classes.KitMenusListener;
 import br.com.murilo.muriloplug.classes.PlayerClassChangeEvent;
 import br.com.murilo.muriloplug.classes.arqueiro.ArcherBowListener;
 import br.com.murilo.muriloplug.classes.arqueiro.ArcherSpeedManager;
@@ -268,10 +271,14 @@ public final class MinePlug extends JavaPlugin {
         getServer().getPluginManager().registerEvents(
                 new BuildListener(buildManager, structureBooks, engenheiroSettings, authManager, placementManager), this);
         getServer().getPluginManager().registerEvents(new EngenheiroMenusListener(this, buildManager, placementManager), this);
-        ClassCommand classCommand = new ClassCommand(classManager, combatManager, staffItems, manaManager, arrowItems,
-                structureBooks);
+        ClassItems classItems = new ClassItems(staffItems, arrowItems, structureBooks);
+        ClassCommand classCommand = new ClassCommand(classManager, combatManager, classItems, manaManager);
         getCommand("classe").setExecutor(classCommand);
         getCommand("classe").setTabCompleter(classCommand);
+        KitCommand kitCommand = new KitCommand(classItems);
+        getCommand("kit").setExecutor(kitCommand);
+        getCommand("kit").setTabCompleter(kitCommand);
+        getServer().getPluginManager().registerEvents(new KitMenusListener(classItems), this);
 
         PvpSettings pvp = PvpSettings.from(getConfig());
         attackSpeedManager = new AttackSpeedManager(this, pvp.noAttackCooldown());
