@@ -88,7 +88,7 @@ final class BoltSpells {
     }
 
     /** Anda 1 passo por tick na direção da mira; ao acertar um alvo ou bloco (ou no alcance máximo) chama {@code onImpact}. */
-    private void launch(Player mage, double range, Particle trail, Consumer<Location> onImpact) {
+    void launch(Player mage, double range, Particle trail, Consumer<Location> onImpact) {
         World world = mage.getWorld();
         Location position = mage.getEyeLocation();
         Vector direction = position.getDirection().normalize();

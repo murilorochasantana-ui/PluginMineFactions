@@ -23,6 +23,7 @@ public final class GrimoireMenu implements GrimoireHolder {
     private static final int SIZE = 54;
     private static final int INFO_SLOT = 4;
     private static final int FIRST_LEARNED_SLOT = 10;
+    private static final int LEARNED_PER_ROW = 7;
     private static final int LEARN_SLOT = 31;
     private static final int EQUIPPED_LABEL_SLOT = 40;
     private static final int EQUIPPED_ROW = 45;
@@ -63,7 +64,7 @@ public final class GrimoireMenu implements GrimoireHolder {
         List<StaffType> learned = grimoire.learned(player);
         for (int i = 0; i < learned.size(); i++) {
             StaffType type = learned.get(i);
-            inventory.setItem(FIRST_LEARNED_SLOT + i, spellItem(type, equipped.contains(type), type == selected));
+            inventory.setItem(learnedSlot(i), spellItem(type, equipped.contains(type), type == selected));
         }
         if (learned.isEmpty()) {
             inventory.setItem(FIRST_LEARNED_SLOT, ShopUi.button(Material.GRAY_DYE, "§8Nenhuma magia aprendida"));
@@ -90,8 +91,17 @@ public final class GrimoireMenu implements GrimoireHolder {
     /** Magia aprendida que está neste slot, ou null. */
     StaffType learnedAt(int slot) {
         List<StaffType> learned = grimoire.learned(player);
-        int index = slot - FIRST_LEARNED_SLOT;
-        return index >= 0 && index < learned.size() ? learned.get(index) : null;
+        for (int i = 0; i < learned.size(); i++) {
+            if (learnedSlot(i) == slot) {
+                return learned.get(i);
+            }
+        }
+        return null;
+    }
+
+    /** As aprendidas ocupam 7 slots por linha, sem encostar nas bordas do menu (10-16, 19-25...). */
+    private static int learnedSlot(int index) {
+        return FIRST_LEARNED_SLOT + index + (index / LEARNED_PER_ROW) * 2;
     }
 
     /** Magia equipada que está neste slot da linha de baixo, ou null. */

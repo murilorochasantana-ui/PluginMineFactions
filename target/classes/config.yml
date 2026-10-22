@@ -135,6 +135,46 @@ mago:
       raio: 5
       forca-horizontal: 1.5
       forca-vertical: 0.5
+    # Nuvem de veneno onde o projétil acerta. nivel-veneno 2 = Veneno II, renovado enquanto o alvo está dentro.
+    veneno:
+      mana: 3
+      recarga: 12
+      raio: 3
+      alcance: 30
+      nuvem-segundos: 4
+      efeito-segundos: 3
+      nivel-veneno: 2
+    # Marca o bloco mirado, avisa com um círculo vermelho e então cai. Não quebra blocos nem põe fogo.
+    meteoro:
+      mana: 6
+      recarga: 60
+      dano: 10
+      raio: 4
+      alcance: 30
+      aviso-segundos: 1.5
+      lentidao-segundos: 3
+    # Dano no alvo da mira (sem atravessar parede); o Mago cura cura-porcentagem do dano causado.
+    sangue:
+      mana: 3
+      recarga: 10
+      dano: 4
+      alcance: 15
+      cura-porcentagem: 0.5
+    # Puxa para o Mago os inimigos no raio (só os que ele enxerga). forca = velocidade máxima da puxada.
+    gravidade:
+      mana: 3
+      recarga: 15
+      dano: 2
+      raio: 8
+      forca: 1.2
+    # Área no bloco mirado: inimigos ficam com Lentidão (nivel-lentidao 4 = Lentidão IV) e sem pular.
+    tempo:
+      mana: 4
+      recarga: 25
+      raio: 5
+      alcance: 30
+      duracao-segundos: 3
+      nivel-lentidao: 4
 
 # Classe Arqueiro (rajada, velocidade, Flecha Explosiva e fraqueza).
 arqueiro:

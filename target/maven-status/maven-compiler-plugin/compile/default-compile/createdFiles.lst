@@ -26,6 +26,7 @@ br\com\murilo\muriloplug\classes\engenheiro\PlacementManager$Pos.class
 br\com\murilo\muriloplug\shop\InventorySpace.class
 br\com\murilo\muriloplug\classes\suporte\SuporteItem.class
 br\com\murilo\muriloplug\classes\mago\BoltSpells.class
+br\com\murilo\muriloplug\classes\mago\ControlSpells$3.class
 br\com\murilo\muriloplug\classes\ClassHolder.class
 br\com\murilo\muriloplug\classes\mago\GrimoireMenusListener$1.class
 br\com\murilo\muriloplug\classes\mago\LightningSpell.class
@@ -54,10 +55,12 @@ br\com\murilo\muriloplug\shop\PriceButtons.class
 br\com\murilo\muriloplug\classes\mago\ArcaneMissile.class
 br\com\murilo\muriloplug\economy\MoneyCommand.class
 br\com\murilo\muriloplug\scoreboard\ScoreboardListener.class
+br\com\murilo\muriloplug\classes\mago\ControlSpells$2.class
 br\com\murilo\muriloplug\classes\engenheiro\PlacementManager$Preview.class
 br\com\murilo\muriloplug\combat\CombatManager.class
 br\com\murilo\muriloplug\classes\arqueiro\ArrowItems.class
 br\com\murilo\muriloplug\clan\ClanMenusListener$1.class
+br\com\murilo\muriloplug\classes\mago\ControlSpells.class
 br\com\murilo\muriloplug\classes\mago\GrimoireManager.class
 br\com\murilo\muriloplug\classes\suporte\NightVisionManager.class
 br\com\murilo\muriloplug\home\HomesMenuListener.class
@@ -66,6 +69,7 @@ br\com\murilo\muriloplug\classes\engenheiro\EngenheiroHolder.class
 br\com\murilo\muriloplug\claim\MyClaimsCommand.class
 br\com\murilo\muriloplug\pvp\SweepAttackListener.class
 br\com\murilo\muriloplug\classes\arqueiro\ShotModes.class
+br\com\murilo\muriloplug\classes\mago\ControlSpells$4.class
 br\com\murilo\muriloplug\market\MarketPurchaseMenu.class
 br\com\murilo\muriloplug\stats\StatsManager.class
 br\com\murilo\muriloplug\classes\combatente\FuryManager.class
@@ -148,6 +152,7 @@ br\com\murilo\muriloplug\clan\ClanCommand.class
 br\com\murilo\muriloplug\classes\engenheiro\BuildManager$Scan.class
 br\com\murilo\muriloplug\clan\ClanInfoMenu.class
 br\com\murilo\muriloplug\claim\ClaimManager.class
+br\com\murilo\muriloplug\classes\mago\ControlSpells$1.class
 br\com\murilo\muriloplug\classes\KitCommand.class
 br\com\murilo\muriloplug\home\HomeCommand.class
 br\com\murilo\muriloplug\pvp\AttackSpeedManager.class

@@ -84,6 +84,41 @@ public final class MagoSettings {
         staff(StaffType.VENTO, "raio", 5);
         staff(StaffType.VENTO, "forca-horizontal", 1.5);
         staff(StaffType.VENTO, "forca-vertical", 0.5);
+
+        staff(StaffType.VENENO, "mana", 3);
+        staff(StaffType.VENENO, "recarga", 12);
+        staff(StaffType.VENENO, "raio", 3);
+        staff(StaffType.VENENO, "alcance", 30);
+        staff(StaffType.VENENO, "nuvem-segundos", 4);
+        staff(StaffType.VENENO, "efeito-segundos", 3);
+        staff(StaffType.VENENO, "nivel-veneno", 2);
+
+        staff(StaffType.METEORO, "mana", 6);
+        staff(StaffType.METEORO, "recarga", 60);
+        staff(StaffType.METEORO, "dano", 10);
+        staff(StaffType.METEORO, "raio", 4);
+        staff(StaffType.METEORO, "alcance", 30);
+        staff(StaffType.METEORO, "aviso-segundos", 1.5);
+        staff(StaffType.METEORO, "lentidao-segundos", 3);
+
+        staff(StaffType.SANGUE, "mana", 3);
+        staff(StaffType.SANGUE, "recarga", 10);
+        staff(StaffType.SANGUE, "dano", 4);
+        staff(StaffType.SANGUE, "alcance", 15);
+        staff(StaffType.SANGUE, "cura-porcentagem", 0.5);
+
+        staff(StaffType.GRAVIDADE, "mana", 3);
+        staff(StaffType.GRAVIDADE, "recarga", 15);
+        staff(StaffType.GRAVIDADE, "dano", 2);
+        staff(StaffType.GRAVIDADE, "raio", 8);
+        staff(StaffType.GRAVIDADE, "forca", 1.2);
+
+        staff(StaffType.TEMPO, "mana", 4);
+        staff(StaffType.TEMPO, "recarga", 25);
+        staff(StaffType.TEMPO, "raio", 5);
+        staff(StaffType.TEMPO, "alcance", 30);
+        staff(StaffType.TEMPO, "duracao-segundos", 3);
+        staff(StaffType.TEMPO, "nivel-lentidao", 4);
     }
 
     private final JavaPlugin plugin;

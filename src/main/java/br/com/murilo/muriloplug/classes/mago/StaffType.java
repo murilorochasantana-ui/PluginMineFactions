@@ -5,7 +5,7 @@ import org.bukkit.Material;
 import java.util.List;
 import java.util.Locale;
 
-/** Os 5 tipos de staff do Mago. O id é o valor guardado no PersistentDataContainer do item. */
+/** Os tipos de staff do Mago. O id é o valor guardado no PersistentDataContainer do item. */
 public enum StaffType {
 
     FOGO("fogo", "§6Staff de Fogo", true,
@@ -22,7 +22,22 @@ public enum StaffType {
             "§7SHIFT + clique direito (segure 3s): leva",
             "§7até 2 jogadores próximos junto."),
     VENTO("vento", "§fStaff de Vento", true,
-            "§7Empurra para longe tudo ao redor.");
+            "§7Empurra para longe tudo ao redor."),
+    VENENO("veneno", "§2Staff de Veneno", false,
+            "§7Lança um projétil que cria uma nuvem",
+            "§7de veneno onde acerta."),
+    METEORO("meteoro", "§cStaff de Meteoro", true,
+            "§7Marca o chão na mira e, após um aviso,",
+            "§7faz cair um meteoro em área e lento."),
+    SANGUE("sangue", "§4Staff de Sangue", true,
+            "§7Fere o alvo na mira e cura o Mago",
+            "§7com metade do dano causado."),
+    GRAVIDADE("gravidade", "§8Staff de Gravidade", true,
+            "§7Puxa para perto do Mago os inimigos",
+            "§7ao redor, ferindo-os."),
+    TEMPO("tempo", "§9Staff do Tempo", false,
+            "§7Cria uma área no chão da mira onde",
+            "§7os inimigos ficam lentos e sem pular.");
 
     /** Material das staffs. As lanças só existem em versões mais novas do jogo que a 1.21.4. */
     public static final Material MATERIAL = Material.BLAZE_ROD;
@@ -50,7 +65,7 @@ public enum StaffType {
 
     /** Nome da magia sem cor ("Fogo"). */
     public String spellName() {
-        return displayName.substring(2).replace("Staff de ", "");
+        return displayName.substring(2).replace("Staff de ", "").replace("Staff do ", "");
     }
 
     /** Nome da magia com a cor da staff ("§6Fogo"). */

@@ -29,6 +29,7 @@ public final class StaffService {
     private final StaffItems items;
     private final MagoSettings settings;
     private final BoltSpells bolts;
+    private final ControlSpells control;
     private final LightningSpell lightning;
     private final WindSpell wind;
     private final TeleportSpell teleport;
@@ -60,6 +61,7 @@ public final class StaffService {
         this.settings = settings;
         this.combos = new MagoCombos(plugin, settings);
         this.bolts = new BoltSpells(plugin, targets, settings, combos);
+        this.control = new ControlSpells(plugin, targets, settings, bolts);
         this.lightning = new LightningSpell(targets, settings, combos);
         this.wind = new WindSpell(targets, settings, combos);
         this.teleport = new TeleportSpell(settings, other -> auth.isLoggedIn(other.getUniqueId()));
@@ -167,13 +169,22 @@ public final class StaffService {
             case RAIO -> lightning.cast(player);
             case TELEPORTE -> teleport.cast(player, group);
             case VENTO -> wind.cast(player);
+            case VENENO -> control.poison(player);
+            case METEORO -> control.meteor(player);
+            case SANGUE -> control.blood(player);
+            case GRAVIDADE -> control.gravity(player);
+            case TEMPO -> control.time(player);
         };
         if (success) {
             commit(player, type);
-        } else if (type == StaffType.RAIO) {
-            actionBar(player, "§cNenhum alvo na mira.");
-        } else if (type == StaffType.TELEPORTE) {
-            actionBar(player, "§cNão há um lugar seguro nessa direção.");
+        } else {
+            switch (type) {
+                case RAIO, SANGUE -> actionBar(player, "§cNenhum alvo na mira.");
+                case TELEPORTE -> actionBar(player, "§cNão há um lugar seguro nessa direção.");
+                case METEORO, TEMPO -> actionBar(player, "§cMire em um bloco.");
+                case GRAVIDADE -> actionBar(player, "§cNenhum inimigo ao alcance.");
+                default -> { }
+            }
         }
     }
 

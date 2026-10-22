@@ -84,6 +84,11 @@ public final class SpellTargets {
 
     /** Linha de partículas entre dois pontos. */
     public static void line(World world, Location from, Location to, Particle particle) {
+        line(world, from, to, particle, null);
+    }
+
+    /** Linha de partículas com dados (a cor da Particle.DUST, por exemplo). */
+    public static void line(World world, Location from, Location to, Particle particle, Object data) {
         Vector direction = to.toVector().subtract(from.toVector());
         double length = direction.length();
         if (length < 0.01) {
@@ -92,7 +97,7 @@ public final class SpellTargets {
         direction.normalize().multiply(0.4);
         Location point = from.clone();
         for (double travelled = 0; travelled < length; travelled += 0.4) {
-            world.spawnParticle(particle, point, 1, 0, 0, 0, 0);
+            world.spawnParticle(particle, point, 1, 0, 0, 0, 0, data);
             point.add(direction);
         }
     }

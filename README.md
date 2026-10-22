@@ -179,6 +179,11 @@ Usa staffs (compradas na `/loja`), lançadas com **clique direito**:
 | Raio | 6 de dano em cadeia (até 3 alvos) | 3 | 5s |
 | Teleporte | Teleporta até 30 blocos (não atravessa parede). Segurando 3s leva até 2 jogadores a até 3 blocos | 5 | 30s |
 | Vento | Empurra quem está perto, 3 de dano | 2 | 20s |
+| Veneno | Projétil que cria uma nuvem (raio 3, 4s): Veneno II renovado enquanto o alvo está dentro | 3 | 12s |
+| Meteoro | Marca o bloco mirado (até 30) com um círculo vermelho por 1,5s e então cai: 10 de dano (raio 4) e lentidão por 3s. Não quebra blocos. Sem bloco na mira, não gasta | 6 | 60s |
+| Sangue | Alvo na mira (até 15, sem atravessar parede): 4 de dano e o Mago cura metade do dano causado. Sem alvo, não gasta | 3 | 10s |
+| Gravidade | Puxa os inimigos num raio de 8 (que o Mago enxerga), 2 de dano. Sem inimigos, não gasta | 3 | 15s |
+| Tempo | Área (raio 5, 3s) no bloco mirado: Lentidão IV e sem pular. Sem bloco na mira, não gasta | 4 | 25s |
 
 - **Grimório** (`/grimorio`): um livro que reúne as magias e libera a hotbar. Quem vira Mago pela primeira vez ganha um Grimório com a magia de Fogo. As outras magias são aprendidas **consumindo a staff** (no menu `/grimorio`, clique numa staff do seu inventário e confirme); a magia fica aprendida para sempre, salva em `mago.yml`. Dá para equipar até 4 magias (`mago.grimorio.max-equipadas`); trocar as equipadas fica bloqueado em combate
   - Clique direito: lança a magia selecionada (mesmos custo, dano, recarga e combos da staff). Clique esquerdo: Míssil Arcano. Shift + clique esquerdo: próxima magia equipada. Teleporte em grupo: Shift + clique direito
@@ -253,7 +258,7 @@ Usa staffs (compradas na `/loja`), lançadas com **clique direito**:
 | `/money admin tirar <jogador> <valor>` | Tira dinheiro |
 | `/money admin definir <jogador> <valor>` | Define o saldo |
 | `/loja admin` | Abre a loja em modo admin (ver abaixo) |
-| `/classe admin staff <fogo\|gelo\|raio\|teleporte\|vento>` | Pega uma staff do Mago (para colocar na loja) |
+| `/classe admin staff <fogo\|gelo\|raio\|teleporte\|vento\|veneno\|meteoro\|sangue\|gravidade\|tempo>` | Pega uma staff do Mago (para colocar na loja) |
 | `/classe admin mana definir <jogador> <valor>` | Define a mana atual do Mago |
 | `/classe admin mana dar <jogador> <valor>` | Soma mana no Mago |
 | `/classe admin manamaxima definir <jogador> <valor>` | Muda a mana máxima só desse jogador |
