@@ -40,8 +40,10 @@ br\com\murilo\muriloplug\claim\ClaimListener.class
 br\com\murilo\muriloplug\classes\suporte\SuporteItems$1.class
 br\com\murilo\muriloplug\scoreboard\SidebarManager$Line.class
 br\com\murilo\muriloplug\stats\StatsListener.class
+br\com\murilo\muriloplug\classes\mago\SupportSpells$1.class
 br\com\murilo\muriloplug\classes\ClassMenusListener.class
 br\com\murilo\muriloplug\shop\ShopItem.class
+br\com\murilo\muriloplug\classes\mago\SummonSpell$1.class
 br\com\murilo\muriloplug\shop\PurchaseConfirmMenu.class
 br\com\murilo\muriloplug\auth\AuthManager.class
 br\com\murilo\muriloplug\clan\ClanConfirmMenu.class
@@ -62,6 +64,7 @@ br\com\murilo\muriloplug\classes\arqueiro\ArrowItems.class
 br\com\murilo\muriloplug\clan\ClanMenusListener$1.class
 br\com\murilo\muriloplug\classes\mago\ControlSpells.class
 br\com\murilo\muriloplug\classes\mago\GrimoireManager.class
+br\com\murilo\muriloplug\classes\mago\IllusionSpell$1.class
 br\com\murilo\muriloplug\classes\suporte\NightVisionManager.class
 br\com\murilo\muriloplug\home\HomesMenuListener.class
 br\com\murilo\muriloplug\market\MercadoCommand.class
@@ -132,6 +135,7 @@ br\com\murilo\muriloplug\auth\PasswordHasher.class
 br\com\murilo\muriloplug\tpa\TpaManager$Type.class
 br\com\murilo\muriloplug\classes\ClassCommand.class
 br\com\murilo\muriloplug\classes\combatente\CombatenteSettings.class
+br\com\murilo\muriloplug\classes\mago\TempEntities.class
 br\com\murilo\muriloplug\classes\engenheiro\BuildConfirmMenu$Kind.class
 br\com\murilo\muriloplug\home\DeleteMenusListener.class
 br\com\murilo\muriloplug\classes\ClassItems.class
@@ -143,11 +147,14 @@ br\com\murilo\muriloplug\classes\KitMenu.class
 br\com\murilo\muriloplug\classes\engenheiro\StructureBooks.class
 br\com\murilo\muriloplug\classes\mago\MagoCombos.class
 br\com\murilo\muriloplug\classes\mago\StaffService$1.class
+br\com\murilo\muriloplug\classes\mago\SummonSpell.class
+br\com\murilo\muriloplug\classes\mago\IllusionSpell$2.class
 br\com\murilo\muriloplug\classes\suporte\LinkManager.class
 br\com\murilo\muriloplug\classes\mago\StaffItems$1.class
 br\com\murilo\muriloplug\classes\engenheiro\EngenheiroSettings.class
 br\com\murilo\muriloplug\classes\arqueiro\ExplosiveArrowListener.class
 br\com\murilo\muriloplug\auth\AuthCommand.class
+br\com\murilo\muriloplug\classes\mago\IllusionSpell.class
 br\com\murilo\muriloplug\clan\ClanCommand.class
 br\com\murilo\muriloplug\classes\engenheiro\BuildManager$Scan.class
 br\com\murilo\muriloplug\clan\ClanInfoMenu.class
@@ -171,6 +178,7 @@ br\com\murilo\muriloplug\classes\arqueiro\ArcherBowListener$Burst.class
 br\com\murilo\muriloplug\classes\mago\StaffService.class
 br\com\murilo\muriloplug\auth\AuthConnectionListener.class
 br\com\murilo\muriloplug\shop\ShopManager.class
+br\com\murilo\muriloplug\classes\mago\SupportSpells.class
 br\com\murilo\muriloplug\classes\mago\GrimoireManager$Data.class
 br\com\murilo\muriloplug\classes\PlayerClassChangeEvent.class
 br\com\murilo\muriloplug\classes\ClassMenu.class

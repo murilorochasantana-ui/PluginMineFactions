@@ -127,6 +127,7 @@ public final class MinePlug extends JavaPlugin {
     private AuthManager authManager;
     private ClassManager classManager;
     private ManaManager manaManager;
+    private StaffService staffService;
     private ArcherSpeedManager archerSpeed;
     private ArcherBowListener archerBow;
     private CombatenteHealth combatenteHealth;
@@ -269,7 +270,7 @@ public final class MinePlug extends JavaPlugin {
         getServer().getPluginManager().registerEvents(
                 new GrimoireMenusListener(this, grimoireManager, staffItems, manaManager, combatManager, magoSettings), this);
         getCommand("grimorio").setExecutor(new GrimoireCommand(manaManager, grimoireManager, magoSettings));
-        StaffService staffService = new StaffService(this, manaManager, authManager, staffItems, magoSettings,
+        staffService = new StaffService(this, manaManager, authManager, staffItems, magoSettings,
                 spellTargets, arcanePower, grimoireItems, grimoireManager);
         getServer().getPluginManager().registerEvents(new MagoWeaponListener(classManager, magoSettings, arcanePower), this);
         getServer().getPluginManager().registerEvents(new StaffListener(staffService, authManager), this);
@@ -426,6 +427,9 @@ public final class MinePlug extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (staffService != null) {
+            staffService.shutdown();
+        }
         if (combatDisplayTask != null) {
             combatDisplayTask.cancel();
         }

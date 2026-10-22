@@ -18,6 +18,7 @@ import org.bukkit.util.Vector;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.UUID;
 
 /** Regras comuns das magias: quem pode ser afetado, como causar o dano e linha de visão. */
 public final class SpellTargets {
@@ -44,6 +45,11 @@ public final class SpellTargets {
                     && !clans.isSameClan(mage.getUniqueId(), player.getUniqueId());
         }
         return true;
+    }
+
+    /** True se o jogador é o próprio Mago ou do clan dele (quem as magias de ataque nunca atingem). */
+    public boolean isAlly(Player mage, UUID other) {
+        return mage.getUniqueId().equals(other) || clans.isSameClan(mage.getUniqueId(), other);
     }
 
     /** Dano mágico indireto (ignora armadura, respeita Proteção) causado pelo Mago, com o bônus do Poder Arcano. */

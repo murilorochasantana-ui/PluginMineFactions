@@ -175,6 +175,36 @@ mago:
       alcance: 30
       duracao-segundos: 3
       nivel-lentidao: 4
+    # Absorção em vida (8 = 4 corações amarelos) por "segundos".
+    escudo:
+      mana: 4
+      recarga: 30
+      absorcao: 8
+      segundos: 10
+    # Clarão no raio: cegueira nos inimigos; jogador inimigo invisível (ou em Ilusão) é revelado e brilha.
+    luz:
+      mana: 2
+      recarga: 20
+      raio: 6
+      cegueira-segundos: 3
+      brilho-segundos: 5
+    # Espíritos (Vex). dano = por golpe de cada espírito (conta como dano do Mago). alcance = distância em que
+    # procuram inimigos em volta do Mago. maximo = espíritos vivos ao mesmo tempo por Mago.
+    invocacao:
+      mana: 5
+      recarga: 45
+      dano: 3
+      quantidade: 2
+      maximo: 2
+      segundos: 10
+      alcance: 16
+    # Invisível (só para quem não é do clan) por invisivel-segundos; as cópias ficam paradas por copias-segundos.
+    ilusao:
+      mana: 3
+      recarga: 25
+      invisivel-segundos: 2
+      copias: 3
+      copias-segundos: 4
 
 # Classe Arqueiro (rajada, velocidade, Flecha Explosiva e fraqueza).
 arqueiro:

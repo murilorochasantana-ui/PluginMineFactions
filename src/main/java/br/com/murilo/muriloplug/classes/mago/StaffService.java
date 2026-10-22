@@ -3,6 +3,7 @@ package br.com.murilo.muriloplug.classes.mago;
 import br.com.murilo.muriloplug.auth.AuthManager;
 import br.com.murilo.muriloplug.shop.ShopUi;
 import org.bukkit.Particle;
+import org.bukkit.event.Listener;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -30,6 +31,10 @@ public final class StaffService {
     private final MagoSettings settings;
     private final BoltSpells bolts;
     private final ControlSpells control;
+    private final SupportSpells support;
+    private final SummonSpell summon;
+    private final IllusionSpell illusion;
+    private final TempEntities temp;
     private final LightningSpell lightning;
     private final WindSpell wind;
     private final TeleportSpell teleport;
@@ -62,6 +67,15 @@ public final class StaffService {
         this.combos = new MagoCombos(plugin, settings);
         this.bolts = new BoltSpells(plugin, targets, settings, combos);
         this.control = new ControlSpells(plugin, targets, settings, bolts);
+        this.temp = new TempEntities(plugin);
+        this.summon = new SummonSpell(plugin, targets, settings, temp, mana::isMage);
+        this.illusion = new IllusionSpell(plugin, targets, settings, temp);
+        this.support = new SupportSpells(plugin, targets, settings, illusion);
+        // Espíritos e cópias têm os próprios eventos; sobras de uma queda do servidor saem já ao ligar.
+        for (Listener listener : new Listener[]{temp, summon, illusion}) {
+            plugin.getServer().getPluginManager().registerEvents(listener, plugin);
+        }
+        temp.sweep();
         this.lightning = new LightningSpell(targets, settings, combos);
         this.wind = new WindSpell(targets, settings, combos);
         this.teleport = new TeleportSpell(settings, other -> auth.isLoggedIn(other.getUniqueId()));
@@ -151,6 +165,7 @@ public final class StaffService {
             return;
         }
         lastMissile.put(id, now);
+        illusion.breakIllusion(player);
         missiles.fire(player);
     }
 
@@ -174,6 +189,10 @@ public final class StaffService {
             case SANGUE -> control.blood(player);
             case GRAVIDADE -> control.gravity(player);
             case TEMPO -> control.time(player);
+            case ESCUDO -> support.shield(player);
+            case LUZ -> support.light(player);
+            case INVOCACAO -> summon.cast(player);
+            case ILUSAO -> illusion.cast(player);
         };
         if (success) {
             commit(player, type);
@@ -183,6 +202,7 @@ public final class StaffService {
                 case TELEPORTE -> actionBar(player, "§cNão há um lugar seguro nessa direção.");
                 case METEORO, TEMPO -> actionBar(player, "§cMire em um bloco.");
                 case GRAVIDADE -> actionBar(player, "§cNenhum inimigo ao alcance.");
+                case INVOCACAO -> actionBar(player, "§cSeus espíritos ainda estão ativos.");
                 default -> { }
             }
         }
@@ -210,6 +230,9 @@ public final class StaffService {
     /** Cobra a mana, inicia a recarga (e a animação no item) e mostra o gasto. */
     private void commit(Player player, StaffType type) {
         UUID id = player.getUniqueId();
+        if (type != StaffType.ILUSAO) {
+            illusion.breakIllusion(player); // lançar magia desfaz a Ilusão
+        }
         boolean free = combos.consumeFreeCast(id);
         int cost = free ? 0 : settings.manaCost(type);
         mana.spend(id, cost);
@@ -301,6 +324,13 @@ public final class StaffService {
         }
         task.cancel();
         return true;
+    }
+
+    /** Desligamento do plugin: espíritos e cópias somem e quem estava invisível volta a ser visto. */
+    public void shutdown() {
+        summon.removeEverything();
+        illusion.endAll();
+        temp.sweep();
     }
 
     /** Esquece o estado de um jogador que saiu. */

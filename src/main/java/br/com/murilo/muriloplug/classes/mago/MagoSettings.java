@@ -119,6 +119,31 @@ public final class MagoSettings {
         staff(StaffType.TEMPO, "alcance", 30);
         staff(StaffType.TEMPO, "duracao-segundos", 3);
         staff(StaffType.TEMPO, "nivel-lentidao", 4);
+
+        staff(StaffType.ESCUDO, "mana", 4);
+        staff(StaffType.ESCUDO, "recarga", 30);
+        staff(StaffType.ESCUDO, "absorcao", 8);
+        staff(StaffType.ESCUDO, "segundos", 10);
+
+        staff(StaffType.LUZ, "mana", 2);
+        staff(StaffType.LUZ, "recarga", 20);
+        staff(StaffType.LUZ, "raio", 6);
+        staff(StaffType.LUZ, "cegueira-segundos", 3);
+        staff(StaffType.LUZ, "brilho-segundos", 5);
+
+        staff(StaffType.INVOCACAO, "mana", 5);
+        staff(StaffType.INVOCACAO, "recarga", 45);
+        staff(StaffType.INVOCACAO, "dano", 3);
+        staff(StaffType.INVOCACAO, "quantidade", 2);
+        staff(StaffType.INVOCACAO, "maximo", 2);
+        staff(StaffType.INVOCACAO, "segundos", 10);
+        staff(StaffType.INVOCACAO, "alcance", 16);
+
+        staff(StaffType.ILUSAO, "mana", 3);
+        staff(StaffType.ILUSAO, "recarga", 25);
+        staff(StaffType.ILUSAO, "invisivel-segundos", 2);
+        staff(StaffType.ILUSAO, "copias", 3);
+        staff(StaffType.ILUSAO, "copias-segundos", 4);
     }
 
     private final JavaPlugin plugin;

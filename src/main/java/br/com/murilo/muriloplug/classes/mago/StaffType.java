@@ -37,7 +37,19 @@ public enum StaffType {
             "§7ao redor, ferindo-os."),
     TEMPO("tempo", "§9Staff do Tempo", false,
             "§7Cria uma área no chão da mira onde",
-            "§7os inimigos ficam lentos e sem pular.");
+            "§7os inimigos ficam lentos e sem pular."),
+    ESCUDO("escudo", "§eStaff de Escudo", false,
+            "§7Dá ao Mago corações de absorção",
+            "§7por alguns segundos."),
+    LUZ("luz", "§fStaff de Luz", false,
+            "§7Clarão em volta do Mago: cega os inimigos",
+            "§7e revela quem está invisível."),
+    INVOCACAO("invocacao", "§aStaff de Invocação", true,
+            "§7Invoca espíritos que atacam o inimigo",
+            "§7mais próximo por alguns segundos."),
+    ILUSAO("ilusao", "§dStaff de Ilusão", false,
+            "§7Fica invisível para os inimigos e deixa",
+            "§7cópias falsas no lugar onde estava.");
 
     /** Material das staffs. As lanças só existem em versões mais novas do jogo que a 1.21.4. */
     public static final Material MATERIAL = Material.BLAZE_ROD;
