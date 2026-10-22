@@ -236,21 +236,58 @@ arqueiro:
   # Dano a menos nos golpes de espada e machado (0.4 = 40% menos).
   reducao-dano-corpo-a-corpo: 0.4
 
-# Classe Combatente (vida extra, menos dano, Grito de Fúria e fraqueza).
+# Classe Combatente (vida extra, Fúria, Berserker, habilidades e fraquezas). A Fúria aparece na barra de XP.
 combatente:
   # Vida a mais (6 = 3 corações: 13 corações no total).
   vida-extra: 6
-  # Dano a menos de todas as origens (0.3 = 30% menos). Não vale para void, /kill e borda do mundo.
-  reducao-dano: 0.3
+  # Dano a menos de golpes, projéteis, explosões etc. (0.2 = 20% menos). Não vale para magia, fogo, queda,
+  # void, /kill e borda do mundo. Magia e fogo só são reduzidos pela armadura (fórmula do jogo).
+  reducao-dano: 0.2
+  # Dano a menos de queda (0.2 = 20% menos).
+  reducao-queda: 0.2
+  # Fraqueza: dano a mais das magias de clique direito do Mago (0.3 = +30%), antes da armadura.
+  dano-extra-magia: 0.3
   furia:
-    duracao-segundos: 8
-    recarga-segundos: 30
-    # Nível da Lentidão durante a fúria (1 = Lentidão I; 0 desliga).
-    nivel-lentidao: 1
+    maxima: 100
+    por-golpe: 5
+    por-dano-recebido: 2
+    # Perde isto por segundo depois de ficar fora de combate pelo tempo abaixo.
+    queda-fora-combate: 2
+    fora-combate-segundos: 5
+  # Shift + F. Não desliga: gasta Fúria até acabar e a Fúria não sobe enquanto dura. Sem as reduções de dano.
+  berserker:
+    furia-minima: 60
+    consumo-por-segundo: 10
     # Quanto mais rápido os golpes saem (encurta a imunidade do alvo depois de cada golpe).
     multiplicador-velocidade: 1.5
-  # false: só o arco é bloqueado. true: a besta também.
-  bloquear-besta: false
+  # F (sem agachar) com espada ou machado, mirando um inimigo.
+  investida:
+    custo: 40
+    alcance: 8
+    # Blocos por tick e força do empurrão no alvo ao chegar.
+    velocidade: 1.3
+    empurrao: 0.7
+    intervalo-segundos: 1
+    protecao-queda-segundos: 3
+  # Automático no golpe crítico (caindo, depois de pular).
+  golpe-pulando:
+    custo: 15
+    bonus: 0.2
+    raio: 3
+    dano-area: 0.5
+  # Shift + clique direito com espada ou machado.
+  provocar:
+    custo: 20
+    raio: 6
+    bonus: 0.15
+    segundos: 5
+  inabalavel:
+    resistencia-empurrao: 0.3
+  ultimo-suspiro:
+    furia-minima: 80
+    # Vida (6 = 3 corações) e absorção (4 = 2 corações dourados) depois de sobreviver ao golpe mortal.
+    vida: 6
+    absorcao: 4
 
 # Classe Engenheiro (Livros de Estrutura).
 engenheiro:

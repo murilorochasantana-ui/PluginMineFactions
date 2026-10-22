@@ -59,7 +59,7 @@ final class ArcaneMissile {
                     cancel();
                     world.spawnParticle(Particle.WITCH, hit.getHitPosition().toLocation(world), 12, 0.15, 0.15, 0.15, 0.05);
                     if (hit.getHitEntity() instanceof LivingEntity target) {
-                        targets.damage(mage, target, damage);
+                        targets.damageMissile(mage, target, damage);
                         mana.add(mage.getUniqueId(), manaPerHit);
                     }
                     return;

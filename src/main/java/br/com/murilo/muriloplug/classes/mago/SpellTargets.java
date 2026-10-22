@@ -54,8 +54,20 @@ public final class SpellTargets {
 
     /** Dano mágico indireto (ignora armadura, respeita Proteção) causado pelo Mago, com o bônus do Poder Arcano. */
     public void damage(Player mage, LivingEntity target, double baseAmount) {
+        deal(mage, target, baseAmount, DamageType.INDIRECT_MAGIC);
+    }
+
+    /**
+     * Dano do Míssil Arcano: igual ao das magias, mas com o tipo MAGIC, para o resto do plugin (a fraqueza do
+     * Combatente, por exemplo) distinguir as magias de clique direito do míssil.
+     */
+    public void damageMissile(Player mage, LivingEntity target, double baseAmount) {
+        deal(mage, target, baseAmount, DamageType.MAGIC);
+    }
+
+    private void deal(Player mage, LivingEntity target, double baseAmount, DamageType type) {
         double amount = baseAmount * arcane.multiplier(mage.getUniqueId());
-        DamageSource source = DamageSource.builder(DamageType.INDIRECT_MAGIC)
+        DamageSource source = DamageSource.builder(type)
                 .withCausingEntity(mage)
                 .withDirectEntity(mage)
                 .build();

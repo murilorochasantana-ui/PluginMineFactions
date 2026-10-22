@@ -54,7 +54,7 @@ public final class SidebarManager {
     private final FuryManager fury;
     /** Linhas na ordem de exibição, de cima para baixo. Uma linha que devolve null não aparece. */
     private final List<Line> lines = List.of(this::moneyLine, this::clanLine, this::classLine, this::modeLine,
-            this::furyLine, this::manaLine, this::combatLine, this::killsLine, this::kdaLine);
+            this::berserkLine, this::chargeLine, this::tauntLine, this::leapLine, this::manaLine, this::combatLine, this::killsLine, this::kdaLine);
     /** Último texto enviado para cada linha de cada jogador, para só reenviar o que mudou. */
     private final Map<UUID, Component[]> lastRendered = new HashMap<>();
     /** Última pontuação (posição) enviada para cada linha de cada jogador. */
@@ -156,20 +156,49 @@ public final class SidebarManager {
                         : Component.text("1 flecha", NamedTextColor.GREEN));
     }
 
-    /** Só aparece para Combatentes. */
-    private Component furyLine(Player player) {
+    // ---- Habilidades do Combatente (só para Combatentes): ✔ verde se der para usar, ✖ vermelho se não.
+
+    private Component berserkLine(Player player) {
         UUID id = player.getUniqueId();
         if (!classes.hasClass(id, PlayerClass.COMBATENTE)) {
             return null;
         }
-        Component label = Component.text("Fúria: ", NamedTextColor.WHITE);
-        if (fury.isActive(id)) {
-            return label.append(Component.text("ativa (" + fury.activeSeconds(id) + "s)", NamedTextColor.DARK_RED));
+        Component label = ShopUi.text("§cBerserker §7[Shift+F] ");
+        if (fury.isBerserk(id)) {
+            return label.append(ShopUi.text("§4ATIVO"));
         }
-        int wait = fury.cooldownSeconds(id);
-        return wait > 0
-                ? label.append(Component.text("recarga (" + wait + "s)", NamedTextColor.RED))
-                : label.append(Component.text("pronta", NamedTextColor.GREEN));
+        return label.append(mark(fury.fury(id) >= fury.settings().berserkerMinimum()));
+    }
+
+    private Component chargeLine(Player player) {
+        UUID id = player.getUniqueId();
+        if (!classes.hasClass(id, PlayerClass.COMBATENTE)) {
+            return null;
+        }
+        return ShopUi.text("§eInvestida §7[F] ")
+                .append(mark(!fury.isBerserk(id) && fury.fury(id) >= fury.settings().dashCost()));
+    }
+
+    private Component tauntLine(Player player) {
+        UUID id = player.getUniqueId();
+        if (!classes.hasClass(id, PlayerClass.COMBATENTE)) {
+            return null;
+        }
+        return ShopUi.text("§6Provocar §7[Shift+Clique] ")
+                .append(mark(fury.fury(id) >= fury.settings().tauntCost()));
+    }
+
+    private Component leapLine(Player player) {
+        UUID id = player.getUniqueId();
+        if (!classes.hasClass(id, PlayerClass.COMBATENTE)) {
+            return null;
+        }
+        return ShopUi.text("§fGolpe Pulando §7[Crítico] ")
+                .append(mark(fury.fury(id) >= fury.settings().leapCost()));
+    }
+
+    private static Component mark(boolean usable) {
+        return usable ? Component.text("✔", NamedTextColor.GREEN) : Component.text("✖", NamedTextColor.RED);
     }
 
     private Component clanLine(Player player) {

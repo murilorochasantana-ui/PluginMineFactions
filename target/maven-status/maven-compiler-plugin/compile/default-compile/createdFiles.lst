@@ -155,6 +155,7 @@ br\com\murilo\muriloplug\classes\mago\StaffService$1.class
 br\com\murilo\muriloplug\classes\mago\SummonSpell.class
 br\com\murilo\muriloplug\classes\mago\IllusionSpell$2.class
 br\com\murilo\muriloplug\classes\suporte\LinkManager.class
+br\com\murilo\muriloplug\classes\combatente\CombatenteAbilities.class
 br\com\murilo\muriloplug\classes\mago\StaffItems$1.class
 br\com\murilo\muriloplug\classes\engenheiro\EngenheiroSettings.class
 br\com\murilo\muriloplug\classes\arqueiro\ExplosiveArrowListener.class
@@ -167,6 +168,7 @@ br\com\murilo\muriloplug\claim\ClaimManager.class
 br\com\murilo\muriloplug\classes\mago\ControlSpells$1.class
 br\com\murilo\muriloplug\classes\KitCommand.class
 br\com\murilo\muriloplug\home\HomeCommand.class
+br\com\murilo\muriloplug\classes\combatente\CombatenteAbilities$1.class
 br\com\murilo\muriloplug\pvp\AttackSpeedManager.class
 br\com\murilo\muriloplug\classes\suporte\SuporteSettings$1.class
 br\com\murilo\muriloplug\market\MarketManager.class

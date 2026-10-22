@@ -36,6 +36,7 @@ import br.com.murilo.muriloplug.classes.arqueiro.ArrowItems;
 import br.com.murilo.muriloplug.classes.arqueiro.ExplosiveArrowListener;
 import br.com.murilo.muriloplug.classes.arqueiro.ShotModes;
 import br.com.murilo.muriloplug.classes.combatente.CombatenteHealth;
+import br.com.murilo.muriloplug.classes.combatente.CombatenteAbilities;
 import br.com.murilo.muriloplug.classes.combatente.CombatenteListener;
 import br.com.murilo.muriloplug.classes.combatente.CombatenteSettings;
 import br.com.murilo.muriloplug.classes.combatente.FuryManager;
@@ -295,9 +296,11 @@ public final class MinePlug extends JavaPlugin {
         combatenteHealth = new CombatenteHealth(this, classManager, combatenteSettings);
         getServer().getPluginManager().registerEvents(combatenteHealth, this);
         combatenteHealth.applyOnline();
-        furyManager = new FuryManager(this, classManager, combatenteSettings, authManager);
+        furyManager = new FuryManager(this, classManager, combatenteSettings, authManager, combatManager);
         getServer().getPluginManager().registerEvents(furyManager, this);
         furyManager.start();
+        getServer().getPluginManager().registerEvents(new CombatenteAbilities(this, classManager, combatenteSettings,
+                furyManager, clanManager, authManager), this);
         EngenheiroSettings engenheiroSettings = new EngenheiroSettings(this);
         StructureBooks structureBooks = new StructureBooks(this, engenheiroSettings);
         StructureStore structureStore = new StructureStore(this);
@@ -365,19 +368,13 @@ public final class MinePlug extends JavaPlugin {
         }
 
         // Depois do PvP 1.8: o HIGH do Combatente roda depois do ajuste do machado.
-        getServer().getPluginManager().registerEvents(new CombatenteListener(classManager, combatenteSettings), this);
+        getServer().getPluginManager().registerEvents(new CombatenteListener(classManager, combatenteSettings, furyManager), this);
         // Por último entre os listeners de dano em HIGHEST: o Escudo de Mana mede o dano final já ajustado pelos outros.
         getServer().getPluginManager().registerEvents(new ManaShieldListener(manaManager, magoSettings), this);
 
         PlayerScoreboards scoreboards = new PlayerScoreboards();
         NametagManager nametagManager = new NametagManager(scoreboards, combatManager, clanManager);
         SidebarManager sidebarManager = new SidebarManager(scoreboards, combatManager, statsManager, economyManager, clanManager, classManager, manaManager, shotModes, furyManager, magoSettings);
-        furyManager.setChangeListener(id -> {
-            Player player = getServer().getPlayer(id);
-            if (player != null) {
-                sidebarManager.update(player);
-            }
-        });
         shotModes.setChangeListener(id -> {
             Player player = getServer().getPlayer(id);
             if (player != null) {
@@ -399,6 +396,21 @@ public final class MinePlug extends JavaPlugin {
             getServer().getPluginManager().registerEvents(classBars, this);
             classBars.start();
         }
+        if (classBars != null) {
+            classBars.register(PlayerClass.COMBATENTE, player -> {
+                double current = furyManager.fury(player.getUniqueId());
+                return new ClassBarManager.Bar((int) Math.floor(current), (float) (current / combatenteSettings.furyMax()));
+            });
+        }
+        furyManager.setChangeListener(id -> {
+            Player player = getServer().getPlayer(id);
+            if (player != null) {
+                sidebarManager.update(player);
+                if (classBars != null) {
+                    classBars.update(player);
+                }
+            }
+        });
         manaManager.setChangeListener(id -> {
             Player player = getServer().getPlayer(id);
             if (player != null) {
