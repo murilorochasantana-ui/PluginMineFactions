@@ -11,6 +11,7 @@ import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.Husk;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Zombie;
 import org.bukkit.inventory.EntityEquipment;
@@ -27,9 +28,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Bonecos de teste: um Zombie adulto sem IA (o Mannequin só existe em versões mais novas que a 1.21.4) que recebe
- * dano, cura e efeitos como um jogador, nunca morre e volta sozinho para o lugar. Os bonecos ficam em bonecos.yml e o
- * Zombie não é salvo no chunk: um relógio recria quem faltar (chunk que carrega, boneco morto por /kill etc.), e as
+ * Bonecos de teste: um Husk adulto sem IA (o Mannequin só existe em versões mais novas que a 1.21.4; o Husk é o
+ * zumbi do deserto, que não queima no sol) que recebe dano, cura e efeitos como um jogador, nunca morre e volta
+ * sozinho para o lugar. Os bonecos ficam em bonecos.yml e o Husk não é salvo no chunk: um relógio recria quem faltar (chunk que carrega, boneco morto por /kill etc.), e as
  * sobras de um desligamento brusco são removidas ao ligar e quando o chunk carrega.
  */
 public final class DummyManager {
@@ -154,7 +155,7 @@ public final class DummyManager {
             return;
         }
         double health = dummy.type == TargetRelations.DummyType.ALIADO ? settings.allyStartHealth() : MAX_HEALTH;
-        Zombie body = at.getWorld().spawn(at, Zombie.class, zombie -> {
+        Zombie body = at.getWorld().spawn(at, Husk.class, zombie -> {
             zombie.setBaby(false);
             zombie.setShouldBurnInDay(false);
             zombie.setCanBreakDoors(false);

@@ -8,6 +8,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityCombustEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
@@ -157,7 +158,19 @@ public final class DummyListener implements Listener {
         }
     }
 
-    /** Na água o Zombie viraria Drowned. */
+    /**
+     * Fogo do sol não pega no boneco (ele é um Husk, que já não queima; isto é a garantia final). Só o evento "puro"
+     * é cancelado: o fogo causado por uma entidade (flecha com Chama) ou por um bloco (lava, fogo no chão, isqueiro)
+     * é um evento filho e continua queimando o boneco para testar o dano de fogo.
+     */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onCombust(EntityCombustEvent event) {
+        if (event.getClass() == EntityCombustEvent.class && manager.find(event.getEntity()) != null) {
+            event.setCancelled(true);
+        }
+    }
+
+    /** Na água o Husk viraria Zombie. */
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onTransform(EntityTransformEvent event) {
         if (manager.find(event.getEntity()) != null) {
