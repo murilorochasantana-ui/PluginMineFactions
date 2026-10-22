@@ -78,6 +78,7 @@ br\com\murilo\muriloplug\classes\mago\ControlSpells$4.class
 br\com\murilo\muriloplug\market\MarketPurchaseMenu.class
 br\com\murilo\muriloplug\stats\StatsManager.class
 br\com\murilo\muriloplug\classes\combatente\FuryManager.class
+br\com\murilo\muriloplug\teste\DummyHud.class
 br\com\murilo\muriloplug\MinePlug.class
 br\com\murilo\muriloplug\classes\mago\StaffItems.class
 br\com\murilo\muriloplug\claim\ClaimPreviewManager$Preview.class
@@ -96,6 +97,7 @@ br\com\murilo\muriloplug\market\MarketHolder.class
 br\com\murilo\muriloplug\classes\mago\ArcaneMissile$1.class
 br\com\murilo\muriloplug\shop\ShopHolder.class
 br\com\murilo\muriloplug\classes\combatente\CombatenteListener.class
+br\com\murilo\muriloplug\teste\Dummy.class
 br\com\murilo\muriloplug\market\SellMenu.class
 br\com\murilo\muriloplug\market\MarketUi.class
 br\com\murilo\muriloplug\teleport\TeleportCountdown.class
@@ -111,6 +113,7 @@ br\com\murilo\muriloplug\pvp\AxeDamageListener.class
 br\com\murilo\muriloplug\classes\mago\GrimoireMenu.class
 br\com\murilo\muriloplug\classes\engenheiro\PlaceConfirmMenu.class
 br\com\murilo\muriloplug\classes\suporte\FlightManager.class
+br\com\murilo\muriloplug\teste\DummyListener$1.class
 br\com\murilo\muriloplug\classes\mago\SpellTargets.class
 br\com\murilo\muriloplug\home\SetHomeCommand$1.class
 br\com\murilo\muriloplug\home\DeleteConfirmMenu.class
@@ -118,6 +121,7 @@ br\com\murilo\muriloplug\shop\LojaCommand.class
 br\com\murilo\muriloplug\stats\PlayerKillEvent.class
 br\com\murilo\muriloplug\classes\engenheiro\StructureStore.class
 br\com\murilo\muriloplug\MinePlug$1.class
+br\com\murilo\muriloplug\teste\DummyListener.class
 br\com\murilo\muriloplug\classes\mago\StaffListener.class
 br\com\murilo\muriloplug\home\Home.class
 br\com\murilo\muriloplug\home\DeleteHomesMenu.class
@@ -130,6 +134,7 @@ br\com\murilo\muriloplug\auth\AuthManager$Session.class
 br\com\murilo\muriloplug\classes\mago\StaffService$2.class
 br\com\murilo\muriloplug\classes\suporte\RootManager.class
 br\com\murilo\muriloplug\economy\RewardListener.class
+br\com\murilo\muriloplug\teste\StatusRegistry.class
 br\com\murilo\muriloplug\xp\XpListener.class
 br\com\murilo\muriloplug\clan\ClanFriendlyFireListener.class
 br\com\murilo\muriloplug\classes\engenheiro\BuildMenu.class
@@ -184,6 +189,7 @@ br\com\murilo\muriloplug\classes\engenheiro\PlacementManager.class
 br\com\murilo\muriloplug\classes\arqueiro\ArcherBowListener$Burst.class
 br\com\murilo\muriloplug\classes\mago\StaffService.class
 br\com\murilo\muriloplug\auth\AuthConnectionListener.class
+br\com\murilo\muriloplug\teste\DummyManager.class
 br\com\murilo\muriloplug\shop\ShopManager.class
 br\com\murilo\muriloplug\classes\mago\SupportSpells.class
 br\com\murilo\muriloplug\classes\mago\GrimoireManager$Data.class
@@ -191,7 +197,9 @@ br\com\murilo\muriloplug\classes\PlayerClassChangeEvent.class
 br\com\murilo\muriloplug\classes\ClassMenu.class
 br\com\murilo\muriloplug\classes\PlayerClass.class
 br\com\murilo\muriloplug\classes\mago\WindSpell.class
+br\com\murilo\muriloplug\teste\DummySettings.class
 br\com\murilo\muriloplug\classes\mago\TeleportSpell.class
+br\com\murilo\muriloplug\teste\BonecoCommand.class
 br\com\murilo\muriloplug\classes\mago\ManaManager.class
 br\com\murilo\muriloplug\classes\KitMenusListener.class
 br\com\murilo\muriloplug\classes\mago\GrimoireItems.class
@@ -201,6 +209,8 @@ br\com\murilo\muriloplug\home\SetHomeCommand.class
 br\com\murilo\muriloplug\auth\CommandPasswordFilter.class
 br\com\murilo\muriloplug\classes\mago\ManaShieldListener.class
 br\com\murilo\muriloplug\classes\engenheiro\BuildManager$1.class
+br\com\murilo\muriloplug\teste\TargetRelations$DummyType.class
+br\com\murilo\muriloplug\teste\DummyHud$1.class
 br\com\murilo\muriloplug\market\MarketMenu.class
 br\com\murilo\muriloplug\pvp\ShieldListener.class
 br\com\murilo\muriloplug\clan\Clan.class
@@ -208,6 +218,7 @@ br\com\murilo\muriloplug\classes\mago\GrimoireManager$EquipResult.class
 br\com\murilo\muriloplug\market\MyListingsMenu.class
 br\com\murilo\muriloplug\auth\AuthManager$1.class
 br\com\murilo\muriloplug\shop\ShopMenu$Mode.class
+br\com\murilo\muriloplug\teste\TargetRelations.class
 br\com\murilo\muriloplug\scoreboard\SidebarManager.class
 br\com\murilo\muriloplug\classes\arqueiro\ArcherBowListener.class
 br\com\murilo\muriloplug\shop\ShopMenusListener.class

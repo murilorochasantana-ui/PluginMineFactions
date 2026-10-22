@@ -2,6 +2,7 @@ package br.com.murilo.muriloplug.classes.mago;
 
 import br.com.murilo.muriloplug.auth.AuthManager;
 import br.com.murilo.muriloplug.clan.ClanManager;
+import br.com.murilo.muriloplug.teste.TargetRelations;
 import org.bukkit.FluidCollisionMode;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -26,23 +27,26 @@ public final class SpellTargets {
     private final AuthManager auth;
     private final ClanManager clans;
     private final ArcanePower arcane;
+    private final TargetRelations relations;
 
-    public SpellTargets(AuthManager auth, ClanManager clans, ArcanePower arcane) {
+    public SpellTargets(AuthManager auth, ClanManager clans, ArcanePower arcane, TargetRelations relations) {
         this.auth = auth;
         this.clans = clans;
         this.arcane = arcane;
+        this.relations = relations;
     }
 
-    /** Só jogadores e mobs; nunca o Mago, nem o clan dele, nem jogadores não logados. */
+    /** Jogadores, mobs e bonecos de teste inimigos; nunca o Mago, nem o clan dele, nem o boneco aliado, nem jogadores não logados. */
     public boolean canAffect(Player mage, Entity entity) {
         if (!(entity instanceof LivingEntity living) || entity instanceof ArmorStand
                 || entity.equals(mage) || living.isDead() || !living.isValid()) {
             return false;
         }
+        if (!relations.isEnemy(mage, living)) {
+            return false;
+        }
         if (entity instanceof Player player) {
-            return auth.isLoggedIn(player.getUniqueId())
-                    && player.getGameMode() != GameMode.SPECTATOR
-                    && !clans.isSameClan(mage.getUniqueId(), player.getUniqueId());
+            return auth.isLoggedIn(player.getUniqueId()) && player.getGameMode() != GameMode.SPECTATOR;
         }
         return true;
     }

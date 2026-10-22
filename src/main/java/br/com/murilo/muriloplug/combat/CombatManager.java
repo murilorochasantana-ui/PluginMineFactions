@@ -50,6 +50,11 @@ public final class CombatManager implements Listener {
         mark(b);
     }
 
+    /** Coloca só este jogador em combate (golpe em um boneco de teste, por exemplo). */
+    public void engage(Player player) {
+        mark(player);
+    }
+
     /** Chamado quando um jogador passa de "fora de combate" para "em combate". */
     public void setEnterListener(Consumer<Player> enterListener) {
         this.enterListener = enterListener;

@@ -353,3 +353,18 @@ suporte:
     recarga: 15
     # Depois do voo, o dano da próxima queda é cancelado por até este tempo.
     protecao-queda-segundos: 10
+
+# Bonecos de teste (/boneco): um inimigo e um aliado que recebem dano, curas e efeitos e mostram tudo em cima deles.
+teste:
+  # false: desliga o comando e remove os bonecos.
+  ativado: true
+  # Bater no boneco inimigo coloca o jogador em combate.
+  boneco-coloca-em-combate: true
+  # Vida com que o boneco aliado nasce e para a qual volta (para testar curas).
+  aliado-vida-inicial: 10
+  # Segundos com a vida cheia até o aliado voltar à vida inicial.
+  aliado-volta-segundos: 3
+  # Segundos parado fora do lugar até o boneco voltar sozinho para a posição original.
+  volta-posicao-segundos: 3
+  # Janela (segundos) do "Dano nos últimos Ns".
+  dano-janela-segundos: 10

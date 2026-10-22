@@ -1,6 +1,7 @@
 package br.com.murilo.muriloplug.classes.mago;
 
 import br.com.murilo.muriloplug.shop.ShopUi;
+import br.com.murilo.muriloplug.teste.StatusRegistry;
 import org.bukkit.Particle;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -29,9 +30,12 @@ public final class MagoCombos {
     /** Fim (ms) da janela de mana grátis de cada Mago (Passo Arcano). */
     private final Map<UUID, Long> freeCast = new HashMap<>();
 
-    public MagoCombos(JavaPlugin plugin, MagoSettings settings) {
+    private final StatusRegistry statuses;
+
+    public MagoCombos(JavaPlugin plugin, MagoSettings settings, StatusRegistry statuses) {
         this.plugin = plugin;
         this.settings = settings;
+        this.statuses = statuses;
     }
 
     // ------------------------------------------------------------ marcas
@@ -39,11 +43,13 @@ public final class MagoCombos {
     /** O Gelo acertou o alvo: marca por alguns segundos (usada pelo Choque Térmico e pelo Condutor). */
     public void markIce(LivingEntity target) {
         mark(iced, target.getUniqueId(), settings.number(BASE + "gelo-marca-segundos"));
+        statuses.add(target, "Congelado", settings.number(BASE + "gelo-marca-segundos"));
     }
 
     /** O Vento empurrou o alvo: marca por alguns segundos (usada pela Tempestade de Fogo). */
     public void markWind(LivingEntity target) {
         mark(pushed, target.getUniqueId(), settings.number(BASE + "vento-marca-segundos"));
+        statuses.add(target, "Empurrado", settings.number(BASE + "vento-marca-segundos"));
     }
 
     // ------------------------------------------------------------ Choque Térmico (Gelo -> Fogo)
@@ -57,6 +63,7 @@ public final class MagoCombos {
             return damage;
         }
         iced.remove(target.getUniqueId());
+        statuses.remove(target, "Congelado");
         target.removePotionEffect(PotionEffectType.SLOWNESS);
         target.removePotionEffect(PotionEffectType.MINING_FATIGUE);
         burst(target, Particle.SNOWFLAKE, Particle.FLAME);
@@ -109,6 +116,7 @@ public final class MagoCombos {
             return false;
         }
         pushed.remove(target.getUniqueId());
+        statuses.remove(target, "Empurrado");
         burst(target, Particle.CLOUD, Particle.FLAME);
         announce(mage, "§c§lTEMPESTADE DE FOGO!");
         return true;
@@ -131,6 +139,7 @@ public final class MagoCombos {
             return false;
         }
         freeCast.remove(mage);
+        statuses.remove(mage, "Passo Arcano");
         return true;
     }
 
@@ -140,11 +149,13 @@ public final class MagoCombos {
             return false;
         }
         mark(freeCast, mage, settings.number(BASE + "passo-arcano.segundos"));
+        statuses.add(mage, "Passo Arcano", settings.number(BASE + "passo-arcano.segundos"));
         return true;
     }
 
     public void forget(UUID mage) {
         freeCast.remove(mage);
+        statuses.remove(mage, "Passo Arcano");
     }
 
     // ------------------------------------------------------------ internos

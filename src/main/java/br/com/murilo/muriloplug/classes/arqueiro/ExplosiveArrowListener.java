@@ -1,5 +1,6 @@
 package br.com.murilo.muriloplug.classes.arqueiro;
 
+import br.com.murilo.muriloplug.teste.TargetRelations;
 import org.bukkit.Location;
 import org.bukkit.entity.AbstractArrow;
 import org.bukkit.entity.ArmorStand;
@@ -30,12 +31,15 @@ public final class ExplosiveArrowListener implements Listener {
     private final JavaPlugin plugin;
     private final ArqueiroSettings settings;
     private final ArrowItems arrows;
+    private final TargetRelations relations;
     /** Flechas que já têm a explosão agendada. */
     private final Set<UUID> pending = new HashSet<>();
     /** Arqueiro cuja explosão está sendo criada agora (os eventos de dano dela saem de dentro da criação). */
     private UUID exploding;
 
-    public ExplosiveArrowListener(JavaPlugin plugin, ArqueiroSettings settings, ArrowItems arrows) {
+    public ExplosiveArrowListener(JavaPlugin plugin, ArqueiroSettings settings, ArrowItems arrows,
+                                  TargetRelations relations) {
+        this.relations = relations;
         this.plugin = plugin;
         this.settings = settings;
         this.arrows = arrows;
@@ -44,7 +48,8 @@ public final class ExplosiveArrowListener implements Listener {
     /** Dano da flecha x3 só no acerto direto em jogador. Roda depois do bloqueio de fogo amigo (LOW). */
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onArrowDamage(EntityDamageByEntityEvent event) {
-        if (event.getDamager() instanceof AbstractArrow arrow && event.getEntity() instanceof Player
+        if (event.getDamager() instanceof AbstractArrow arrow
+                && (event.getEntity() instanceof Player || relations.isDummy(event.getEntity()))
                 && arrows.isExplosiveProjectile(arrow.getPersistentDataContainer())) {
             event.setDamage(event.getDamage() * settings.explosiveDamageMultiplier());
         }

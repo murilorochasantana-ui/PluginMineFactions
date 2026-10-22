@@ -1,11 +1,12 @@
 package br.com.murilo.muriloplug.classes.combatente;
 
 import br.com.murilo.muriloplug.auth.AuthManager;
-import br.com.murilo.muriloplug.clan.ClanManager;
 import br.com.murilo.muriloplug.classes.ClassManager;
 import br.com.murilo.muriloplug.classes.PlayerClass;
 import br.com.murilo.muriloplug.combat.CombatManager;
 import br.com.murilo.muriloplug.shop.ShopUi;
+import br.com.murilo.muriloplug.teste.StatusRegistry;
+import br.com.murilo.muriloplug.teste.TargetRelations;
 import org.bukkit.FluidCollisionMode;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -65,7 +66,8 @@ public final class CombatenteAbilities implements Listener {
     private final ClassManager classes;
     private final CombatenteSettings settings;
     private final FuryManager fury;
-    private final ClanManager clans;
+    private final TargetRelations relations;
+    private final StatusRegistry statuses;
     private final AuthManager auth;
     private final Map<UUID, Long> lastDash = new HashMap<>();
     private final Map<UUID, Long> lastTaunt = new HashMap<>();
@@ -77,12 +79,13 @@ public final class CombatenteAbilities implements Listener {
     private EntityDamageByEntityEvent pendingLeap;
 
     public CombatenteAbilities(JavaPlugin plugin, ClassManager classes, CombatenteSettings settings, FuryManager fury,
-                               ClanManager clans, AuthManager auth) {
+                               TargetRelations relations, AuthManager auth, StatusRegistry statuses) {
         this.plugin = plugin;
         this.classes = classes;
         this.settings = settings;
         this.fury = fury;
-        this.clans = clans;
+        this.relations = relations;
+        this.statuses = statuses;
         this.auth = auth;
     }
 
@@ -100,14 +103,13 @@ public final class CombatenteAbilities implements Listener {
 
     private boolean isEnemy(Player self, Entity entity) {
         if (entity.equals(self) || !(entity instanceof LivingEntity living) || entity instanceof ArmorStand
-                || living.isDead() || !living.isValid()) {
+                || living.isDead() || !living.isValid() || !relations.isEnemy(self, living)) {
             return false;
         }
         if (entity instanceof Player player) {
-            return auth.isLoggedIn(player.getUniqueId()) && player.getGameMode() != GameMode.SPECTATOR
-                    && !clans.isSameClan(self.getUniqueId(), player.getUniqueId());
+            return auth.isLoggedIn(player.getUniqueId()) && player.getGameMode() != GameMode.SPECTATOR;
         }
-        return entity instanceof Enemy;
+        return relations.isDummy(entity) || entity instanceof Enemy;
     }
 
     private static Location center(Entity entity) {
@@ -369,6 +371,7 @@ public final class CombatenteAbilities implements Listener {
         for (LivingEntity enemy : enemies) {
             enemy.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, seconds * 20, 0));
             provoked.computeIfAbsent(enemy.getUniqueId(), k -> new HashMap<>()).put(id, until);
+            statuses.add(enemy, "Provocado", seconds);
         }
         World world = player.getWorld();
         world.playSound(player.getLocation(), Sound.ENTITY_EVOKER_PREPARE_ATTACK, 1f, 0.6f);

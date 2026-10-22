@@ -3,12 +3,15 @@ package br.com.murilo.muriloplug.classes.suporte;
 import br.com.murilo.muriloplug.combat.CombatManager;
 import br.com.murilo.muriloplug.shop.ShopUi;
 import br.com.murilo.muriloplug.stats.DamageTracker;
+import br.com.murilo.muriloplug.teste.StatusRegistry;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -17,6 +20,7 @@ import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.util.Vector;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -36,11 +40,13 @@ public final class RootManager implements Listener {
     private final SuporteTargets targets;
     private final CombatManager combat;
     private final DamageTracker damage;
+    private final StatusRegistry statuses;
     /** Fim da prisão (ms) de cada jogador preso. */
     private final Map<UUID, Long> rootedUntil = new HashMap<>();
 
     public RootManager(JavaPlugin plugin, SuporteSettings settings, SuporteTargets targets, CombatManager combat,
-                       DamageTracker damage) {
+                       DamageTracker damage, StatusRegistry statuses) {
+        this.statuses = statuses;
         this.plugin = plugin;
         this.settings = settings;
         this.targets = targets;
@@ -50,6 +56,22 @@ public final class RootManager implements Listener {
 
     public void start() {
         plugin.getServer().getScheduler().runTaskTimer(plugin, this::tick, TICK_PERIOD, TICK_PERIOD);
+        plugin.getServer().getScheduler().runTaskTimer(plugin, this::freezeMobs, 1L, 1L);
+    }
+
+    /** Quem não é jogador (o boneco de teste) não anda enquanto preso: o movimento horizontal é zerado a cada tick. */
+    private void freezeMobs() {
+        if (rootedUntil.isEmpty()) {
+            return;
+        }
+        long now = System.currentTimeMillis();
+        for (Map.Entry<UUID, Long> entry : rootedUntil.entrySet()) {
+            Entity entity = Bukkit.getEntity(entry.getKey());
+            if (entity != null && !(entity instanceof Player) && entity.isValid() && entry.getValue() > now) {
+                Vector velocity = entity.getVelocity();
+                entity.setVelocity(new Vector(0, Math.min(velocity.getY(), 0), 0));
+            }
+        }
     }
 
     public boolean isRooted(UUID id) {
@@ -59,7 +81,7 @@ public final class RootManager implements Listener {
 
     /** Prende o inimigo na mira. Retorna false (sem gastar nada) se não há alvo válido. */
     public boolean root(Player support) {
-        Player target = targets.aimedPlayer(support, settings.rootRange());
+        LivingEntity target = targets.aimedTarget(support, settings.rootRange());
         if (target == null) {
             support.sendActionBar(ShopUi.text("§cNenhum alvo na mira."));
             return false;
@@ -69,10 +91,16 @@ public final class RootManager implements Listener {
             return false;
         }
         rootedUntil.put(target.getUniqueId(), System.currentTimeMillis() + (long) (settings.rootSeconds() * 1000));
-        combat.engage(support, target);
-        damage.record(target.getUniqueId(), support.getUniqueId());
-        target.sendActionBar(ShopUi.text("§cVocê foi preso por " + support.getName() + "!"));
-        support.sendActionBar(ShopUi.text("§aVocê prendeu " + target.getName() + "."));
+        statuses.add(target, "Preso", settings.rootSeconds());
+        if (target instanceof Player player) {
+            combat.engage(support, player);
+            damage.record(player.getUniqueId(), support.getUniqueId());
+            player.sendActionBar(ShopUi.text("§cVocê foi preso por " + support.getName() + "!"));
+            support.sendActionBar(ShopUi.text("§aVocê prendeu " + player.getName() + "."));
+        } else {
+            combat.engage(support);
+            support.sendActionBar(ShopUi.text("§aVocê prendeu o alvo."));
+        }
         target.getWorld().playSound(target.getLocation(), Sound.BLOCK_CHAIN_PLACE, 1f, 0.8f);
         effects(target);
         return true;
@@ -81,17 +109,17 @@ public final class RootManager implements Listener {
     private void tick() {
         long now = System.currentTimeMillis();
         for (UUID id : Set.copyOf(rootedUntil.keySet())) {
-            Player player = Bukkit.getPlayer(id);
-            if (player == null || rootedUntil.get(id) <= now) {
+            Entity entity = Bukkit.getEntity(id);
+            if (entity == null || !entity.isValid() || rootedUntil.get(id) <= now) {
                 rootedUntil.remove(id);
-            } else {
-                effects(player);
+            } else if (entity instanceof LivingEntity living) {
+                effects(living);
             }
         }
     }
 
     /** Correntes e raízes em volta dos pés. */
-    private void effects(Player target) {
+    private void effects(LivingEntity target) {
         Location feet = target.getLocation();
         for (int i = 0; i < 8; i++) {
             double angle = i * Math.PI / 4;

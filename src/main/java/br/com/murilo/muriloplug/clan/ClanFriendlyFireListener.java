@@ -1,6 +1,7 @@
 package br.com.murilo.muriloplug.clan;
 
 import br.com.murilo.muriloplug.combat.CombatManager;
+import br.com.murilo.muriloplug.teste.TargetRelations;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.ThrownPotion;
@@ -27,19 +28,29 @@ public final class ClanFriendlyFireListener implements Listener {
     private static final long WARNING_COOLDOWN_MILLIS = 2_000L;
 
     private final ClanManager clans;
+    private final TargetRelations relations;
     private final Map<UUID, Long> lastWarning = new HashMap<>();
 
-    public ClanFriendlyFireListener(ClanManager clans) {
+    public ClanFriendlyFireListener(ClanManager clans, TargetRelations relations) {
         this.clans = clans;
+        this.relations = relations;
     }
 
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     public void onDamage(EntityDamageByEntityEvent event) {
-        if (!(event.getEntity() instanceof Player victim)) {
+        Player attacker = CombatManager.attackerOf(event);
+        if (attacker == null) {
             return;
         }
-        Player attacker = CombatManager.attackerOf(event);
-        if (attacker != null && !attacker.equals(victim) && clans.isSameClan(attacker.getUniqueId(), victim.getUniqueId())) {
+        if (!(event.getEntity() instanceof Player victim)) {
+            // O boneco de teste aliado conta como membro do clan de todos.
+            if (event.getEntity() instanceof LivingEntity living && relations.isAlly(attacker, living)) {
+                event.setCancelled(true);
+                warn(attacker);
+            }
+            return;
+        }
+        if (!attacker.equals(victim) && clans.isSameClan(attacker.getUniqueId(), victim.getUniqueId())) {
             event.setCancelled(true);
             warn(attacker);
         }

@@ -26,6 +26,12 @@ import br.com.murilo.muriloplug.classes.KitMenusListener;
 import br.com.murilo.muriloplug.classes.ClassBarManager;
 import br.com.murilo.muriloplug.classes.PlayerClass;
 import br.com.murilo.muriloplug.classes.PlayerClassChangeEvent;
+import br.com.murilo.muriloplug.teste.BonecoCommand;
+import br.com.murilo.muriloplug.teste.DummyListener;
+import br.com.murilo.muriloplug.teste.DummyManager;
+import br.com.murilo.muriloplug.teste.DummySettings;
+import br.com.murilo.muriloplug.teste.StatusRegistry;
+import br.com.murilo.muriloplug.teste.TargetRelations;
 import br.com.murilo.muriloplug.xp.XpListener;
 import br.com.murilo.muriloplug.xp.XpSettings;
 import br.com.murilo.muriloplug.classes.arqueiro.ArcherBowListener;
@@ -133,6 +139,7 @@ public final class MinePlug extends JavaPlugin {
     private ClassManager classManager;
     private ManaManager manaManager;
     private StaffService staffService;
+    private DummyManager dummyManager;
     private ArcherSpeedManager archerSpeed;
     private ArcherBowListener archerBow;
     private CombatenteHealth combatenteHealth;
@@ -255,7 +262,9 @@ public final class MinePlug extends JavaPlugin {
         getCommand("c").setExecutor(clanCommand);
         claimManager.setClanManager(clanManager);
         getServer().getPluginManager().registerEvents(new ClanChatListener(clanManager), this);
-        getServer().getPluginManager().registerEvents(new ClanFriendlyFireListener(clanManager), this);
+        TargetRelations targetRelations = new TargetRelations(this, clanManager);
+        StatusRegistry statusRegistry = new StatusRegistry();
+        getServer().getPluginManager().registerEvents(new ClanFriendlyFireListener(clanManager, targetRelations), this);
 
         MagoSettings magoSettings = new MagoSettings(this);
         manaManager = new ManaManager(this, classManager, magoSettings, combatManager);
@@ -266,7 +275,7 @@ public final class MinePlug extends JavaPlugin {
         getServer().getPluginManager().registerEvents(arcanePower, this);
         arcanePower.start();
         StaffItems staffItems = new StaffItems(this, magoSettings);
-        SpellTargets spellTargets = new SpellTargets(authManager, clanManager, arcanePower);
+        SpellTargets spellTargets = new SpellTargets(authManager, clanManager, arcanePower, targetRelations);
         GrimoireItems grimoireItems = new GrimoireItems(this);
         GrimoireManager grimoireManager = new GrimoireManager(this, magoSettings, classManager, grimoireItems);
         grimoireManager.load();
@@ -276,7 +285,7 @@ public final class MinePlug extends JavaPlugin {
                 new GrimoireMenusListener(this, grimoireManager, staffItems, manaManager, combatManager, magoSettings), this);
         getCommand("grimorio").setExecutor(new GrimoireCommand(manaManager, grimoireManager, magoSettings));
         staffService = new StaffService(this, manaManager, authManager, staffItems, magoSettings,
-                spellTargets, arcanePower, grimoireItems, grimoireManager);
+                spellTargets, arcanePower, grimoireItems, grimoireManager, statusRegistry);
         getServer().getPluginManager().registerEvents(new MagoWeaponListener(classManager, magoSettings, arcanePower), this);
         getServer().getPluginManager().registerEvents(new StaffListener(staffService, authManager), this);
         getServer().getPluginManager().registerEvents(new MagoWeaknessListener(classManager, magoSettings), this);
@@ -287,7 +296,7 @@ public final class MinePlug extends JavaPlugin {
         getServer().getPluginManager().registerEvents(shotModes, this);
         archerBow = new ArcherBowListener(this, classManager, arqueiroSettings, shotModes, arrowItems);
         getServer().getPluginManager().registerEvents(archerBow, this);
-        getServer().getPluginManager().registerEvents(new ExplosiveArrowListener(this, arqueiroSettings, arrowItems), this);
+        getServer().getPluginManager().registerEvents(new ExplosiveArrowListener(this, arqueiroSettings, arrowItems, targetRelations), this);
         getServer().getPluginManager().registerEvents(new ArcherWeaknessListener(classManager, arqueiroSettings), this);
         archerSpeed = new ArcherSpeedManager(this, classManager, arqueiroSettings);
         getServer().getPluginManager().registerEvents(archerSpeed, this);
@@ -300,7 +309,7 @@ public final class MinePlug extends JavaPlugin {
         getServer().getPluginManager().registerEvents(furyManager, this);
         furyManager.start();
         getServer().getPluginManager().registerEvents(new CombatenteAbilities(this, classManager, combatenteSettings,
-                furyManager, clanManager, authManager), this);
+                furyManager, targetRelations, authManager, statusRegistry), this);
         EngenheiroSettings engenheiroSettings = new EngenheiroSettings(this);
         StructureBooks structureBooks = new StructureBooks(this, engenheiroSettings);
         StructureStore structureStore = new StructureStore(this);
@@ -323,17 +332,17 @@ public final class MinePlug extends JavaPlugin {
             getLogger().info("Pergaminhos antigos trocados na loja e no mercado: " + oldScrolls);
         }
         SuporteCooldowns suporteCooldowns = new SuporteCooldowns();
-        SuporteTargets suporteTargets = new SuporteTargets(authManager, clanManager);
+        SuporteTargets suporteTargets = new SuporteTargets(authManager, targetRelations);
         SuporteAssists suporteAssists = new SuporteAssists();
         statsManager.setExtraAssistants(suporteAssists::supportersOf);
         suporteHealth = new SuporteHealth(this, classManager, suporteSettings);
         getServer().getPluginManager().registerEvents(suporteHealth, this);
         suporteHealth.applyOnline();
         LinkManager linkManager = new LinkManager(this, classManager, clanManager, authManager, suporteSettings,
-                suporteTargets, suporteAssists);
+                suporteTargets, suporteAssists, statusRegistry);
         getServer().getPluginManager().registerEvents(linkManager, this);
         linkManager.start();
-        RootManager rootManager = new RootManager(this, suporteSettings, suporteTargets, combatManager, damageTracker);
+        RootManager rootManager = new RootManager(this, suporteSettings, suporteTargets, combatManager, damageTracker, statusRegistry);
         getServer().getPluginManager().registerEvents(rootManager, this);
         rootManager.start();
         flightManager = new FlightManager(this, classManager, suporteSettings, suporteCooldowns);
@@ -457,10 +466,23 @@ public final class MinePlug extends JavaPlugin {
         scoreboardListener.setupOnlinePlayers();
         combatDisplayTask = new CombatDisplayTask(combatManager, nametagManager, sidebarManager)
                 .runTaskTimer(this, 20L, 20L);
+
+        // Bonecos de teste. O listener vai por último: ele cancela o dano letal em MONITOR, depois dos outros sistemas.
+        DummySettings dummySettings = new DummySettings(this);
+        dummyManager = new DummyManager(this, dummySettings, targetRelations, statusRegistry);
+        BonecoCommand bonecoCommand = new BonecoCommand(dummyManager, dummySettings);
+        getCommand("boneco").setExecutor(bonecoCommand);
+        getCommand("boneco").setTabCompleter(bonecoCommand);
+        getServer().getPluginManager().registerEvents(new DummyListener(this, dummyManager, dummySettings, combatManager,
+                furyManager::isAreaDamage), this);
+        dummyManager.start();
     }
 
     @Override
     public void onDisable() {
+        if (dummyManager != null) {
+            dummyManager.shutdown();
+        }
         if (staffService != null) {
             staffService.shutdown();
         }
@@ -573,6 +595,7 @@ public final class MinePlug extends JavaPlugin {
         changed |= addMissing(config, AuthManager.SESSION_MINUTES_PATH, 10);
         changed |= addMissing(config, CombatCommandListener.PATH, java.util.List.of("grimorio"));
         changed |= XpSettings.addMissing(config);
+        changed |= DummySettings.addMissing(config);
         changed |= MagoSettings.addMissing(config);
         changed |= ArqueiroSettings.addMissing(config);
         changed |= CombatenteSettings.addMissing(config);

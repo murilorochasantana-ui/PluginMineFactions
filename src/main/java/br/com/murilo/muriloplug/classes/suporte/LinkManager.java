@@ -6,6 +6,7 @@ import br.com.murilo.muriloplug.classes.PlayerClass;
 import br.com.murilo.muriloplug.classes.PlayerClassChangeEvent;
 import br.com.murilo.muriloplug.clan.ClanManager;
 import br.com.murilo.muriloplug.shop.ShopUi;
+import br.com.murilo.muriloplug.teste.StatusRegistry;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.Location;
@@ -13,6 +14,8 @@ import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.damage.DamageSource;
 import org.bukkit.damage.DamageType;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -49,6 +52,7 @@ public final class LinkManager implements Listener {
     private final SuporteSettings settings;
     private final SuporteTargets targets;
     private final SuporteAssists assists;
+    private final StatusRegistry statuses;
     /** Suporte -> aliado vinculado. */
     private final Map<UUID, UUID> bySupport = new HashMap<>();
     /** Aliado vinculado -> Suporte. */
@@ -58,7 +62,9 @@ public final class LinkManager implements Listener {
     private boolean sharing;
 
     public LinkManager(JavaPlugin plugin, ClassManager classes, ClanManager clans, AuthManager auth,
-                       SuporteSettings settings, SuporteTargets targets, SuporteAssists assists) {
+                       SuporteSettings settings, SuporteTargets targets, SuporteAssists assists,
+                       StatusRegistry statuses) {
+        this.statuses = statuses;
         this.plugin = plugin;
         this.classes = classes;
         this.clans = clans;
@@ -84,7 +90,7 @@ public final class LinkManager implements Listener {
     public void use(Player support) {
         UUID id = support.getUniqueId();
         UUID current = bySupport.get(id);
-        Player aimed = targets.aimedPlayer(support, settings.linkRange());
+        LivingEntity aimed = targets.aimedTarget(support, settings.linkRange());
         if (aimed == null) {
             if (current != null) {
                 end(id, "você desfez o vínculo.");
@@ -116,11 +122,14 @@ public final class LinkManager implements Listener {
         }
         bySupport.put(id, allyId);
         byAlly.put(allyId, id);
-        assists.record(id, allyId);
+        if (aimed instanceof Player) {
+            assists.record(id, allyId);
+        }
+        statuses.add(allyId, "Vinculado", StatusRegistry.INDEFINITE);
         int percent = (int) Math.round(settings.linkPercent() * 100);
-        support.sendMessage("§5Você se vinculou a " + aimed.getName() + "§5: ele leva " + percent
+        support.sendMessage("§5Você se vinculou a " + nameOf(aimed) + "§5: ele leva " + percent
                 + "% menos dano e você recebe essa parte.");
-        aimed.sendMessage("§5" + support.getName() + " se vinculou a você: você leva " + percent
+        tell(aimed, "§5" + support.getName() + " se vinculou a você: você leva " + percent
                 + "% menos dano e ele recebe essa parte.");
         support.getWorld().playSound(support.getLocation(), Sound.BLOCK_BEACON_ACTIVATE, 0.8f, 1.4f);
     }
@@ -132,15 +141,28 @@ public final class LinkManager implements Listener {
             return;
         }
         byAlly.remove(allyId);
+        statuses.remove(allyId, "Vinculado");
         Player support = Bukkit.getPlayer(supportId);
-        Player ally = Bukkit.getPlayer(allyId);
+        Entity found = Bukkit.getEntity(allyId);
+        LivingEntity ally = found instanceof LivingEntity living ? living : null;
         if (support != null && ally != null) {
-            support.sendMessage("§5O vínculo com " + ally.getName() + " acabou: " + reason);
-            ally.sendMessage("§5O vínculo com " + support.getName() + " acabou: " + reason);
+            support.sendMessage("§5O vínculo com " + nameOf(ally) + " acabou: " + reason);
+            tell(ally, "§5O vínculo com " + support.getName() + " acabou: " + reason);
         } else if (support != null) {
             support.sendMessage("§5O vínculo acabou: " + reason);
         } else if (ally != null) {
-            ally.sendMessage("§5O vínculo acabou: " + reason);
+            tell(ally, "§5O vínculo acabou: " + reason);
+        }
+    }
+
+    private static String nameOf(LivingEntity entity) {
+        return entity instanceof Player player ? player.getName() : "Boneco de Teste";
+    }
+
+    /** Mensagem só para jogadores (o boneco de teste não lê chat). */
+    private static void tell(LivingEntity entity, String message) {
+        if (entity instanceof Player player) {
+            player.sendMessage(message);
         }
     }
 
@@ -164,7 +186,8 @@ public final class LinkManager implements Listener {
                 continue;
             }
             Player support = Bukkit.getPlayer(supportId);
-            Player ally = Bukkit.getPlayer(allyId);
+            Entity found = Bukkit.getEntity(allyId);
+            LivingEntity ally = found instanceof LivingEntity living ? living : null;
             String reason = null;
             if (support == null || ally == null) {
                 reason = "um dos dois saiu do servidor.";
@@ -172,7 +195,7 @@ public final class LinkManager implements Listener {
                 reason = "um dos dois morreu.";
             } else if (!classes.hasClass(supportId, PlayerClass.SUPORTE)) {
                 reason = "você deixou de ser Suporte.";
-            } else if (!clans.isSameClan(supportId, allyId)) {
+            } else if (!targets.isAlly(support, ally)) {
                 reason = "vocês não estão mais no mesmo clan.";
             } else if (!tooClose(support, ally)) {
                 reason = "vocês ficaram a mais de " + (int) settings.linkMaxDistance() + " blocos de distância.";
@@ -182,16 +205,18 @@ public final class LinkManager implements Listener {
                 continue;
             }
             drawTrail(support, ally);
-            assists.record(supportId, allyId); // o vínculo ativo conta como ajuda contínua
+            if (ally instanceof Player) {
+                assists.record(supportId, allyId); // o vínculo ativo conta como ajuda contínua
+            }
         }
     }
 
-    private boolean tooClose(Player support, Player ally) {
+    private boolean tooClose(Player support, LivingEntity ally) {
         return support.getWorld().equals(ally.getWorld())
                 && support.getLocation().distance(ally.getLocation()) <= settings.linkMaxDistance();
     }
 
-    private void drawTrail(Player support, Player ally) {
+    private void drawTrail(Player support, LivingEntity ally) {
         Location from = support.getLocation().add(0, 1, 0);
         Location to = ally.getLocation().add(0, 1, 0);
         Vector step = to.toVector().subtract(from.toVector());
@@ -212,7 +237,7 @@ public final class LinkManager implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onDamage(EntityDamageEvent event) {
-        if (sharing || !(event.getEntity() instanceof Player ally) || EXEMPT.contains(event.getCause())) {
+        if (sharing || !(event.getEntity() instanceof LivingEntity ally) || EXEMPT.contains(event.getCause())) {
             return;
         }
         UUID supportId = byAlly.get(ally.getUniqueId());

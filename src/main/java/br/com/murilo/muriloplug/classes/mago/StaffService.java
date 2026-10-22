@@ -2,6 +2,7 @@ package br.com.murilo.muriloplug.classes.mago;
 
 import br.com.murilo.muriloplug.auth.AuthManager;
 import br.com.murilo.muriloplug.shop.ShopUi;
+import br.com.murilo.muriloplug.teste.StatusRegistry;
 import org.bukkit.Particle;
 import org.bukkit.event.Listener;
 import org.bukkit.entity.Player;
@@ -54,7 +55,7 @@ public final class StaffService {
 
     public StaffService(JavaPlugin plugin, ManaManager mana, AuthManager auth, StaffItems items,
                         MagoSettings settings, SpellTargets targets, ArcanePower arcane,
-                        GrimoireItems grimoireItems, GrimoireManager grimoire) {
+                        GrimoireItems grimoireItems, GrimoireManager grimoire, StatusRegistry statuses) {
         this.plugin = plugin;
         this.grimoireItems = grimoireItems;
         this.grimoire = grimoire;
@@ -64,7 +65,7 @@ public final class StaffService {
         this.auth = auth;
         this.items = items;
         this.settings = settings;
-        this.combos = new MagoCombos(plugin, settings);
+        this.combos = new MagoCombos(plugin, settings, statuses);
         this.bolts = new BoltSpells(plugin, targets, settings, combos);
         this.control = new ControlSpells(plugin, targets, settings, bolts);
         this.temp = new TempEntities(plugin);

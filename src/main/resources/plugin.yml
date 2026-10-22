@@ -67,6 +67,9 @@ commands:
   auth:
     description: Administração do login (resetar o registro de um jogador).
     usage: /auth admin resetar <jogador>
+  boneco:
+    description: Cria e controla os bonecos de teste (um inimigo e um aliado) que recebem dano, curas e efeitos.
+    usage: /boneco <inimigo|aliado|remover|removertodos|vida <valor>|dano <valor>|armadura <tipo>|resetar>
 
 permissions:
   mineplug.claim.bypass:
@@ -74,6 +77,9 @@ permissions:
     default: op
   mineplug.money.admin:
     description: Permite usar /money admin (dar, tirar e definir saldo).
+    default: op
+  mineplug.boneco:
+    description: Permite usar /boneco (bonecos de teste).
     default: op
   mineplug.loja.admin:
     description: Permite gerenciar os itens da loja (/loja admin).

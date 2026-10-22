@@ -10,6 +10,7 @@ import org.bukkit.Sound;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.block.Block;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
@@ -150,15 +151,15 @@ public final class SuporteListener implements Listener {
     /** Cura na hora o Suporte e os aliados em volta, sem passar da vida máxima de cada um. */
     private void heal(Player support) {
         double amount = settings.healAmount();
-        List<Player> group = targets.group(support, settings.healRadius());
-        for (Player target : group) {
+        List<LivingEntity> group = targets.group(support, settings.healRadius());
+        for (LivingEntity target : group) {
             AttributeInstance max = target.getAttribute(Attribute.MAX_HEALTH);
             double limit = max == null ? 20 : max.getValue();
             target.setHealth(Math.min(limit, target.getHealth() + amount));
             target.getWorld().spawnParticle(Particle.HEART, target.getLocation().add(0, 1.8, 0), 6, 0.4, 0.3, 0.4, 0);
-            if (!target.equals(support)) {
-                assists.record(support.getUniqueId(), target.getUniqueId());
-                target.sendActionBar(ShopUi.text("§aVocê foi curado por " + support.getName() + "."));
+            if (target instanceof Player player && !player.equals(support)) {
+                assists.record(support.getUniqueId(), player.getUniqueId());
+                player.sendActionBar(ShopUi.text("§aVocê foi curado por " + support.getName() + "."));
             }
         }
         support.getWorld().playSound(support.getLocation(), Sound.BLOCK_BEACON_POWER_SELECT, 1f, 1.6f);
@@ -171,13 +172,13 @@ public final class SuporteListener implements Listener {
     private void scroll(Player support) {
         int ticks = settings.scrollSeconds() * 20;
         int amplifier = settings.scrollLevel() - 1;
-        List<Player> group = targets.group(support, settings.scrollRadius());
-        for (Player target : group) {
+        List<LivingEntity> group = targets.group(support, settings.scrollRadius());
+        for (LivingEntity target : group) {
             target.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, ticks, amplifier, false, true, true));
             target.getWorld().spawnParticle(Particle.ENCHANT, target.getLocation().add(0, 1, 0), 25, 0.5, 0.8, 0.5, 0.6);
-            if (!target.equals(support)) {
-                assists.record(support.getUniqueId(), target.getUniqueId());
-                target.sendActionBar(ShopUi.text("§eVocê ganhou velocidade de " + support.getName() + "."));
+            if (target instanceof Player player && !player.equals(support)) {
+                assists.record(support.getUniqueId(), player.getUniqueId());
+                player.sendActionBar(ShopUi.text("§eVocê ganhou velocidade de " + support.getName() + "."));
             }
         }
         support.getWorld().playSound(support.getLocation(), Sound.ENTITY_EVOKER_CAST_SPELL, 1f, 1.4f);
