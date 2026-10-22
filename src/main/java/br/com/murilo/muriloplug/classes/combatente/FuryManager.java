@@ -51,6 +51,8 @@ public final class FuryManager implements Listener {
     private final Map<UUID, Long> lastActivity = new HashMap<>();
     /** Último momento (ms) de uma mensagem de habilidade, que tem prioridade sobre a dica da action bar. */
     private final Map<UUID, Long> lastWarning = new HashMap<>();
+    /** Fim (ms) da recarga do Provocar de cada Combatente. */
+    private final Map<UUID, Long> tauntUntil = new HashMap<>();
     private Consumer<UUID> changeListener = id -> { };
     private boolean areaDamage;
     private int ticks;
@@ -85,6 +87,25 @@ public final class FuryManager implements Listener {
 
     public boolean isCombatente(UUID id) {
         return classes.hasClass(id, PlayerClass.COMBATENTE);
+    }
+
+    /** Segundos restantes (arredondados para cima) da recarga do Provocar, ou 0. */
+    public int tauntCooldownSeconds(UUID id) {
+        Long until = tauntUntil.get(id);
+        if (until == null) {
+            return 0;
+        }
+        long left = until - System.currentTimeMillis();
+        return left <= 0 ? 0 : (int) Math.ceil(left / 1000.0);
+    }
+
+    /** Inicia a recarga do Provocar (só depois de ele acontecer de verdade). */
+    public void startTauntCooldown(UUID id) {
+        long millis = settings.tauntCooldownMillis();
+        if (millis > 0) {
+            tauntUntil.put(id, System.currentTimeMillis() + millis);
+            changeListener.accept(id);
+        }
     }
 
     // ------------------------------------------------------------ mudança
@@ -174,6 +195,17 @@ public final class FuryManager implements Listener {
             UUID id = player.getUniqueId();
             if (!isCombatente(id)) {
                 continue;
+            }
+            // A recarga do Provocar aparece na sidebar: atualiza uma vez por segundo e quando termina.
+            Long taunt = tauntUntil.get(id);
+            if (taunt != null) {
+                boolean over = taunt <= now;
+                if (over) {
+                    tauntUntil.remove(id);
+                }
+                if (over || secondTick) {
+                    changeListener.accept(id);
+                }
             }
             if (berserk.contains(id)) {
                 if (player.isDead()) {
@@ -266,6 +298,7 @@ public final class FuryManager implements Listener {
     public void onQuit(PlayerQuitEvent event) {
         UUID id = event.getPlayer().getUniqueId();
         reset(id);
+        tauntUntil.remove(id);
         lastWarning.remove(id);
     }
 
@@ -273,6 +306,7 @@ public final class FuryManager implements Listener {
     public void onClassChange(PlayerClassChangeEvent event) {
         if (event.getOldClass() == PlayerClass.COMBATENTE || event.getNewClass() == PlayerClass.COMBATENTE) {
             reset(event.getPlayerId());
+            tauntUntil.remove(event.getPlayerId());
         }
     }
 }

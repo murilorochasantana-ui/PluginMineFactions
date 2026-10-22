@@ -217,11 +217,11 @@ Usa staffs (compradas na `/loja`), lançadas com **clique direito**:
 
 - 13 corações de vida máxima (em vez de 10)
 - Recebe 20% menos dano (queda com redução própria). Magia e fogo não têm essa redução, só a armadura (fórmula do jogo)
-- **Fúria** (0 a 100, na barra de XP): +5 por golpe corpo a corpo em inimigo, +2 por golpe ou projétil que leva; cai 2 por segundo depois de 5s fora de combate
+- **Fúria** (0 a 100, na barra de XP): +3 por golpe corpo a corpo em inimigo, +2 por golpe ou projétil que leva; cai 2 por segundo depois de 5s fora de combate
 - **Berserker (Shift + F, 60 de Fúria):** não desliga; a Fúria cai 10 por segundo e não sobe. Golpes 1.5x mais rápidos, sem lentidão e sem as reduções de dano
 - **Investida (F com espada ou machado, 40 de Fúria):** avança até um inimigo a até 8 blocos e o empurra; sem queda por 3s. Indisponível no Berserker
 - **Golpe Pulando (automático, 15 de Fúria):** golpe crítico em inimigo: +20% de dano e metade do dano final nos outros inimigos a 3 blocos
-- **Provocar (Shift + clique direito com espada ou machado, 20 de Fúria):** inimigos a 6 blocos brilham e levam +15% de dano dele por 5s
+- **Provocar (Shift + clique direito com espada ou machado, 20 de Fúria):** inimigos a 6 blocos brilham e levam +15% de dano dele por 5s (recarga de 10s)
 - **Passivas:** Inabalável (30% menos empurrão) e Último Suspiro (com 80+ de Fúria, sobrevive a um golpe mortal com 3 corações e 2 dourados, gastando toda a Fúria)
 - **Fraqueza:** não pode usar arco, besta nem tridente; +30% de dano das magias de clique direito do Mago
 

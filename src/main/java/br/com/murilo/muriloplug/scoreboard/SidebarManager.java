@@ -184,8 +184,12 @@ public final class SidebarManager {
         if (!classes.hasClass(id, PlayerClass.COMBATENTE)) {
             return null;
         }
-        return ShopUi.text("§6Provocar §7[Shift+Clique] ")
-                .append(mark(fury.fury(id) >= fury.settings().tauntCost()));
+        Component label = ShopUi.text("§6Provocar §7[Shift+Clique] ");
+        int wait = fury.tauntCooldownSeconds(id);
+        if (wait > 0) {
+            return label.append(ShopUi.text("§c" + wait + "s"));
+        }
+        return label.append(mark(fury.fury(id) >= fury.settings().tauntCost()));
     }
 
     private Component leapLine(Player player) {

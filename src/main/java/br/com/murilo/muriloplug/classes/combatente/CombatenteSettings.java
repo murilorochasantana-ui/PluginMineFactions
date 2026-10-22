@@ -23,7 +23,7 @@ public final class CombatenteSettings {
         DEFAULTS.put("combatente.reducao-queda", 0.2);
         DEFAULTS.put("combatente.dano-extra-magia", 0.3);
         DEFAULTS.put("combatente.furia.maxima", 100);
-        DEFAULTS.put("combatente.furia.por-golpe", 5);
+        DEFAULTS.put("combatente.furia.por-golpe", 3);
         DEFAULTS.put("combatente.furia.por-dano-recebido", 2);
         DEFAULTS.put("combatente.furia.queda-fora-combate", 2);
         DEFAULTS.put("combatente.furia.fora-combate-segundos", 5);
@@ -44,6 +44,7 @@ public final class CombatenteSettings {
         DEFAULTS.put("combatente.provocar.raio", 6);
         DEFAULTS.put("combatente.provocar.bonus", 0.15);
         DEFAULTS.put("combatente.provocar.segundos", 5);
+        DEFAULTS.put("combatente.provocar.recarga-segundos", 10);
         DEFAULTS.put("combatente.inabalavel.resistencia-empurrao", 0.3);
         DEFAULTS.put("combatente.ultimo-suspiro.furia-minima", 80);
         DEFAULTS.put("combatente.ultimo-suspiro.vida", 6);
@@ -189,6 +190,10 @@ public final class CombatenteSettings {
 
     public int tauntSeconds() {
         return Math.max(1, (int) Math.round(number("combatente.provocar.segundos")));
+    }
+
+    public long tauntCooldownMillis() {
+        return (long) (Math.max(0, number("combatente.provocar.recarga-segundos")) * 1000);
     }
 
     public double knockbackResistance() {

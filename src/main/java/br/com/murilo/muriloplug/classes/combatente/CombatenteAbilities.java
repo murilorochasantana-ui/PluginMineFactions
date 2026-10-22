@@ -350,6 +350,11 @@ public final class CombatenteAbilities implements Listener {
             return marks.isEmpty();
         });
 
+        int wait = fury.tauntCooldownSeconds(id);
+        if (wait > 0) {
+            fury.warn(player, "§cProvocar em recarga: " + wait + "s");
+            return;
+        }
         double cost = settings.tauntCost();
         if (fury.fury(id) < cost) {
             fury.warn(player, "§cFúria insuficiente (" + (int) fury.fury(id) + "/" + (int) cost + ")");
@@ -366,6 +371,7 @@ public final class CombatenteAbilities implements Listener {
             return; // ninguém por perto: não faz nada e não gasta
         }
         fury.spend(id, cost);
+        fury.startTauntCooldown(id);
         int seconds = settings.tauntSeconds();
         long until = now + seconds * 1000L;
         for (LivingEntity enemy : enemies) {

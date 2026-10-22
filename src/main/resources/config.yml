@@ -249,7 +249,7 @@ combatente:
   dano-extra-magia: 0.3
   furia:
     maxima: 100
-    por-golpe: 5
+    por-golpe: 3
     por-dano-recebido: 2
     # Perde isto por segundo depois de ficar fora de combate pelo tempo abaixo.
     queda-fora-combate: 2
@@ -281,6 +281,7 @@ combatente:
     raio: 6
     bonus: 0.15
     segundos: 5
+    recarga-segundos: 10
   inabalavel:
     resistencia-empurrao: 0.3
   ultimo-suspiro:
