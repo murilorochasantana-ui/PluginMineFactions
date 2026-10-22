@@ -23,7 +23,11 @@ import br.com.murilo.muriloplug.classes.ClassManager;
 import br.com.murilo.muriloplug.classes.ClassMenusListener;
 import br.com.murilo.muriloplug.classes.KitCommand;
 import br.com.murilo.muriloplug.classes.KitMenusListener;
+import br.com.murilo.muriloplug.classes.ClassBarManager;
+import br.com.murilo.muriloplug.classes.PlayerClass;
 import br.com.murilo.muriloplug.classes.PlayerClassChangeEvent;
+import br.com.murilo.muriloplug.xp.XpListener;
+import br.com.murilo.muriloplug.xp.XpSettings;
 import br.com.murilo.muriloplug.classes.arqueiro.ArcherBowListener;
 import br.com.murilo.muriloplug.classes.arqueiro.ArcherSpeedManager;
 import br.com.murilo.muriloplug.classes.arqueiro.ArcherWeaknessListener;
@@ -367,7 +371,7 @@ public final class MinePlug extends JavaPlugin {
 
         PlayerScoreboards scoreboards = new PlayerScoreboards();
         NametagManager nametagManager = new NametagManager(scoreboards, combatManager, clanManager);
-        SidebarManager sidebarManager = new SidebarManager(scoreboards, combatManager, statsManager, economyManager, clanManager, classManager, manaManager, shotModes, furyManager);
+        SidebarManager sidebarManager = new SidebarManager(scoreboards, combatManager, statsManager, economyManager, clanManager, classManager, manaManager, shotModes, furyManager, magoSettings);
         furyManager.setChangeListener(id -> {
             Player player = getServer().getPlayer(id);
             if (player != null) {
@@ -380,10 +384,28 @@ public final class MinePlug extends JavaPlugin {
                 sidebarManager.update(player);
             }
         });
+        XpSettings xpSettings = new XpSettings(this);
+        XpListener xpListener = new XpListener(xpSettings);
+        getServer().getPluginManager().registerEvents(xpListener, this);
+        getServer().getOnlinePlayers().forEach(xpListener::clear);
+        // A barra de XP das classes só existe com o XP desligado: com XP real o jogo a sobrescreveria.
+        ClassBarManager classBars = xpSettings.disabled() ? new ClassBarManager(this, classManager) : null;
+        if (classBars != null) {
+            classBars.register(PlayerClass.MAGO, player -> {
+                int max = Math.max(1, manaManager.max(player.getUniqueId()));
+                int current = manaManager.get(player.getUniqueId());
+                return new ClassBarManager.Bar(current, (float) current / max);
+            });
+            getServer().getPluginManager().registerEvents(classBars, this);
+            classBars.start();
+        }
         manaManager.setChangeListener(id -> {
             Player player = getServer().getPlayer(id);
             if (player != null) {
                 sidebarManager.update(player);
+                if (classBars != null) {
+                    classBars.update(player);
+                }
             }
         });
         getServer().getPluginManager().registerEvents(new Listener() {
@@ -538,6 +560,7 @@ public final class MinePlug extends JavaPlugin {
         changed |= addMissing(config, AuthManager.SESSION_ENABLED_PATH, false);
         changed |= addMissing(config, AuthManager.SESSION_MINUTES_PATH, 10);
         changed |= addMissing(config, CombatCommandListener.PATH, java.util.List.of("grimorio"));
+        changed |= XpSettings.addMissing(config);
         changed |= MagoSettings.addMissing(config);
         changed |= ArqueiroSettings.addMissing(config);
         changed |= CombatenteSettings.addMissing(config);

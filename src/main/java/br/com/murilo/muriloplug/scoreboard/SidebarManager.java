@@ -4,6 +4,7 @@ import br.com.murilo.muriloplug.classes.ClassManager;
 import br.com.murilo.muriloplug.classes.PlayerClass;
 import br.com.murilo.muriloplug.classes.arqueiro.ShotModes;
 import br.com.murilo.muriloplug.classes.combatente.FuryManager;
+import br.com.murilo.muriloplug.classes.mago.MagoSettings;
 import br.com.murilo.muriloplug.classes.mago.ManaManager;
 import br.com.murilo.muriloplug.combat.CombatManager;
 import br.com.murilo.muriloplug.shop.ShopUi;
@@ -48,6 +49,7 @@ public final class SidebarManager {
     private final ClanManager clans;
     private final ClassManager classes;
     private final ManaManager mana;
+    private final MagoSettings magoSettings;
     private final ShotModes shotModes;
     private final FuryManager fury;
     /** Linhas na ordem de exibição, de cima para baixo. Uma linha que devolve null não aparece. */
@@ -60,7 +62,8 @@ public final class SidebarManager {
 
     public SidebarManager(PlayerScoreboards boards, CombatManager combat, StatsManager stats,
                           EconomyManager economy, ClanManager clans, ClassManager classes, ManaManager mana,
-                          ShotModes shotModes, FuryManager fury) {
+                          ShotModes shotModes, FuryManager fury, MagoSettings magoSettings) {
+        this.magoSettings = magoSettings;
         this.fury = fury;
         this.shotModes = shotModes;
         this.classes = classes;
@@ -131,10 +134,10 @@ public final class SidebarManager {
         lastScores.remove(player.getUniqueId());
     }
 
-    /** Só aparece para Magos. */
+    /** Só aparece para Magos, e só com mago.mana-na-sidebar (a mana fica na barra de XP). */
     private Component manaLine(Player player) {
         UUID id = player.getUniqueId();
-        if (!classes.hasClass(id, PlayerClass.MAGO)) {
+        if (!classes.hasClass(id, PlayerClass.MAGO) || !magoSettings.flag("mago.mana-na-sidebar")) {
             return null;
         }
         return Component.text("Mana: ", NamedTextColor.WHITE)

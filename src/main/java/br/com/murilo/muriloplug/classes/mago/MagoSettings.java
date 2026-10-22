@@ -19,6 +19,7 @@ public final class MagoSettings {
     static {
         DEFAULTS.put(TEXTURE, false);
         DEFAULTS.put(MANA_MAX, 10);
+        DEFAULTS.put("mago.mana-na-sidebar", false);
         DEFAULTS.put(WEAPON_PENALTY, 0.6);
         DEFAULTS.put(EXTRA_DAMAGE, 0.15);
         DEFAULTS.put("mago.mana.regen-fora-combate", 2);

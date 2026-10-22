@@ -10,6 +10,14 @@ clan:
   # Máximo de membros por clan (incluindo o líder).
   max-membros: 2
 
+# XP: o servidor não tem XP. A barra de XP mostra o recurso da classe (ex: a mana do Mago).
+xp:
+  # true: nenhuma fonte dá XP nem orbes e o XP real de todos fica em 0 (a barra das classes só funciona assim).
+  desativado: true
+  # Mesa de encantamento e bigorna ficam bloqueadas até o encantamento novo existir.
+  bloquear-mesa-encantamento: true
+  bloquear-bigorna: true
+
 # Combate: comandos que não podem ser usados enquanto o jogador está em combate (sem a barra).
 combate:
   comandos-bloqueados:
@@ -42,6 +50,8 @@ mago:
   # true: as staffs usam o item_model "mineplug:staff_<tipo>" (resource pack). false: aparência normal.
   textura-personalizada: false
   mana-maxima: 10
+  # true: mostra a mana também na sidebar (por padrão ela só aparece na barra de XP).
+  mana-na-sidebar: false
   mana:
     # Segundos para recuperar 1 ponto de mana.
     regen-fora-combate: 2

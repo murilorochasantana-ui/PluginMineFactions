@@ -30,6 +30,7 @@ C:\Users\muril\IdeaProjects\MinePlug\src\main\java\br\com\murilo\muriloplug\clas
 C:\Users\muril\IdeaProjects\MinePlug\src\main\java\br\com\murilo\muriloplug\classes\arqueiro\ArrowItems.java
 C:\Users\muril\IdeaProjects\MinePlug\src\main\java\br\com\murilo\muriloplug\classes\arqueiro\ExplosiveArrowListener.java
 C:\Users\muril\IdeaProjects\MinePlug\src\main\java\br\com\murilo\muriloplug\classes\arqueiro\ShotModes.java
+C:\Users\muril\IdeaProjects\MinePlug\src\main\java\br\com\murilo\muriloplug\classes\ClassBarManager.java
 C:\Users\muril\IdeaProjects\MinePlug\src\main\java\br\com\murilo\muriloplug\classes\ClassCommand.java
 C:\Users\muril\IdeaProjects\MinePlug\src\main\java\br\com\murilo\muriloplug\classes\ClassConfirmMenu.java
 C:\Users\muril\IdeaProjects\MinePlug\src\main\java\br\com\murilo\muriloplug\classes\ClassHolder.java
@@ -158,3 +159,5 @@ C:\Users\muril\IdeaProjects\MinePlug\src\main\java\br\com\murilo\muriloplug\stat
 C:\Users\muril\IdeaProjects\MinePlug\src\main\java\br\com\murilo\muriloplug\teleport\TeleportCountdown.java
 C:\Users\muril\IdeaProjects\MinePlug\src\main\java\br\com\murilo\muriloplug\tpa\TpaCommand.java
 C:\Users\muril\IdeaProjects\MinePlug\src\main\java\br\com\murilo\muriloplug\tpa\TpaManager.java
+C:\Users\muril\IdeaProjects\MinePlug\src\main\java\br\com\murilo\muriloplug\xp\XpListener.java
+C:\Users\muril\IdeaProjects\MinePlug\src\main\java\br\com\murilo\muriloplug\xp\XpSettings.java
