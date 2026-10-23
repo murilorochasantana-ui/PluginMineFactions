@@ -218,25 +218,113 @@ mago:
       copias: 3
       copias-segundos: 4
 
-# Classe Arqueiro (rajada, velocidade, Flecha Explosiva e fraqueza).
+# Classe Arqueiro (Foco, rajada, dano por distância, headshot, habilidades, passivas e fraquezas).
+# O Foco (0 a 100) aparece na barra de XP.
 arqueiro:
   # false: tudo vale só para ARCO. true: a besta também conta.
   incluir-besta: false
-  # +20% de velocidade de movimento com o arco na mão principal (0 desliga).
-  bonus-velocidade: 0.2
+  # Dano a mais pela distância entre onde o Arqueiro atirou e onde a flecha acertou.
+  distancia:
+    # +1% por bloco (0.01)...
+    por-bloco: 0.01
+    # ...até +30% (0.3).
+    maximo: 0.3
+  headshot:
+    # Flecha na cabeça do alvo: +50% de dano.
+    bonus: 0.5
   rajada:
     # Ticks entre uma flecha e a seguinte da rajada (20 ticks = 1 segundo).
     intervalo-ticks: 4
+    # Dano das 2 flechas extras (0.7 = 70%). A rajada inteira gasta só 1 flecha.
+    dano-extra: 0.7
     # Segundos entre uma rajada e outra (0 = sem recarga).
-    recarga-segundos: 3
+    recarga-segundos: 10
+  foco:
+    maximo: 100
+    # Fora de combate: +5 de Foco a cada 2 segundos. Em combate só sobe com acertos.
+    regen-fora-combate: 5
+    regen-intervalo-segundos: 2
+    # Foco por flecha que acerta um inimigo.
+    por-acerto: 2
+  # Habilidades: custo em Foco.
+  pulo-duplo:
+    custo: 10
+    impulso-vertical: 0.8
+    impulso-frente: 0.4
+  # Shift + F com o arco.
+  dash:
+    custo: 20
+    distancia: 5
+    # Sem dano de queda por este tempo depois do Dash.
+    protecao-queda-segundos: 2
+  # Shift + clique esquerdo com o arco, mirando em um bloco.
+  chuva:
+    custo: 40
+    flechas: 10
+    raio: 4
+    alcance: 40
+    # Tempo do círculo no chão antes das flechas caírem.
+    atraso-segundos: 1
+  # Clique esquerdo com o arco, mirando em um inimigo. O alvo fica brilhando para todos.
+  marca:
+    custo: 60
+    segundos: 10
+    # +15% de dano das flechas do Arqueiro no alvo marcado.
+    bonus: 0.15
+    alcance: 40
+  # Q com o arco arma o próximo tiro; ele só vale se o arco ficar puxado pelo tempo mínimo.
+  ultra:
+    custo: 100
+    ticks-minimos: 40
+    multiplicador: 2.5
+  # Passivas.
+  recuperacao:
+    # Chance de a flecha comum não ser gasta (não vale para flechas especiais nem com poção).
+    chance: 0.3
+  pes-leves:
+    # Sem dano de queda até esta altura; acima dela o dano é reduzido por "reducao".
+    altura-sem-dano: 6
+    reducao: 0.5
+  olhos-de-aguia:
+    # Agachado com o arco, os inimigos até esta distância aparecem só para o Arqueiro.
+    alcance: 20
+  # Flechas especiais (vendidas na /loja). Só o Arqueiro atira, só com arco, e sempre gastam a flecha.
+  flechas:
+    perfurante:
+      # Ticks com o arco puxado para a força total (o normal é 20; menos que isto = força proporcional).
+      ticks-forca-total: 28
+      # Cada alvo atravessado leva isto a menos que o anterior (0.3: 100%, 70%, 49%...).
+      queda-por-alvo: 0.3
+      # A flecha para quando o dano ficaria abaixo desta fração do original.
+      minimo: 0.1
+      # Dano a mais em quem usa pelo menos uma peça de armadura.
+      bonus-armadura: 0.2
+      # Atravessa paredes de até esta espessura (em blocos); depois vira flecha normal.
+      espessura-max-parede: 1
+    gelo:
+      nivel: 2
+      segundos: 3
+    fumaca:
+      raio: 4
+      segundos: 5
+    corrente:
+      segundos: 1
+    corda:
+      recarga: 3
+      alcance: 30
+      velocidade: 1.4
+      protecao-queda-segundos: 3
   flecha-explosiva:
     multiplicador-dano: 3
     # 3.0 = a mesma força de um creeper normal.
     forca-explosao: 3.0
     # false: a explosão não machuca o próprio Arqueiro.
     dano-proprio: false
+  # Fraquezas.
   # Dano a menos nos golpes de espada e machado (0.4 = 40% menos).
   reducao-dano-corpo-a-corpo: 0.4
+  # Dano a mais de golpes corpo a corpo recebidos de jogadores e mobs (0.15 = +15%).
+  dano-corpo-a-corpo-recebido: 0.15
 
 # Classe Combatente (vida extra, Fúria, Berserker, habilidades e fraquezas). A Fúria aparece na barra de XP.
 combatente:

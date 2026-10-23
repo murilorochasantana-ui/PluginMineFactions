@@ -1,28 +1,21 @@
 package br.com.murilo.muriloplug.classes.engenheiro;
 
 import br.com.murilo.muriloplug.classes.ClassManager;
+import br.com.murilo.muriloplug.classes.GrapplePull;
 import br.com.murilo.muriloplug.classes.PlayerClass;
 import br.com.murilo.muriloplug.classes.arqueiro.ArrowItems;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.Particle;
-import org.bukkit.Sound;
-import org.bukkit.World;
-import org.bukkit.block.BlockFace;
 import org.bukkit.entity.AbstractArrow;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.entity.EntityDamageEvent;
-import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.event.entity.EntityShootBowEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.scheduler.BukkitRunnable;
-import org.bukkit.util.Vector;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -35,8 +28,6 @@ import java.util.UUID;
  */
 public final class GanchoManager implements Listener {
 
-    private static final int PULL_MAX_TICKS = 40;
-    private static final double ARRIVAL_DISTANCE = 1.5;
     private static final long WARNING_COOLDOWN_MILLIS = 2_000L;
 
     private final JavaPlugin plugin;
@@ -44,14 +35,14 @@ public final class GanchoManager implements Listener {
     private final EngenheiroSettings settings;
     private final ArrowItems arrows;
     private final EngenheiroAcoes actions;
+    private final GrapplePull pull;
     /** Momento (ms) do último tiro de gancho de cada Engenheiro. */
     private final Map<UUID, Long> lastShot = new HashMap<>();
-    /** Fim (ms) da proteção contra queda. */
-    private final Map<UUID, Long> fallProtectedUntil = new HashMap<>();
     private final Map<UUID, Long> lastWarning = new HashMap<>();
 
     public GanchoManager(JavaPlugin plugin, ClassManager classes, EngenheiroSettings settings, ArrowItems arrows,
-                         EngenheiroAcoes actions) {
+                         EngenheiroAcoes actions, GrapplePull pull) {
+        this.pull = pull;
         this.plugin = plugin;
         this.classes = classes;
         this.settings = settings;
@@ -128,7 +119,8 @@ public final class GanchoManager implements Listener {
             if (shooter.getLocation().distance(impact) > settings.grappleRange()) {
                 warn(shooter, "§cAlvo longe demais (máximo " + (int) settings.grappleRange() + " blocos).");
             } else {
-                pull(shooter, target(impact, event.getHitBlockFace()));
+                pull.pull(shooter, GrapplePull.target(impact, event.getHitBlockFace()), settings.grappleSpeed(),
+                        settings.grappleFallProtectionSeconds());
                 actions.registrarAcao(shooter);
             }
         }
@@ -136,81 +128,10 @@ public final class GanchoManager implements Listener {
         plugin.getServer().getScheduler().runTask(plugin, arrow::remove);
     }
 
-    /** Um pouco para fora da parede (e mais alto no chão), para o corpo do jogador caber no ponto. */
-    private static Location target(Location impact, BlockFace face) {
-        Location target = impact.clone();
-        if (face != null) {
-            target.add(face.getDirection().multiply(0.6));
-            if (face == BlockFace.UP) {
-                target.add(0, 0.9, 0);
-            }
-        }
-        return target;
-    }
-
-    private void pull(Player player, Location target) {
-        UUID id = player.getUniqueId();
-        World world = player.getWorld();
-        double speed = settings.grappleSpeed();
-        fallProtectedUntil.put(id, Long.MAX_VALUE);
-        world.playSound(player.getLocation(), Sound.ENTITY_FISHING_BOBBER_RETRIEVE, 1f, 0.8f);
-
-        new BukkitRunnable() {
-            int elapsed;
-
-            @Override
-            public void run() {
-                if (!player.isOnline() || player.isDead() || !player.getWorld().equals(world)
-                        || elapsed++ >= PULL_MAX_TICKS) {
-                    finish();
-                    return;
-                }
-                Location from = player.getBoundingBox().getCenter().toLocation(world);
-                Vector toTarget = target.toVector().subtract(from.toVector());
-                double distance = toTarget.length();
-                if (distance <= ARRIVAL_DISTANCE) {
-                    player.setVelocity(player.getVelocity().multiply(0.3));
-                    finish();
-                    return;
-                }
-                player.setVelocity(toTarget.clone().normalize().multiply(Math.min(speed, distance)).add(new Vector(0, 0.04, 0)));
-                line(from, target, distance);
-            }
-
-            private void finish() {
-                cancel();
-                // Sem dano de queda também por alguns segundos depois da puxada.
-                fallProtectedUntil.put(id, System.currentTimeMillis() + settings.grappleFallProtectionSeconds() * 1000L);
-            }
-        }.runTaskTimer(plugin, 0L, 1L);
-    }
-
-    /** Linha de partículas entre o jogador e o ponto de impacto. */
-    private static void line(Location from, Location to, double distance) {
-        Vector step = to.toVector().subtract(from.toVector()).normalize().multiply(0.5);
-        Location point = from.clone();
-        for (int i = 0; i < Math.min(60, (int) (distance / 0.5)); i++) {
-            point.add(step);
-            from.getWorld().spawnParticle(Particle.END_ROD, point, 1, 0, 0, 0, 0);
-        }
-    }
-
-    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
-    public void onFall(EntityDamageEvent event) {
-        if (event.getCause() != DamageCause.FALL || !(event.getEntity() instanceof Player player)) {
-            return;
-        }
-        Long until = fallProtectedUntil.get(player.getUniqueId());
-        if (until != null && until > System.currentTimeMillis()) {
-            event.setCancelled(true);
-        }
-    }
-
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
         UUID id = event.getPlayer().getUniqueId();
         lastShot.remove(id);
-        fallProtectedUntil.remove(id);
         lastWarning.remove(id);
     }
 }

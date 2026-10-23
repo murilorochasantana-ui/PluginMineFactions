@@ -1,6 +1,7 @@
 package br.com.murilo.muriloplug.classes;
 
 import br.com.murilo.muriloplug.classes.arqueiro.ArrowItems;
+import br.com.murilo.muriloplug.classes.arqueiro.SpecialArrow;
 import br.com.murilo.muriloplug.classes.engenheiro.PlantaItems;
 import br.com.murilo.muriloplug.classes.engenheiro.SentinelaItems;
 import br.com.murilo.muriloplug.classes.engenheiro.StructureBooks;
@@ -27,6 +28,11 @@ public final class ClassItems {
     public static final String STAFF_PREFIX = "mago.staff_";
     public static final String GRIMOIRE = "mago.grimorio";
     public static final String EXPLOSIVE_ARROW = "arqueiro.flecha_explosiva";
+    public static final String PIERCING_ARROW = "arqueiro.flecha_perfurante";
+    public static final String ICE_ARROW = "arqueiro.flecha_gelo";
+    public static final String SMOKE_ARROW = "arqueiro.flecha_fumaca";
+    public static final String CHAIN_ARROW = "arqueiro.flecha_corrente";
+    public static final String ROPE_ARROW = "arqueiro.flecha_corda";
     public static final String STRUCTURE_BOOK = "engenheiro.livro_estrutura";
     public static final String BLUEPRINT = "engenheiro.planta";
     public static final String GRAPPLE_ARROW = "engenheiro.flecha_gancho";
@@ -68,6 +74,11 @@ public final class ClassItems {
         }
         register(new Entry(GRIMOIRE, PlayerClass.MAGO, 1, 1, amount -> grimoire.create()));
         register(new Entry(EXPLOSIVE_ARROW, PlayerClass.ARQUEIRO, 1, KIT_ARROWS, arrows::createExplosive));
+        registerArrow(PIERCING_ARROW, SpecialArrow.PERFURANTE, arrows);
+        registerArrow(ICE_ARROW, SpecialArrow.GELO, arrows);
+        registerArrow(SMOKE_ARROW, SpecialArrow.FUMACA, arrows);
+        registerArrow(CHAIN_ARROW, SpecialArrow.CORRENTE, arrows);
+        registerArrow(ROPE_ARROW, SpecialArrow.CORDA, arrows);
         register(new Entry(STRUCTURE_BOOK, PlayerClass.ENGENHEIRO, KIT_BOOKS, 1, amount -> books.createEmpty()));
         register(new Entry(BLUEPRINT, PlayerClass.ENGENHEIRO, 1, 1, amount -> blueprints.create()));
         register(new Entry(GRAPPLE_ARROW, PlayerClass.ENGENHEIRO, 1, KIT_GRAPPLE_ARROWS, arrows::createGrapple));
@@ -77,6 +88,23 @@ public final class ClassItems {
         registerSupport(SUPPORT_HEAL, SuporteItem.CURA, support);
         registerSupport(SUPPORT_SCROLL, SuporteItem.PERGAMINHO, support);
         registerSupport(SUPPORT_FLIGHT, SuporteItem.VOO, support);
+    }
+
+    /** Flecha especial do Arqueiro: 1 pilha de 16 no kit. */
+    private void registerArrow(String id, SpecialArrow type, ArrowItems arrows) {
+        register(new Entry(id, PlayerClass.ARQUEIRO, 1, KIT_ARROWS, amount -> arrows.create(type, amount)));
+    }
+
+    /** O id do item registrado da flecha especial (ex.: para o /classe admin flecha). */
+    public static String arrowItemId(SpecialArrow type) {
+        return switch (type) {
+            case EXPLOSIVA -> EXPLOSIVE_ARROW;
+            case PERFURANTE -> PIERCING_ARROW;
+            case GELO -> ICE_ARROW;
+            case FUMACA -> SMOKE_ARROW;
+            case CORRENTE -> CHAIN_ARROW;
+            case CORDA -> ROPE_ARROW;
+        };
     }
 
     /** Item do Suporte: 1 de cada no kit (os de usos limitados saem cada um com o seu UUID). */

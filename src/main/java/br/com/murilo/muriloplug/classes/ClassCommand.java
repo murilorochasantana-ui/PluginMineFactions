@@ -1,5 +1,6 @@
 package br.com.murilo.muriloplug.classes;
 
+import br.com.murilo.muriloplug.classes.arqueiro.SpecialArrow;
 import br.com.murilo.muriloplug.classes.mago.ManaManager;
 import br.com.murilo.muriloplug.classes.mago.StaffType;
 import br.com.murilo.muriloplug.combat.CombatManager;
@@ -145,24 +146,31 @@ public final class ClassCommand implements CommandExecutor, TabCompleter {
                 : "§cSeu inventário está cheio. Você recebeu " + given + " de " + amount + " livro(s).");
     }
 
-    /** /classe admin flecha <quantidade>: dá Flechas Explosivas ao administrador (para colocar na /loja). */
+    /**
+     * /classe admin flecha <tipo> <quantidade> (tipos: explosiva, perfurante, gelo, fumaca, corrente, corda).
+     * Também aceita o formato antigo: /classe admin flecha <quantidade> [gancho].
+     */
     private void adminArrow(Player player, String[] args) {
+        SpecialArrow type = args.length >= 3 ? SpecialArrow.byId(args[2]) : null;
+        boolean grapple = type == null && args.length == 4 && args[3].equalsIgnoreCase("gancho");
+        String amountText = type != null ? (args.length == 4 ? args[3] : "") : (args.length == 3 || grapple ? args[2] : "");
         int amount = -1;
-        boolean grapple = args.length == 4 && args[3].equalsIgnoreCase("gancho");
-        if (args.length == 3 || grapple) {
-            try {
-                amount = Integer.parseInt(args[2]);
-            } catch (NumberFormatException ignored) {
-                // cai na mensagem de uso abaixo
-            }
+        try {
+            amount = Integer.parseInt(amountText);
+        } catch (NumberFormatException ignored) {
+            // cai na mensagem de uso abaixo
         }
         if (amount < 1 || amount > MAX_ARROWS_GIVEN) {
-            player.sendMessage("§cUso: /classe admin flecha <quantidade de 1 a " + MAX_ARROWS_GIVEN + "> [gancho]");
+            player.sendMessage("§cUso: /classe admin flecha <explosiva|perfurante|gelo|fumaca|corrente|corda> <quantidade de 1 a "
+                    + MAX_ARROWS_GIVEN + ">  (ou: flecha <quantidade> [gancho])");
             return;
         }
-        var leftover = player.getInventory().addItem(items.create(grapple ? ClassItems.GRAPPLE_ARROW : ClassItems.EXPLOSIVE_ARROW, amount));
+        String itemId = grapple ? ClassItems.GRAPPLE_ARROW
+                : ClassItems.arrowItemId(type == null ? SpecialArrow.EXPLOSIVA : type);
+        var leftover = player.getInventory().addItem(items.create(itemId, amount));
         if (leftover.isEmpty()) {
-            player.sendMessage("§aVocê recebeu " + amount + (grapple ? " Flecha(s) Gancho." : " Flecha(s) Explosiva(s)§a."));
+            player.sendMessage("§aVocê recebeu " + amount + " " + (grapple ? "Flecha(s) Gancho."
+                    : (type == null ? SpecialArrow.EXPLOSIVA : type).displayName() + "§a."));
         } else {
             player.sendMessage("§cSeu inventário está cheio.");
         }
@@ -244,12 +252,16 @@ public final class ClassCommand implements CommandExecutor, TabCompleter {
         } else if (admin && args.length == 3 && args[0].equalsIgnoreCase("admin")) {
             switch (args[1].toLowerCase(Locale.ROOT)) {
                 case "staff" -> options = staffIds();
-                case "flecha", "sentinela" -> options = List.of("1", "16", "64");
+                case "flecha" -> options = Arrays.stream(SpecialArrow.values()).map(SpecialArrow::id).toList();
+                case "sentinela" -> options = List.of("1", "16", "64");
                 case "livro" -> options = List.of("1", "5", "10");
                 case "mana" -> options = List.of("definir", "dar");
                 case "manamaxima" -> options = List.of("definir", "resetar");
                 default -> { }
             }
+        } else if (admin && args.length == 4 && args[0].equalsIgnoreCase("admin") && args[1].equalsIgnoreCase("flecha")
+                && SpecialArrow.byId(args[2]) != null) {
+            options = List.of("1", "16", "64");
         } else if (admin && args.length == 4 && args[0].equalsIgnoreCase("admin")
                 && (args[1].equalsIgnoreCase("mana") || args[1].equalsIgnoreCase("manamaxima"))) {
             options = Bukkit.getOnlinePlayers().stream().map(Player::getName).toList();

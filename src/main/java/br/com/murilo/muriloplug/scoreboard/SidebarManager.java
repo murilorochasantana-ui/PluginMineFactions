@@ -2,7 +2,7 @@ package br.com.murilo.muriloplug.scoreboard;
 
 import br.com.murilo.muriloplug.classes.ClassManager;
 import br.com.murilo.muriloplug.classes.PlayerClass;
-import br.com.murilo.muriloplug.classes.arqueiro.ShotModes;
+import br.com.murilo.muriloplug.classes.arqueiro.ArqueiroSidebar;
 import br.com.murilo.muriloplug.classes.combatente.FuryManager;
 import br.com.murilo.muriloplug.classes.engenheiro.EngenheiroSidebar;
 import br.com.murilo.muriloplug.classes.mago.MagoSettings;
@@ -51,12 +51,12 @@ public final class SidebarManager {
     private final ClassManager classes;
     private final ManaManager mana;
     private final MagoSettings magoSettings;
-    private final ShotModes shotModes;
+    private final ArqueiroSidebar archer;
     private final FuryManager fury;
     private final EngenheiroSidebar engineer;
     /** Linhas na ordem de exibição, de cima para baixo. Uma linha que devolve null não aparece. */
-    private final List<Line> lines = List.of(this::moneyLine, this::clanLine, this::classLine, this::modeLine,
-            this::berserkLine, this::chargeLine, this::tauntLine, this::leapLine, this::energyLine, this::repairLine, this::hookLine, this::sentinelLine, this::manaLine, this::combatLine, this::killsLine, this::kdaLine);
+    private final List<Line> lines = List.of(this::moneyLine, this::clanLine, this::classLine, this::focusLine, this::modeLine,
+            this::jumpLine, this::dashLine, this::rainLine, this::markLine, this::ultraLine, this::berserkLine, this::chargeLine, this::tauntLine, this::leapLine, this::energyLine, this::repairLine, this::hookLine, this::sentinelLine, this::manaLine, this::combatLine, this::killsLine, this::kdaLine);
     /** Último texto enviado para cada linha de cada jogador, para só reenviar o que mudou. */
     private final Map<UUID, Component[]> lastRendered = new HashMap<>();
     /** Última pontuação (posição) enviada para cada linha de cada jogador. */
@@ -64,11 +64,11 @@ public final class SidebarManager {
 
     public SidebarManager(PlayerScoreboards boards, CombatManager combat, StatsManager stats,
                           EconomyManager economy, ClanManager clans, ClassManager classes, ManaManager mana,
-                          ShotModes shotModes, FuryManager fury, MagoSettings magoSettings, EngenheiroSidebar engineer) {
+                          ArqueiroSidebar archer, FuryManager fury, MagoSettings magoSettings, EngenheiroSidebar engineer) {
         this.engineer = engineer;
         this.magoSettings = magoSettings;
         this.fury = fury;
-        this.shotModes = shotModes;
+        this.archer = archer;
         this.classes = classes;
         this.mana = mana;
         this.boards = boards;
@@ -147,16 +147,34 @@ public final class SidebarManager {
                 .append(Component.text(mana.get(id) + "/" + mana.max(id), NamedTextColor.AQUA));
     }
 
-    /** Só aparece para Arqueiros. */
+    // ---- Habilidades do Arqueiro (só para Arqueiros): as linhas ficam em ArqueiroSidebar.
+
+    private Component focusLine(Player player) {
+        return archer.focusLine(player);
+    }
+
     private Component modeLine(Player player) {
-        UUID id = player.getUniqueId();
-        if (!classes.hasClass(id, PlayerClass.ARQUEIRO)) {
-            return null;
-        }
-        boolean burst = shotModes.isBurst(id);
-        return Component.text("Modo: ", NamedTextColor.WHITE)
-                .append(burst ? Component.text("rajada de 3", NamedTextColor.GOLD)
-                        : Component.text("1 flecha", NamedTextColor.GREEN));
+        return archer.modeLine(player);
+    }
+
+    private Component jumpLine(Player player) {
+        return archer.jumpLine(player);
+    }
+
+    private Component dashLine(Player player) {
+        return archer.dashLine(player);
+    }
+
+    private Component rainLine(Player player) {
+        return archer.rainLine(player);
+    }
+
+    private Component markLine(Player player) {
+        return archer.markLine(player);
+    }
+
+    private Component ultraLine(Player player) {
+        return archer.ultraLine(player);
     }
 
     // ---- Habilidades do Combatente (só para Combatentes): ✔ verde se der para usar, ✖ vermelho se não.

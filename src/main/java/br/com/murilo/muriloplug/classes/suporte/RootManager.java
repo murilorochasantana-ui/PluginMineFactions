@@ -90,8 +90,7 @@ public final class RootManager implements Listener {
             support.sendActionBar(ShopUi.text("§cVocê só pode prender inimigos."));
             return false;
         }
-        rootedUntil.put(target.getUniqueId(), System.currentTimeMillis() + (long) (settings.rootSeconds() * 1000));
-        statuses.add(target, "Preso", settings.rootSeconds());
+        hold(target, settings.rootSeconds());
         if (target instanceof Player player) {
             combat.engage(support, player);
             damage.record(player.getUniqueId(), support.getUniqueId());
@@ -101,9 +100,15 @@ public final class RootManager implements Listener {
             combat.engage(support);
             support.sendActionBar(ShopUi.text("§aVocê prendeu o alvo."));
         }
+        return true;
+    }
+
+    /** Prende a entidade (sem andar nem pular) pelo tempo dado, com o status "Preso" e as correntes. */
+    public void hold(LivingEntity target, double seconds) {
+        rootedUntil.put(target.getUniqueId(), System.currentTimeMillis() + (long) (seconds * 1000));
+        statuses.add(target, "Preso", seconds);
         target.getWorld().playSound(target.getLocation(), Sound.BLOCK_CHAIN_PLACE, 1f, 0.8f);
         effects(target);
-        return true;
     }
 
     private void tick() {

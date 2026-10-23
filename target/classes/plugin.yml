@@ -43,7 +43,7 @@ commands:
     usage: /clan [criar|convidar|aceitar|negar|sair|expulsar|lider|desfazer|chat|info]
   classe:
     description: Abre o menu de classes (escolher) ou troca a sua classe atual.
-    usage: /classe [trocar] | admin staff <tipo> | admin mana <definir|dar> <jogador> <valor> | admin manamaxima <definir|resetar> <jogador> [valor] | admin flecha <quantidade> [gancho] | admin sentinela <quantidade> | admin livro <quantidade> | admin planta
+    usage: /classe [trocar] | admin staff <tipo> | admin mana <definir|dar> <jogador> <valor> | admin manamaxima <definir|resetar> <jogador> [valor] | admin flecha <explosiva|perfurante|gelo|fumaca|corrente|corda> <quantidade> | admin flecha <quantidade> [gancho] | admin sentinela <quantidade> | admin livro <quantidade> | admin planta
   grimorio:
     description: Abre o Grimório do Mago (aprender magias consumindo staffs e equipar até 4 magias).
     usage: /grimorio
@@ -85,7 +85,7 @@ permissions:
     description: Permite gerenciar os itens da loja (/loja admin).
     default: op
   mineplug.classe.admin:
-    description: Permite pegar as staffs do Mago as Flechas Explosivas do Arqueiro e os Livros de Estrutura do Engenheiro (/classe admin).
+    description: Permite pegar as staffs do Mago as Flechas Especiais do Arqueiro e os Livros de Estrutura do Engenheiro (/classe admin).
     default: op
   mineplug.kit.admin:
     description: Permite usar /kit admin classe (pegar o kit de itens de uma classe).

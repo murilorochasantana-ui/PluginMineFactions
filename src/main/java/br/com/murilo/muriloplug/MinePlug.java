@@ -35,7 +35,18 @@ import br.com.murilo.muriloplug.teste.TargetRelations;
 import br.com.murilo.muriloplug.xp.XpListener;
 import br.com.murilo.muriloplug.xp.XpSettings;
 import br.com.murilo.muriloplug.classes.arqueiro.ArcherBowListener;
-import br.com.murilo.muriloplug.classes.arqueiro.ArcherSpeedManager;
+import br.com.murilo.muriloplug.classes.arqueiro.ArcherDamageListener;
+import br.com.murilo.muriloplug.classes.arqueiro.ArcherMobility;
+import br.com.murilo.muriloplug.classes.arqueiro.ArcherSkills;
+import br.com.murilo.muriloplug.classes.arqueiro.ArcherSpeedCleanup;
+import br.com.murilo.muriloplug.classes.arqueiro.ArcherTargets;
+import br.com.murilo.muriloplug.classes.arqueiro.ArqueiroSidebar;
+import br.com.murilo.muriloplug.classes.arqueiro.FocusManager;
+import br.com.murilo.muriloplug.classes.arqueiro.HunterMark;
+import br.com.murilo.muriloplug.classes.arqueiro.ShotRegistry;
+import br.com.murilo.muriloplug.classes.arqueiro.SpecialArrowListener;
+import br.com.murilo.muriloplug.classes.GrapplePull;
+import br.com.murilo.muriloplug.classes.arqueiro.UltraFocus;
 import br.com.murilo.muriloplug.classes.arqueiro.ArcherWeaknessListener;
 import br.com.murilo.muriloplug.classes.arqueiro.ArqueiroSettings;
 import br.com.murilo.muriloplug.classes.arqueiro.ArrowItems;
@@ -152,7 +163,10 @@ public final class MinePlug extends JavaPlugin {
     private ManaManager manaManager;
     private StaffService staffService;
     private DummyManager dummyManager;
-    private ArcherSpeedManager archerSpeed;
+    private ArcherMobility archerMobility;
+    private HunterMark hunterMark;
+    private FocusManager focusManager;
+    private ShotRegistry shotRegistry;
     private ArcherBowListener archerBow;
     private CombatenteHealth combatenteHealth;
     private FuryManager furyManager;
@@ -307,13 +321,36 @@ public final class MinePlug extends JavaPlugin {
         ArrowItems arrowItems = new ArrowItems(this);
         ShotModes shotModes = new ShotModes();
         getServer().getPluginManager().registerEvents(shotModes, this);
-        archerBow = new ArcherBowListener(this, classManager, arqueiroSettings, shotModes, arrowItems);
+        focusManager = new FocusManager(this, classManager, arqueiroSettings, combatManager);
+        getServer().getPluginManager().registerEvents(focusManager, this);
+        focusManager.start();
+        shotRegistry = new ShotRegistry();
+        getServer().getPluginManager().registerEvents(shotRegistry, this);
+        hunterMark = new HunterMark(statusRegistry);
+        getServer().getPluginManager().registerEvents(hunterMark, this);
+        UltraFocus ultraFocus = new UltraFocus(this, classManager, arqueiroSettings, focusManager, authManager);
+        getServer().getPluginManager().registerEvents(ultraFocus, this);
+        ultraFocus.start();
+        archerBow = new ArcherBowListener(this, classManager, arqueiroSettings, shotModes, arrowItems, shotRegistry,
+                ultraFocus, focusManager);
         getServer().getPluginManager().registerEvents(archerBow, this);
         getServer().getPluginManager().registerEvents(new ExplosiveArrowListener(this, arqueiroSettings, arrowItems, targetRelations), this);
         getServer().getPluginManager().registerEvents(new ArcherWeaknessListener(classManager, arqueiroSettings), this);
-        archerSpeed = new ArcherSpeedManager(this, classManager, arqueiroSettings);
-        getServer().getPluginManager().registerEvents(archerSpeed, this);
-        archerSpeed.start();
+        ArcherDamageListener archerDamage = new ArcherDamageListener(this, classManager, arqueiroSettings, shotRegistry,
+                hunterMark, focusManager, targetRelations);
+        getServer().getPluginManager().registerEvents(archerDamage, this);
+        ArcherTargets archerTargets = new ArcherTargets(targetRelations, authManager);
+        ArcherSkills archerSkills = new ArcherSkills(this, classManager, arqueiroSettings, focusManager, hunterMark,
+                shotRegistry, archerDamage, archerTargets, authManager);
+        getServer().getPluginManager().registerEvents(archerSkills, this);
+        archerSkills.start();
+        archerMobility = new ArcherMobility(this, classManager, arqueiroSettings, focusManager, authManager);
+        getServer().getPluginManager().registerEvents(archerMobility, this);
+        archerMobility.start();
+        ArcherSpeedCleanup archerSpeedCleanup = new ArcherSpeedCleanup(this);
+        getServer().getPluginManager().registerEvents(archerSpeedCleanup, this);
+        archerSpeedCleanup.start();
+        ArqueiroSidebar arqueiroSidebar = new ArqueiroSidebar(classManager, arqueiroSettings, focusManager, shotModes, ultraFocus);
         CombatenteSettings combatenteSettings = new CombatenteSettings(this);
         combatenteHealth = new CombatenteHealth(this, classManager, combatenteSettings);
         getServer().getPluginManager().registerEvents(combatenteHealth, this);
@@ -353,7 +390,9 @@ public final class MinePlug extends JavaPlugin {
         engenheiroPassivas.start();
         getServer().getPluginManager().registerEvents(new EngenheiroReparo(this, classManager, engenheiroSettings,
                 engenheiroEnergia, engenheiroAcoes, authManager), this);
-        GanchoManager ganchoManager = new GanchoManager(this, classManager, engenheiroSettings, arrowItems, engenheiroAcoes);
+        GrapplePull grapplePull = new GrapplePull(this);
+        getServer().getPluginManager().registerEvents(grapplePull, this);
+        GanchoManager ganchoManager = new GanchoManager(this, classManager, engenheiroSettings, arrowItems, engenheiroAcoes, grapplePull);
         getServer().getPluginManager().registerEvents(ganchoManager, this);
         SentinelaItems sentinelaItems = new SentinelaItems(this, engenheiroSettings);
         SentinelaManager sentinelaManager = new SentinelaManager(this, classManager, claimManager, authManager,
@@ -381,6 +420,9 @@ public final class MinePlug extends JavaPlugin {
         RootManager rootManager = new RootManager(this, suporteSettings, suporteTargets, combatManager, damageTracker, statusRegistry);
         getServer().getPluginManager().registerEvents(rootManager, this);
         rootManager.start();
+        getServer().getPluginManager().registerEvents(new SpecialArrowListener(this, classManager, arqueiroSettings,
+                arrowItems, shotRegistry, ultraFocus, focusManager, archerTargets, targetRelations, rootManager,
+                statusRegistry, grapplePull), this);
         flightManager = new FlightManager(this, classManager, suporteSettings, suporteCooldowns);
         getServer().getPluginManager().registerEvents(flightManager, this);
         flightManager.start();
@@ -420,9 +462,15 @@ public final class MinePlug extends JavaPlugin {
 
         PlayerScoreboards scoreboards = new PlayerScoreboards();
         NametagManager nametagManager = new NametagManager(scoreboards, combatManager, clanManager);
-        SidebarManager sidebarManager = new SidebarManager(scoreboards, combatManager, statsManager, economyManager, clanManager, classManager, manaManager, shotModes, furyManager, magoSettings,
+        SidebarManager sidebarManager = new SidebarManager(scoreboards, combatManager, statsManager, economyManager, clanManager, classManager, manaManager, arqueiroSidebar, furyManager, magoSettings,
                 new EngenheiroSidebar(classManager, engenheiroEnergia, engenheiroSettings, ganchoManager, sentinelaManager));
         shotModes.setChangeListener(id -> {
+            Player player = getServer().getPlayer(id);
+            if (player != null) {
+                sidebarManager.update(player);
+            }
+        });
+        ultraFocus.setChangeListener(id -> {
             Player player = getServer().getPlayer(id);
             if (player != null) {
                 sidebarManager.update(player);
@@ -456,6 +504,21 @@ public final class MinePlug extends JavaPlugin {
                 return new ClassBarManager.Bar((int) Math.floor(current), (float) (current / engenheiroEnergia.maxEnergia()));
             });
         }
+        if (classBars != null) {
+            classBars.register(PlayerClass.ARQUEIRO, player -> {
+                int current = focusManager.get(player.getUniqueId());
+                return new ClassBarManager.Bar(current, (float) current / focusManager.max());
+            });
+        }
+        focusManager.setChangeListener(id -> {
+            Player player = getServer().getPlayer(id);
+            if (player != null) {
+                sidebarManager.update(player);
+                if (classBars != null) {
+                    classBars.update(player);
+                }
+            }
+        });
         engenheiroEnergia.setChangeListener(id -> {
             Player player = getServer().getPlayer(id);
             if (player != null) {
@@ -568,8 +631,17 @@ public final class MinePlug extends JavaPlugin {
         if (combatenteHealth != null) {
             combatenteHealth.removeAll();
         }
-        if (archerSpeed != null) {
-            archerSpeed.removeAll();
+        if (archerMobility != null) {
+            archerMobility.removeAll();
+        }
+        if (hunterMark != null) {
+            hunterMark.clearAll();
+        }
+        if (focusManager != null) {
+            focusManager.endAll();
+        }
+        if (shotRegistry != null) {
+            shotRegistry.clear();
         }
         if (archerBow != null) {
             archerBow.cancelAll();
