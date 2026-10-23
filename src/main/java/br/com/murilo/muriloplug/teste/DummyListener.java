@@ -2,6 +2,7 @@ package br.com.murilo.muriloplug.teste;
 
 import br.com.murilo.muriloplug.combat.CombatManager;
 import org.bukkit.damage.DamageType;
+import org.bukkit.entity.AbstractArrow;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -68,6 +69,10 @@ public final class DummyListener implements Listener {
     public void onHitAlly(EntityDamageByEntityEvent event) {
         if (isAlly(manager.find(event.getEntity()))) {
             event.setCancelled(true);
+            // Só o dano é cancelado; a flecha some em vez de atravessar o boneco ou ficar presa nele.
+            if (event.getDamager() instanceof AbstractArrow arrow) {
+                arrow.remove();
+            }
         }
     }
 

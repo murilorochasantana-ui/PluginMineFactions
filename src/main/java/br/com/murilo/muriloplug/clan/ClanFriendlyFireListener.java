@@ -2,6 +2,7 @@ package br.com.murilo.muriloplug.clan;
 
 import br.com.murilo.muriloplug.combat.CombatManager;
 import br.com.murilo.muriloplug.teste.TargetRelations;
+import org.bukkit.entity.AbstractArrow;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.ThrownPotion;
@@ -46,13 +47,22 @@ public final class ClanFriendlyFireListener implements Listener {
             // O boneco de teste aliado conta como membro do clan de todos.
             if (event.getEntity() instanceof LivingEntity living && relations.isAlly(attacker, living)) {
                 event.setCancelled(true);
+                removeArrow(event);
                 warn(attacker);
             }
             return;
         }
         if (!attacker.equals(victim) && clans.isSameClan(attacker.getUniqueId(), victim.getUniqueId())) {
             event.setCancelled(true);
+            removeArrow(event);
             warn(attacker);
+        }
+    }
+
+    /** Só o dano é cancelado; a flecha some em vez de atravessar o alvo ou ficar presa nele. */
+    private static void removeArrow(EntityDamageByEntityEvent event) {
+        if (event.getDamager() instanceof AbstractArrow arrow) {
+            arrow.remove();
         }
     }
 

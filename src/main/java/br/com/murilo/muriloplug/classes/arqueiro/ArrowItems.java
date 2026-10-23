@@ -23,8 +23,9 @@ public final class ArrowItems {
 
     public ItemStack createExplosive(int amount) {
         ItemStack item = ShopUi.button(Material.ARROW, "§cFlecha Explosiva",
-                "§7Dano 3x maior ao acertar um jogador.",
-                "§7Explode como um creeper, sem quebrar blocos.",
+                "§71.5x de dano no acerto direto.",
+                "§7Explosão de até 3 corações (raio 3).",
+                "§7Recarga de 8s. Precisa puxar o arco.",
                 "§cSomente Arqueiros podem usar.");
         item.setAmount(amount);
         ItemMeta meta = item.getItemMeta();

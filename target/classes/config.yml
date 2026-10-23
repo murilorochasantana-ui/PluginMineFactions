@@ -315,11 +315,18 @@ arqueiro:
       velocidade: 1.4
       protecao-queda-segundos: 3
   flecha-explosiva:
-    multiplicador-dano: 3
-    # 3.0 = a mesma força de um creeper normal.
-    forca-explosao: 3.0
-    # false: a explosão não machuca o próprio Arqueiro.
-    dano-proprio: false
+    # Dano do acerto direto (1.5 = 1.5x).
+    multiplicador-dano: 1.5
+    # A explosão é só efeito visual/sonoro; o dano é calculado à parte (tipo explosão, causado pelo Arqueiro,
+    # então armadura, Proteção e a passiva do Engenheiro valem). Não machuca o Arqueiro nem o clan.
+    raio: 3
+    # Dano no centro, caindo em linha reta até 0 na borda do raio (6 = 3 corações).
+    dano-maximo: 6
+    empurrao: 0.6
+    # Segundos entre uma Flecha Explosiva e outra, por Arqueiro.
+    recarga-segundos: 8
+    # Força mínima do arco (0 a 1). Abaixo disso sai uma flecha normal e a Explosiva não é gasta.
+    forca-minima: 0.8
   # Fraquezas.
   # Dano a menos nos golpes de espada e machado (0.4 = 40% menos).
   reducao-dano-corpo-a-corpo: 0.4

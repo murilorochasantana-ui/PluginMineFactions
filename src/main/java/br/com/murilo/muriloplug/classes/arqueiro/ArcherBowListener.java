@@ -53,6 +53,8 @@ public final class ArcherBowListener implements Listener {
     private final UltraFocus ultra;
     private final FocusManager focus;
     private final Map<UUID, Burst> bursts = new HashMap<>();
+    /** Momento (ms) do último tiro de Flecha Explosiva de cada Arqueiro. */
+    private final Map<UUID, Long> lastExplosive = new HashMap<>();
 
     public ArcherBowListener(JavaPlugin plugin, ClassManager classes, ArqueiroSettings settings,
                              ShotModes modes, ArrowItems arrows, ShotRegistry shots, UltraFocus ultra,
@@ -91,9 +93,8 @@ public final class ArcherBowListener implements Listener {
         }
         ItemStack ammo = event.getConsumable();
         boolean archer = isArcher(player);
-        boolean explosive = arrows.isExplosive(ammo);
 
-        if (explosive && !shootExplosive(event, player, ammo, archer)) {
+        if (arrows.isExplosive(ammo) && !shootExplosive(event, player, ammo, archer)) {
             return;
         }
         if (!archer || !settings.isArcherBow(event.getBow()) || !(event.getProjectile() instanceof AbstractArrow arrow)) {
@@ -102,7 +103,8 @@ public final class ArcherBowListener implements Listener {
         ShotRegistry.Shot shot = shots.register(arrow, ShotRegistry.Kind.MAIN, player.getEyeLocation());
         SpecialArrow special = arrows.typeOfProjectile(arrow.getPersistentDataContainer());
         shot.setSpecial(special);
-        if (ultra.tryFire(player)) {
+        // O Ultra Foco não vale para a Flecha Explosiva: ele continua armado para o próximo tiro.
+        if (special != SpecialArrow.EXPLOSIVA && ultra.tryFire(player)) {
             shot.setUltra(true);
             ultra.trail(arrow);
         }
@@ -127,7 +129,11 @@ public final class ArcherBowListener implements Listener {
         startBurst(player, event.getBow(), arrow);
     }
 
-    /** Retorna false se o tiro foi cancelado (quem não é Arqueiro não atira a Explosiva). */
+    /**
+     * Retorna false se o tiro foi cancelado (quem não é Arqueiro não atira a Explosiva; em recarga o tiro é
+     * cancelado sem gastar a flecha). Com o arco pouco puxado o tiro segue como flecha NORMAL, sem gastar a
+     * Explosiva e sem começar a recarga.
+     */
     private boolean shootExplosive(EntityShootBowEvent event, Player player, ItemStack ammo, boolean archer) {
         if (!archer) {
             event.setCancelled(true);
@@ -135,16 +141,43 @@ public final class ArcherBowListener implements Listener {
             player.updateInventory();
             return false;
         }
-        if (event.getProjectile() instanceof AbstractArrow arrow) {
-            arrows.markProjectile(arrow.getPersistentDataContainer());
-            arrow.setPickupStatus(AbstractArrow.PickupStatus.DISALLOWED);
+        if (!(event.getProjectile() instanceof AbstractArrow arrow)) {
+            return true;
         }
+        UUID id = player.getUniqueId();
+        if (event.getForce() < settings.explosiveMinForce()) {
+            event.setConsumeArrow(false);
+            arrow.setPickupStatus(AbstractArrow.PickupStatus.CREATIVE_ONLY);
+            if (arrow instanceof Arrow normal) {
+                normal.setItemStack(new ItemStack(Material.ARROW));
+            }
+            return true;
+        }
+        int wait = explosiveWaitSeconds(id);
+        if (wait > 0) {
+            event.setCancelled(true);
+            player.updateInventory();
+            focus.warn(player, "§cFlecha Explosiva em recarga: " + wait + "s");
+            return false;
+        }
+        lastExplosive.put(id, System.currentTimeMillis());
+        arrows.markProjectile(arrow.getPersistentDataContainer());
+        arrow.setPickupStatus(AbstractArrow.PickupStatus.DISALLOWED);
         // Com Infinidade o jogo não gasta a flecha; a explosiva sempre gasta (no criativo nada é gasto).
         if (event.getBow() != null && event.getBow().containsEnchantment(Enchantment.INFINITY)
                 && player.getGameMode() != GameMode.CREATIVE) {
             takeOne(player.getInventory(), ammo);
         }
         return true;
+    }
+
+    private int explosiveWaitSeconds(UUID id) {
+        Long last = lastExplosive.get(id);
+        if (last == null) {
+            return 0;
+        }
+        long left = last + (long) (settings.explosiveCooldownSeconds() * 1000) - System.currentTimeMillis();
+        return left <= 0 ? 0 : (int) Math.ceil(left / 1000.0);
     }
 
     private void startBurst(Player player, ItemStack bow, AbstractArrow original) {
@@ -305,6 +338,7 @@ public final class ArcherBowListener implements Listener {
 
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
+        lastExplosive.remove(event.getPlayer().getUniqueId());
         cancelBurst(event.getPlayer().getUniqueId());
     }
 }

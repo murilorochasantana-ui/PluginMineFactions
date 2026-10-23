@@ -161,7 +161,6 @@ public final class DummyManager {
             zombie.setCanBreakDoors(false);
             zombie.setCanPickupItems(false);
             zombie.setSilent(true);
-            zombie.setCollidable(false);
             zombie.setRemoveWhenFarAway(false);
             zombie.setPersistent(false);
             zombie.setCustomNameVisible(false);

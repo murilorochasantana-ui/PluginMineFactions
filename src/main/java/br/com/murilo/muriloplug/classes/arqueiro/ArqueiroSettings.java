@@ -17,8 +17,11 @@ public final class ArqueiroSettings {
     public static final String BURST_COOLDOWN = "arqueiro.rajada.recarga-segundos";
     public static final String BURST_EXTRA_DAMAGE = "arqueiro.rajada.dano-extra";
     public static final String DAMAGE_MULTIPLIER = "arqueiro.flecha-explosiva.multiplicador-dano";
-    public static final String EXPLOSION_POWER = "arqueiro.flecha-explosiva.forca-explosao";
-    public static final String SELF_DAMAGE = "arqueiro.flecha-explosiva.dano-proprio";
+    public static final String EXPLOSION_RADIUS = "arqueiro.flecha-explosiva.raio";
+    public static final String EXPLOSION_DAMAGE = "arqueiro.flecha-explosiva.dano-maximo";
+    public static final String EXPLOSION_KNOCKBACK = "arqueiro.flecha-explosiva.empurrao";
+    public static final String EXPLOSION_COOLDOWN = "arqueiro.flecha-explosiva.recarga-segundos";
+    public static final String EXPLOSION_MIN_FORCE = "arqueiro.flecha-explosiva.forca-minima";
     public static final String MELEE_REDUCTION = "arqueiro.reducao-dano-corpo-a-corpo";
     public static final String MELEE_TAKEN = "arqueiro.dano-corpo-a-corpo-recebido";
     public static final String DISTANCE_PER_BLOCK = "arqueiro.distancia.por-bloco";
@@ -67,7 +70,10 @@ public final class ArqueiroSettings {
     public static final String ROPE_FALL = "arqueiro.flechas.corda.protecao-queda-segundos";
 
     /** Opções que deixaram de existir (a velocidade extra com o arco foi removida). */
-    private static final List<String> OBSOLETE = List.of("arqueiro.bonus-velocidade");
+    private static final List<String> OBSOLETE = List.of("arqueiro.bonus-velocidade",
+            "arqueiro.flecha-explosiva.forca-explosao", "arqueiro.flecha-explosiva.dano-proprio");
+    /** Multiplicador de dano antigo da Flecha Explosiva (3x): quem ainda o tem no config passa para o novo padrão. */
+    private static final double OLD_EXPLOSIVE_MULTIPLIER = 3;
 
     private static final Map<String, Object> DEFAULTS = new LinkedHashMap<>();
 
@@ -79,9 +85,12 @@ public final class ArqueiroSettings {
         DEFAULTS.put(BURST_INTERVAL, 4);
         DEFAULTS.put(BURST_COOLDOWN, 10);
         DEFAULTS.put(BURST_EXTRA_DAMAGE, 0.7);
-        DEFAULTS.put(DAMAGE_MULTIPLIER, 3);
-        DEFAULTS.put(EXPLOSION_POWER, 3.0);
-        DEFAULTS.put(SELF_DAMAGE, false);
+        DEFAULTS.put(DAMAGE_MULTIPLIER, 1.5);
+        DEFAULTS.put(EXPLOSION_RADIUS, 3);
+        DEFAULTS.put(EXPLOSION_DAMAGE, 6);
+        DEFAULTS.put(EXPLOSION_KNOCKBACK, 0.6);
+        DEFAULTS.put(EXPLOSION_COOLDOWN, 8);
+        DEFAULTS.put(EXPLOSION_MIN_FORCE, 0.8);
         DEFAULTS.put(MELEE_REDUCTION, 0.4);
         DEFAULTS.put(MELEE_TAKEN, 0.15);
         DEFAULTS.put(FOCUS_MAX, 100);
@@ -141,6 +150,10 @@ public final class ArqueiroSettings {
                 changed = true;
             }
         }
+        if (config.contains(DAMAGE_MULTIPLIER) && config.getDouble(DAMAGE_MULTIPLIER) == OLD_EXPLOSIVE_MULTIPLIER) {
+            config.set(DAMAGE_MULTIPLIER, DEFAULTS.get(DAMAGE_MULTIPLIER));
+            changed = true;
+        }
         for (Map.Entry<String, Object> entry : DEFAULTS.entrySet()) {
             if (!config.contains(entry.getKey())) {
                 config.set(entry.getKey(), entry.getValue());
@@ -191,12 +204,26 @@ public final class ArqueiroSettings {
         return Math.max(0, number(DAMAGE_MULTIPLIER));
     }
 
-    public float explosionPower() {
-        return (float) Math.max(0, number(EXPLOSION_POWER));
+    public double explosionRadius() {
+        return Math.max(0.5, number(EXPLOSION_RADIUS));
     }
 
-    public boolean selfDamage() {
-        return flag(SELF_DAMAGE);
+    /** Dano da explosão no centro; cai em linha reta até 0 na borda do raio. */
+    public double explosionDamage() {
+        return Math.max(0, number(EXPLOSION_DAMAGE));
+    }
+
+    public double explosionKnockback() {
+        return Math.max(0, number(EXPLOSION_KNOCKBACK));
+    }
+
+    public double explosiveCooldownSeconds() {
+        return Math.max(0, number(EXPLOSION_COOLDOWN));
+    }
+
+    /** Força mínima do arco (0 a 1) para a Flecha Explosiva sair explosiva. */
+    public double explosiveMinForce() {
+        return Math.max(0, Math.min(1, number(EXPLOSION_MIN_FORCE)));
     }
 
     // ------------------------------------------------------------ dano
