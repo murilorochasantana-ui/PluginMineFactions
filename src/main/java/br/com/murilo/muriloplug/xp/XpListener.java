@@ -1,5 +1,7 @@
 package br.com.murilo.muriloplug.xp;
 
+import org.bukkit.GameRule;
+import org.bukkit.World;
 import org.bukkit.entity.ExperienceOrb;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -18,6 +20,7 @@ import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerExpChangeEvent;
 import org.bukkit.event.player.PlayerFishEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.world.WorldLoadEvent;
 
 /**
  * O servidor não tem XP: nenhuma fonte dá XP real (mortes, blocos, fornalha, pesca, reprodução, garrafa) nem orbes, o
@@ -122,6 +125,27 @@ public final class XpListener implements Listener {
             player.setLevel(0);
             player.setExp(0);
             player.setTotalExperience(0);
+        }
+    }
+
+    // ------------------------------------------------------------ Locator Bar
+
+    @EventHandler
+    public void onWorldLoad(WorldLoadEvent event) {
+        disableLocatorBar(event.getWorld());
+    }
+
+    /**
+     * Desliga a Locator Bar do mundo. A API 1.21.4 não tem a constante (a regra é da 1.21.6+), então a regra é buscada
+     * pelo nome; se o servidor não a conhece, nada acontece.
+     */
+    public void disableLocatorBar(World world) {
+        if (!settings.disableLocatorBar()) {
+            return;
+        }
+        GameRule<?> rule = GameRule.getByName("locatorBar");
+        if (rule != null && rule.getType() == Boolean.class) {
+            world.setGameRule((GameRule<Boolean>) rule, false);
         }
     }
 

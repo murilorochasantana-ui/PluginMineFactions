@@ -432,6 +432,7 @@ public final class MinePlug extends JavaPlugin {
         XpListener xpListener = new XpListener(xpSettings);
         getServer().getPluginManager().registerEvents(xpListener, this);
         getServer().getOnlinePlayers().forEach(xpListener::clear);
+        getServer().getWorlds().forEach(xpListener::disableLocatorBar);
         // A barra de XP das classes só existe com o XP desligado: com XP real o jogo a sobrescreveria.
         ClassBarManager classBars = xpSettings.disabled() ? new ClassBarManager(this, classManager) : null;
         if (classBars != null) {

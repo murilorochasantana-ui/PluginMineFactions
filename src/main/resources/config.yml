@@ -17,6 +17,8 @@ xp:
   # Mesa de encantamento e bigorna ficam bloqueadas até o encantamento novo existir.
   bloquear-mesa-encantamento: true
   bloquear-bigorna: true
+  # true: desliga a Locator Bar (barra de pontos/direção no lugar da barra de XP) em todos os mundos. Só existe na 1.21.6+.
+  desativar-locator-bar: true
 
 # Combate: comandos que não podem ser usados enquanto o jogador está em combate (sem a barra).
 combate:
