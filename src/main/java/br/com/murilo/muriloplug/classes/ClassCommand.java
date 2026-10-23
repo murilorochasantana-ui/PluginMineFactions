@@ -90,6 +90,23 @@ public final class ClassCommand implements CommandExecutor, TabCompleter {
             adminArrow(player, args);
             return;
         }
+        if (args.length == 3 && args[1].equalsIgnoreCase("sentinela")) {
+            int amount = args[2].matches("\\d{1,2}") ? Integer.parseInt(args[2]) : 0;
+            if (amount < 1 || amount > MAX_ARROWS_GIVEN) {
+                player.sendMessage("§cUso: /classe admin sentinela <quantidade de 1 a " + MAX_ARROWS_GIVEN + ">");
+            } else {
+                var leftover = player.getInventory().addItem(items.create(ClassItems.SENTINEL, amount));
+                player.sendMessage(leftover.isEmpty() ? "§aVocê recebeu " + amount + " Sentinela(s)."
+                        : "§cSeu inventário está cheio.");
+            }
+            return;
+        }
+        if (args.length == 2 && args[1].equalsIgnoreCase("planta")) {
+            var leftover = player.getInventory().addItem(items.create(ClassItems.BLUEPRINT, 1));
+            player.sendMessage(leftover.isEmpty() ? "§aVocê recebeu uma Planta de Engenharia."
+                    : "§cSeu inventário está cheio.");
+            return;
+        }
         StaffType type = args.length == 3 && args[1].equalsIgnoreCase("staff") ? StaffType.byId(args[2]) : null;
         if (type == null) {
             player.sendMessage("§cUso: /classe admin staff <" + String.join("|", staffIds()) + ">");
@@ -131,7 +148,8 @@ public final class ClassCommand implements CommandExecutor, TabCompleter {
     /** /classe admin flecha <quantidade>: dá Flechas Explosivas ao administrador (para colocar na /loja). */
     private void adminArrow(Player player, String[] args) {
         int amount = -1;
-        if (args.length == 3) {
+        boolean grapple = args.length == 4 && args[3].equalsIgnoreCase("gancho");
+        if (args.length == 3 || grapple) {
             try {
                 amount = Integer.parseInt(args[2]);
             } catch (NumberFormatException ignored) {
@@ -139,12 +157,12 @@ public final class ClassCommand implements CommandExecutor, TabCompleter {
             }
         }
         if (amount < 1 || amount > MAX_ARROWS_GIVEN) {
-            player.sendMessage("§cUso: /classe admin flecha <quantidade de 1 a " + MAX_ARROWS_GIVEN + ">");
+            player.sendMessage("§cUso: /classe admin flecha <quantidade de 1 a " + MAX_ARROWS_GIVEN + "> [gancho]");
             return;
         }
-        var leftover = player.getInventory().addItem(items.create(ClassItems.EXPLOSIVE_ARROW, amount));
+        var leftover = player.getInventory().addItem(items.create(grapple ? ClassItems.GRAPPLE_ARROW : ClassItems.EXPLOSIVE_ARROW, amount));
         if (leftover.isEmpty()) {
-            player.sendMessage("§aVocê recebeu " + amount + " Flecha(s) Explosiva(s)§a.");
+            player.sendMessage("§aVocê recebeu " + amount + (grapple ? " Flecha(s) Gancho." : " Flecha(s) Explosiva(s)§a."));
         } else {
             player.sendMessage("§cSeu inventário está cheio.");
         }
@@ -222,11 +240,11 @@ public final class ClassCommand implements CommandExecutor, TabCompleter {
         if (args.length == 1) {
             options = admin ? List.of("trocar", "admin") : List.of("trocar");
         } else if (admin && args.length == 2 && args[0].equalsIgnoreCase("admin")) {
-            options = List.of("staff", "mana", "manamaxima", "flecha", "livro");
+            options = List.of("staff", "mana", "manamaxima", "flecha", "livro", "planta", "sentinela");
         } else if (admin && args.length == 3 && args[0].equalsIgnoreCase("admin")) {
             switch (args[1].toLowerCase(Locale.ROOT)) {
                 case "staff" -> options = staffIds();
-                case "flecha" -> options = List.of("1", "16", "64");
+                case "flecha", "sentinela" -> options = List.of("1", "16", "64");
                 case "livro" -> options = List.of("1", "5", "10");
                 case "mana" -> options = List.of("definir", "dar");
                 case "manamaxima" -> options = List.of("definir", "resetar");

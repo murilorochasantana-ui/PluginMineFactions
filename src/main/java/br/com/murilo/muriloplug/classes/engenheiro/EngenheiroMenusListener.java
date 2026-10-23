@@ -16,8 +16,11 @@ public final class EngenheiroMenusListener implements Listener {
     private final JavaPlugin plugin;
     private final BuildManager builds;
     private final PlacementManager placement;
+    private final PlantaManager plantas;
 
-    public EngenheiroMenusListener(JavaPlugin plugin, BuildManager builds, PlacementManager placement) {
+    public EngenheiroMenusListener(JavaPlugin plugin, BuildManager builds, PlacementManager placement,
+                                   PlantaManager plantas) {
+        this.plantas = plantas;
         this.placement = placement;
         this.plugin = plugin;
         this.builds = builds;
@@ -39,6 +42,13 @@ public final class EngenheiroMenusListener implements Listener {
             switch (event.getSlot()) {
                 case BuildMenu.SAVE_SLOT -> openConfirmLater(player, BuildConfirmMenu.Kind.SAVE);
                 case BuildMenu.CANCEL_SLOT -> openConfirmLater(player, BuildConfirmMenu.Kind.CANCEL);
+                case BuildMenu.PLANTA_SLOT -> {
+                    if (builds.plantaAvailable(player)) {
+                        openConfirmLater(player, BuildConfirmMenu.Kind.SAVE_PLANT);
+                    } else {
+                        player.sendMessage("§cVocê precisa de uma Planta com espaço no inventário.");
+                    }
+                }
                 default -> { }
             }
         } else if (holder instanceof PlaceConfirmMenu menu) {
@@ -57,6 +67,12 @@ public final class EngenheiroMenusListener implements Listener {
                 }
                 default -> { }
             }
+        } else if (holder instanceof PlantaMenu menu) {
+            plantas.onListClick(player, menu, event.getSlot());
+        } else if (holder instanceof PlantaProjectMenu menu) {
+            plantas.onProjectClick(player, menu, event.getSlot());
+        } else if (holder instanceof PlantaConfirmMenu menu) {
+            plantas.onConfirmClick(player, menu, event.getSlot());
         } else if (holder instanceof BuildConfirmMenu confirm) {
             switch (event.getSlot()) {
                 case BuildConfirmMenu.BACK_SLOT -> closeLater(player);
@@ -87,7 +103,13 @@ public final class EngenheiroMenusListener implements Listener {
             return;
         }
         confirm.markUsed();
-        if (confirm.kind() == BuildConfirmMenu.Kind.SAVE) {
+        if (confirm.kind() == BuildConfirmMenu.Kind.SAVE_PLANT) {
+            if (builds.ofOwner(player.getUniqueId()) == null) {
+                player.sendMessage("§cVocê não tem uma construção aberta.");
+            } else {
+                plantas.askProjectName(player);
+            }
+        } else if (confirm.kind() == BuildConfirmMenu.Kind.SAVE) {
             builds.save(player);
         } else if (builds.ofOwner(player.getUniqueId()) == null) {
             player.sendMessage("§cVocê não tem uma construção aberta.");

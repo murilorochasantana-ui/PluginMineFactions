@@ -4,6 +4,7 @@ import br.com.murilo.muriloplug.classes.ClassManager;
 import br.com.murilo.muriloplug.classes.PlayerClass;
 import br.com.murilo.muriloplug.classes.arqueiro.ShotModes;
 import br.com.murilo.muriloplug.classes.combatente.FuryManager;
+import br.com.murilo.muriloplug.classes.engenheiro.EngenheiroSidebar;
 import br.com.murilo.muriloplug.classes.mago.MagoSettings;
 import br.com.murilo.muriloplug.classes.mago.ManaManager;
 import br.com.murilo.muriloplug.combat.CombatManager;
@@ -52,9 +53,10 @@ public final class SidebarManager {
     private final MagoSettings magoSettings;
     private final ShotModes shotModes;
     private final FuryManager fury;
+    private final EngenheiroSidebar engineer;
     /** Linhas na ordem de exibição, de cima para baixo. Uma linha que devolve null não aparece. */
     private final List<Line> lines = List.of(this::moneyLine, this::clanLine, this::classLine, this::modeLine,
-            this::berserkLine, this::chargeLine, this::tauntLine, this::leapLine, this::manaLine, this::combatLine, this::killsLine, this::kdaLine);
+            this::berserkLine, this::chargeLine, this::tauntLine, this::leapLine, this::energyLine, this::repairLine, this::hookLine, this::sentinelLine, this::manaLine, this::combatLine, this::killsLine, this::kdaLine);
     /** Último texto enviado para cada linha de cada jogador, para só reenviar o que mudou. */
     private final Map<UUID, Component[]> lastRendered = new HashMap<>();
     /** Última pontuação (posição) enviada para cada linha de cada jogador. */
@@ -62,7 +64,8 @@ public final class SidebarManager {
 
     public SidebarManager(PlayerScoreboards boards, CombatManager combat, StatsManager stats,
                           EconomyManager economy, ClanManager clans, ClassManager classes, ManaManager mana,
-                          ShotModes shotModes, FuryManager fury, MagoSettings magoSettings) {
+                          ShotModes shotModes, FuryManager fury, MagoSettings magoSettings, EngenheiroSidebar engineer) {
+        this.engineer = engineer;
         this.magoSettings = magoSettings;
         this.fury = fury;
         this.shotModes = shotModes;
@@ -199,6 +202,24 @@ public final class SidebarManager {
         }
         return ShopUi.text("§fGolpe Pulando §7[Crítico] ")
                 .append(mark(fury.fury(id) >= fury.settings().leapCost()));
+    }
+
+    // ---- Habilidades do Engenheiro (só para Engenheiros): as linhas ficam em EngenheiroSidebar.
+
+    private Component energyLine(Player player) {
+        return engineer.energyLine(player);
+    }
+
+    private Component repairLine(Player player) {
+        return engineer.repairLine(player);
+    }
+
+    private Component hookLine(Player player) {
+        return engineer.hookLine(player);
+    }
+
+    private Component sentinelLine(Player player) {
+        return engineer.sentinelLine(player);
     }
 
     private static Component mark(boolean usable) {

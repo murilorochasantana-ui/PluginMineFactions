@@ -10,7 +10,7 @@ import org.bukkit.inventory.Inventory;
 /** Confirmação verde/vermelho de salvar ou de cancelar a construção. */
 final class BuildConfirmMenu implements EngenheiroHolder {
 
-    enum Kind { SAVE, CANCEL }
+    enum Kind { SAVE, CANCEL, SAVE_PLANT }
 
     static final int BACK_SLOT = 3;
     static final int INFO_SLOT = 4;
@@ -24,10 +24,14 @@ final class BuildConfirmMenu implements EngenheiroHolder {
     private BuildConfirmMenu(Kind kind) {
         this.kind = kind;
         boolean save = kind == Kind.SAVE;
+        boolean plant = kind == Kind.SAVE_PLANT;
         this.inventory = Bukkit.createInventory(this, 9,
-                Component.text(save ? "Salvar estrutura?" : "Cancelar estrutura?"));
+                Component.text(plant ? "Salvar projeto?" : save ? "Salvar estrutura?" : "Cancelar estrutura?"));
         inventory.setItem(BACK_SLOT, ShopUi.button(Material.RED_CONCRETE, "§cVoltar"));
-        inventory.setItem(INFO_SLOT, save
+        inventory.setItem(INFO_SLOT, plant
+                ? ShopUi.button(Material.BLUE_CONCRETE, "§9Salvar projeto na Planta",
+                        "§7O projeto vai para a Planta e os blocos", "§7ficam no mundo. Depois, digite o nome.")
+                : save
                 ? ShopUi.button(Material.BOOK, "§eSalvar estrutura",
                         "§7Os blocos e o conteúdo dos baús vão", "§7para o livro e somem do mundo.")
                 : ShopUi.button(Material.BOOK, "§eCancelar estrutura",

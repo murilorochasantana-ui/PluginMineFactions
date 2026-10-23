@@ -15,16 +15,20 @@ import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.data.BlockData;
-import org.bukkit.block.structure.Mirror;
 import org.bukkit.block.structure.StructureRotation;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.player.PlayerBucketEmptyEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.Particle;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.structure.Palette;
 import org.bukkit.structure.Structure;
 import org.bukkit.util.BoundingBox;
@@ -38,15 +42,16 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.UUID;
 import java.util.logging.Level;
 
 /**
  * Colocar a estrutura de um Livro de Estrutura cheio: prévia só visual (sendBlockChange, nada muda no mundo),
  * validação, e a colocação em si. O livro só gera a estrutura UMA vez: a regra é o arquivo .nbt, que é apagado
- * na hora de colocar (sem arquivo, sem estrutura).
+ * na hora de colocar (sem arquivo, sem estrutura). A estrutura sobe aos poucos, camada por camada (de baixo para
+ * cima), e a área de destino fica reservada até o fim.
  */
 public final class PlacementManager implements Listener {
 
@@ -58,7 +63,11 @@ public final class PlacementManager implements Listener {
     }
 
     /** Um bloco da estrutura (sem ar), na posição relativa original. */
-    private record Piece(int x, int y, int z, BlockData data) {
+    private record Piece(int x, int y, int z, BlockData data, BlockState state) {
+    }
+
+    /** Um bloco da estrutura já girado e na posição do mundo (com o estado original, para baús e ejetores). */
+    private record Placed(Pos pos, BlockData data, BlockState state) {
     }
 
     private static final class Preview {
@@ -112,10 +121,14 @@ public final class PlacementManager implements Listener {
     private final EngenheiroSettings settings;
     private final StructureBooks books;
     private final StructureStore store;
+    private final EngenheiroAcoes actions;
     private final Map<UUID, Preview> previews = new HashMap<>();
+    private final List<Construction> constructions = new ArrayList<>();
 
     public PlacementManager(JavaPlugin plugin, BuildManager builds, ClaimManager claims, CombatManager combat,
-                            EngenheiroSettings settings, StructureBooks books, StructureStore store) {
+                            EngenheiroSettings settings, StructureBooks books, StructureStore store,
+                            EngenheiroAcoes actions) {
+        this.actions = actions;
         this.plugin = plugin;
         this.builds = builds;
         this.claims = claims;
@@ -165,7 +178,7 @@ public final class PlacementManager implements Listener {
     }
 
     private void startPreview(Player player, UUID bookId, String structureId) {
-        int wait = combat.secondsUntilCalm(player, settings.combatWaitSeconds());
+        int wait = combat.secondsUntilCalm(player, settings.placeWaitSeconds());
         if (wait > 0) {
             player.sendMessage("§cVocê esteve em combate. Aguarde " + wait + "s para construir.");
             return;
@@ -192,7 +205,7 @@ public final class PlacementManager implements Listener {
         for (BlockState state : palette.getBlocks()) {
             BlockData data = state.getBlockData();
             if (!data.getMaterial().isAir()) {
-                pieces.add(new Piece(state.getX(), state.getY(), state.getZ(), data));
+                pieces.add(new Piece(state.getX(), state.getY(), state.getZ(), data, state));
             }
         }
         Preview preview = new Preview(player.getUniqueId(), bookId, structureId, player.getWorld().getName(),
@@ -378,20 +391,275 @@ public final class PlacementManager implements Listener {
             }
             // O arquivo sumiu entre a validação e agora (não deveria): nada a fazer, o livro já saiu.
         }
-        // c) coloca (itens de baús e ejetores vão junto, como foram guardados)
+        // c) começa a construir: sobe camada por camada (itens de baús e ejetores vão junto, como foram guardados)
+        List<List<Placed>> layers = layers(preview, anchor);
+        // d) apaga a prévia (os blocos reais vão aparecendo) e avisa
+        clear(preview);
         try {
-            preview.structure.place(where, false, preview.rotation, Mirror.NONE, 0, 1.0f, new Random());
+            new Construction(player.getUniqueId(), world, anchor.x(), anchor.x() + preview.rotatedX() - 1,
+                    anchor.z(), anchor.z() + preview.rotatedZ() - 1, anchor.y(), layers).start();
         } catch (RuntimeException e) {
             plugin.getLogger().log(Level.SEVERE, "Erro ao colocar a estrutura " + preview.structureId + " de "
                     + player.getName() + " em " + where + " (o livro e o arquivo já foram gastos)", e);
             player.sendMessage("§cOcorreu um erro ao colocar a estrutura. Avise um administrador.");
-            clear(preview);
             return;
         }
-        // d) apaga a prévia (agora os blocos são reais) e avisa
-        clear(preview);
         player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_USE, 1f, 1f);
-        player.sendMessage("§aEstrutura colocada!");
+        player.sendMessage("§aConstruindo a estrutura...");
+        actions.registrarAcao(player);
+    }
+
+    // ------------------------------------------------------------ construção aos poucos
+
+    /** Os blocos da estrutura já girados, agrupados por altura (de baixo para cima). */
+    private List<List<Placed>> layers(Preview preview, Pos anchor) {
+        int[] min = minTurned(preview);
+        Map<Integer, List<Placed>> byY = new TreeMap<>();
+        for (int y = 0; y < preview.sizeY; y++) {
+            byY.put(y, new ArrayList<>());
+        }
+        for (Piece piece : preview.pieces) {
+            BlockData data = piece.data().clone();
+            data.rotate(preview.rotation);
+            Pos pos = new Pos(
+                    anchor.x() + turnX(preview.rotation, piece.x(), piece.z()) - min[0],
+                    anchor.y() + piece.y(),
+                    anchor.z() + turnZ(preview.rotation, piece.x(), piece.z()) - min[1]);
+            byY.get(piece.y()).add(new Placed(pos, data, piece.state()));
+        }
+        return new ArrayList<>(byY.values());
+    }
+
+    /** Blocos que dependem de outro (tochas, redstone, botões, água...) entram no fim de cada camada. */
+    private static boolean isDependent(BlockData data) {
+        Material type = data.getMaterial();
+        return !type.isSolid() || type == Material.WATER || type == Material.LAVA;
+    }
+
+    /** Uma estrutura subindo: uma camada a cada N ticks, com a área toda reservada até o fim. */
+    private final class Construction extends BukkitRunnable {
+
+        final UUID owner;
+        final World world;
+        final int minX;
+        final int maxX;
+        final int minZ;
+        final int maxZ;
+        final int baseY;
+        final List<List<Placed>> layers;
+        int next;
+
+        Construction(UUID owner, World world, int minX, int maxX, int minZ, int maxZ, int baseY,
+                     List<List<Placed>> layers) {
+            this.owner = owner;
+            this.world = world;
+            this.minX = minX;
+            this.maxX = maxX;
+            this.minZ = minZ;
+            this.maxZ = maxZ;
+            this.baseY = baseY;
+            this.layers = layers;
+        }
+
+        void start() {
+            constructions.add(this);
+            runTaskTimer(plugin, 0L, settings.ticksPerLayer());
+        }
+
+        boolean reserves(World other, int x, int y, int z) {
+            return other.equals(world) && x >= minX && x <= maxX && z >= minZ && z <= maxZ
+                    && y >= baseY && y < baseY + layers.size();
+        }
+
+        boolean overlaps(World other, int x1, int x2, int z1, int z2, int y1, int y2) {
+            return other.equals(world) && x1 <= maxX && x2 >= minX && z1 <= maxZ && z2 >= minZ
+                    && y1 < baseY + layers.size() && y2 >= baseY;
+        }
+
+        @Override
+        public void run() {
+            placeNext();
+            if (next >= layers.size()) {
+                finish();
+            }
+        }
+
+        /** onDisable: coloca já o que falta. */
+        void finishNow() {
+            while (next < layers.size()) {
+                placeNext();
+            }
+            finish();
+        }
+
+        private void placeNext() {
+            int index = next++;
+            try {
+                placeLayer(index);
+            } catch (RuntimeException e) {
+                plugin.getLogger().log(Level.SEVERE, "Erro ao colocar a camada " + index + " da estrutura", e);
+            }
+        }
+
+        private void finish() {
+            cancel();
+            constructions.remove(this);
+            Player player = Bukkit.getPlayer(owner);
+            if (player != null && player.isOnline()) {
+                player.sendMessage("§aEstrutura colocada!");
+            }
+            world.playSound(new Location(world, (minX + maxX) / 2.0, baseY, (minZ + maxZ) / 2.0),
+                    Sound.BLOCK_ANVIL_USE, 1f, 1f);
+        }
+
+        private void placeLayer(int index) {
+            int y = baseY + index;
+            pushOut(index);
+            if (index + 1 < layers.size()) {
+                pushOut(index + 1);
+            }
+            Set<Pos> wanted = new HashSet<>();
+            for (Placed placed : layers.get(index)) {
+                wanted.add(placed.pos());
+            }
+            // O que a estrutura deixa vazio vira ar (a caixa tinha no máximo água e plantas).
+            for (int x = minX; x <= maxX; x++) {
+                for (int z = minZ; z <= maxZ; z++) {
+                    Block block = world.getBlockAt(x, y, z);
+                    if (!wanted.contains(new Pos(x, y, z)) && !block.getType().isAir()) {
+                        block.setType(Material.AIR, false);
+                    }
+                }
+            }
+            for (int pass = 0; pass < 2; pass++) {
+                for (Placed placed : layers.get(index)) {
+                    if (isDependent(placed.data()) == (pass == 1)) {
+                        set(placed);
+                    }
+                }
+            }
+            effects(index);
+        }
+
+        private void set(Placed placed) {
+            Pos pos = placed.pos();
+            Block block = world.getBlockAt(pos.x(), pos.y(), pos.z());
+            try {
+                BlockState copy = placed.state().copy(block.getLocation());
+                copy.setBlockData(placed.data());
+                copy.update(true, false);
+            } catch (RuntimeException e) {
+                block.setBlockData(placed.data(), false); // sem o conteúdo, mas o bloco vai
+            }
+        }
+
+        private void effects(int index) {
+            List<Placed> layer = layers.get(index);
+            if (layer.isEmpty()) {
+                return;
+            }
+            int step = Math.max(1, layer.size() / 10);
+            for (int i = 0; i < layer.size(); i += step) {
+                Placed placed = layer.get(i);
+                Location at = new Location(world, placed.pos().x() + 0.5, placed.pos().y() + 0.5, placed.pos().z() + 0.5);
+                world.spawnParticle(Particle.BLOCK, at, 6, 0.4, 0.4, 0.4, 0, placed.data());
+            }
+            Location sound = new Location(world, (minX + maxX) / 2.0, baseY + index, (minZ + maxZ) / 2.0);
+            world.playSound(sound, layer.get(0).data().getSoundGroup().getPlaceSound(), 1f, 0.9f);
+        }
+
+        /** Quem está dentro de um bloco sólido desta camada é empurrado para fora da área da estrutura. */
+        private void pushOut(int index) {
+            Set<Pos> solid = new HashSet<>();
+            for (Placed placed : layers.get(index)) {
+                if (placed.data().getMaterial().isSolid()) {
+                    solid.add(placed.pos());
+                }
+            }
+            if (solid.isEmpty()) {
+                return;
+            }
+            for (Player other : world.getPlayers()) {
+                if (other.getGameMode() == GameMode.SPECTATOR || !intersects(other.getBoundingBox(), solid)) {
+                    continue;
+                }
+                other.teleport(outside(other.getLocation()));
+                other.sendMessage("§eVocê foi empurrado: uma estrutura está sendo construída aqui.");
+            }
+        }
+
+        private boolean intersects(BoundingBox box, Set<Pos> solid) {
+            for (int x = (int) Math.floor(box.getMinX()); x <= (int) Math.floor(box.getMaxX() - 1e-7); x++) {
+                for (int y = (int) Math.floor(box.getMinY()); y <= (int) Math.floor(box.getMaxY() - 1e-7); y++) {
+                    for (int z = (int) Math.floor(box.getMinZ()); z <= (int) Math.floor(box.getMaxZ() - 1e-7); z++) {
+                        if (solid.contains(new Pos(x, y, z))) {
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        /** O ponto livre mais perto, fora do retângulo da estrutura. */
+        private Location outside(Location from) {
+            double west = from.getX() - minX;
+            double east = maxX + 1 - from.getX();
+            double north = from.getZ() - minZ;
+            double south = maxZ + 1 - from.getZ();
+            double best = Math.min(Math.min(west, east), Math.min(north, south));
+            Location to = from.clone();
+            if (best == west) {
+                to.setX(minX - 0.6);
+            } else if (best == east) {
+                to.setX(maxX + 1.6);
+            } else if (best == north) {
+                to.setZ(minZ - 0.6);
+            } else {
+                to.setZ(maxZ + 1.6);
+            }
+            for (int up = 0; up <= 4; up++) {
+                Location test = to.clone().add(0, up, 0);
+                if (test.getBlock().isPassable() && test.clone().add(0, 1, 0).getBlock().isPassable()) {
+                    return test;
+                }
+            }
+            to.setY(world.getHighestBlockYAt(to) + 1);
+            return to;
+        }
+    }
+
+    /** onDisable: termina de colocar, sem espera, o que faltar das estruturas em andamento. */
+    public void finishAll() {
+        for (Construction construction : List.copyOf(constructions)) {
+            construction.finishNow();
+        }
+    }
+
+    private boolean reserved(Block block) {
+        for (Construction construction : constructions) {
+            if (construction.reserves(block.getWorld(), block.getX(), block.getY(), block.getZ())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Ninguém coloca blocos na área reservada enquanto a estrutura sobe. */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onPlaceBlock(BlockPlaceEvent event) {
+        if (!constructions.isEmpty() && reserved(event.getBlockPlaced())) {
+            event.setCancelled(true);
+            event.getPlayer().sendMessage("§cEsta área está reservada: uma estrutura está sendo construída.");
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onBucket(PlayerBucketEmptyEvent event) {
+        if (!constructions.isEmpty() && reserved(event.getBlock())) {
+            event.setCancelled(true);
+            event.getPlayer().sendMessage("§cEsta área está reservada: uma estrutura está sendo construída.");
+        }
     }
 
     /** Mensagem de erro, ou null se pode colocar. */
@@ -403,7 +671,7 @@ public final class PlacementManager implements Listener {
         if (!books.isFull(hand) || !preview.bookId.equals(books.bookId(hand))) {
             return "§cVocê precisa estar com o livro desta estrutura na mão principal.";
         }
-        int wait = combat.secondsUntilCalm(player, settings.combatWaitSeconds());
+        int wait = combat.secondsUntilCalm(player, settings.placeWaitSeconds());
         if (wait > 0) {
             return "§cVocê esteve em combate. Aguarde " + wait + "s para construir.";
         }
@@ -436,6 +704,11 @@ public final class PlacementManager implements Listener {
                 if (!claims.canBuild(player, new Location(world, x, anchor.y(), z))) {
                     return "§cVocê não pode construir aqui: parte da área pertence a outro jogador.";
                 }
+            }
+        }
+        for (Construction construction : constructions) {
+            if (construction.overlaps(world, anchor.x(), maxX, anchor.z(), maxZ, anchor.y(), maxY)) {
+                return "§cO local está reservado por uma estrutura em construção.";
             }
         }
         if (builds.overlapsOpenBuild(world, anchor.x(), maxX, anchor.z(), maxZ, anchor.y(), maxY)) {

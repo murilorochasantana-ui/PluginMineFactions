@@ -48,7 +48,19 @@ import br.com.murilo.muriloplug.classes.combatente.CombatenteSettings;
 import br.com.murilo.muriloplug.classes.combatente.FuryManager;
 import br.com.murilo.muriloplug.classes.engenheiro.BuildListener;
 import br.com.murilo.muriloplug.classes.engenheiro.BuildManager;
+import br.com.murilo.muriloplug.classes.engenheiro.EngenheiroAcoes;
+import br.com.murilo.muriloplug.classes.engenheiro.EngenheiroArmas;
+import br.com.murilo.muriloplug.classes.engenheiro.EngenheiroEnergia;
 import br.com.murilo.muriloplug.classes.engenheiro.EngenheiroMenusListener;
+import br.com.murilo.muriloplug.classes.engenheiro.EngenheiroPassivas;
+import br.com.murilo.muriloplug.classes.engenheiro.EngenheiroReparo;
+import br.com.murilo.muriloplug.classes.engenheiro.EngenheiroSidebar;
+import br.com.murilo.muriloplug.classes.engenheiro.GanchoManager;
+import br.com.murilo.muriloplug.classes.engenheiro.PlantaItems;
+import br.com.murilo.muriloplug.classes.engenheiro.SentinelaItems;
+import br.com.murilo.muriloplug.classes.engenheiro.SentinelaManager;
+import br.com.murilo.muriloplug.classes.engenheiro.PlantaManager;
+import br.com.murilo.muriloplug.classes.engenheiro.PlantaStore;
 import br.com.murilo.muriloplug.classes.engenheiro.EngenheiroSettings;
 import br.com.murilo.muriloplug.classes.engenheiro.PlacementManager;
 import br.com.murilo.muriloplug.classes.engenheiro.StructureBooks;
@@ -146,6 +158,7 @@ public final class MinePlug extends JavaPlugin {
     private FuryManager furyManager;
     private BuildManager buildManager;
     private PlacementManager placementManager;
+    private EngenheiroPassivas engenheiroPassivas;
     private SuporteHealth suporteHealth;
     private FlightManager flightManager;
     private NightVisionManager nightVision;
@@ -316,15 +329,38 @@ public final class MinePlug extends JavaPlugin {
         getLogger().info("Estruturas salvas em estruturas/: " + structureStore.count());
         buildManager = new BuildManager(this, classManager, claimManager, combatManager, engenheiroSettings,
                 structureBooks, structureStore);
+        EngenheiroEnergia engenheiroEnergia = new EngenheiroEnergia(this, classManager, engenheiroSettings);
+        getServer().getPluginManager().registerEvents(engenheiroEnergia, this);
+        engenheiroEnergia.start();
+        EngenheiroAcoes engenheiroAcoes = new EngenheiroAcoes(classManager, engenheiroSettings);
         placementManager = new PlacementManager(this, buildManager, claimManager, combatManager, engenheiroSettings,
-                structureBooks, structureStore);
+                structureBooks, structureStore, engenheiroAcoes);
         getServer().getPluginManager().registerEvents(placementManager, this);
         placementManager.start();
         buildManager.restoreLeftovers();
         buildManager.start();
         getServer().getPluginManager().registerEvents(
                 new BuildListener(buildManager, structureBooks, engenheiroSettings, authManager, placementManager), this);
-        getServer().getPluginManager().registerEvents(new EngenheiroMenusListener(this, buildManager, placementManager), this);
+        PlantaItems plantaItems = new PlantaItems(this, engenheiroSettings);
+        PlantaManager plantaManager = new PlantaManager(this, buildManager, engenheiroSettings, structureBooks,
+                structureStore, plantaItems, new PlantaStore(this), engenheiroAcoes, authManager);
+        buildManager.setPlantas(plantaManager);
+        getServer().getPluginManager().registerEvents(plantaManager, this);
+        getServer().getPluginManager().registerEvents(
+                new EngenheiroMenusListener(this, buildManager, placementManager, plantaManager), this);
+        engenheiroPassivas = new EngenheiroPassivas(this, classManager, engenheiroSettings);
+        getServer().getPluginManager().registerEvents(engenheiroPassivas, this);
+        engenheiroPassivas.start();
+        getServer().getPluginManager().registerEvents(new EngenheiroReparo(this, classManager, engenheiroSettings,
+                engenheiroEnergia, engenheiroAcoes, authManager), this);
+        GanchoManager ganchoManager = new GanchoManager(this, classManager, engenheiroSettings, arrowItems, engenheiroAcoes);
+        getServer().getPluginManager().registerEvents(ganchoManager, this);
+        SentinelaItems sentinelaItems = new SentinelaItems(this, engenheiroSettings);
+        SentinelaManager sentinelaManager = new SentinelaManager(this, classManager, claimManager, authManager,
+                targetRelations, engenheiroSettings, sentinelaItems, engenheiroAcoes);
+        sentinelaManager.load();
+        getServer().getPluginManager().registerEvents(sentinelaManager, this);
+        sentinelaManager.start();
         SuporteSettings suporteSettings = new SuporteSettings(this);
         SuporteItems suporteItems = new SuporteItems(this, suporteSettings);
         int oldScrolls = shopManager.migrate(suporteItems::upgradeLegacy) + marketManager.migrate(suporteItems::upgradeLegacy);
@@ -353,7 +389,7 @@ public final class MinePlug extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new SuporteListener(classManager, authManager, suporteItems,
                 suporteSettings, suporteCooldowns, suporteTargets, suporteAssists, linkManager, rootManager,
                 flightManager), this);
-        ClassItems classItems = new ClassItems(staffItems, grimoireItems, arrowItems, structureBooks, suporteItems);
+        ClassItems classItems = new ClassItems(staffItems, grimoireItems, arrowItems, structureBooks, plantaItems, sentinelaItems, suporteItems);
         ClassCommand classCommand = new ClassCommand(classManager, combatManager, classItems, manaManager);
         getCommand("classe").setExecutor(classCommand);
         getCommand("classe").setTabCompleter(classCommand);
@@ -378,12 +414,14 @@ public final class MinePlug extends JavaPlugin {
 
         // Depois do PvP 1.8: o HIGH do Combatente roda depois do ajuste do machado.
         getServer().getPluginManager().registerEvents(new CombatenteListener(classManager, combatenteSettings, furyManager), this);
+        getServer().getPluginManager().registerEvents(new EngenheiroArmas(classManager, engenheiroSettings), this);
         // Por último entre os listeners de dano em HIGHEST: o Escudo de Mana mede o dano final já ajustado pelos outros.
         getServer().getPluginManager().registerEvents(new ManaShieldListener(manaManager, magoSettings), this);
 
         PlayerScoreboards scoreboards = new PlayerScoreboards();
         NametagManager nametagManager = new NametagManager(scoreboards, combatManager, clanManager);
-        SidebarManager sidebarManager = new SidebarManager(scoreboards, combatManager, statsManager, economyManager, clanManager, classManager, manaManager, shotModes, furyManager, magoSettings);
+        SidebarManager sidebarManager = new SidebarManager(scoreboards, combatManager, statsManager, economyManager, clanManager, classManager, manaManager, shotModes, furyManager, magoSettings,
+                new EngenheiroSidebar(classManager, engenheiroEnergia, engenheiroSettings, ganchoManager, sentinelaManager));
         shotModes.setChangeListener(id -> {
             Player player = getServer().getPlayer(id);
             if (player != null) {
@@ -411,6 +449,21 @@ public final class MinePlug extends JavaPlugin {
                 return new ClassBarManager.Bar((int) Math.floor(current), (float) (current / combatenteSettings.furyMax()));
             });
         }
+        if (classBars != null) {
+            classBars.register(PlayerClass.ENGENHEIRO, player -> {
+                double current = engenheiroEnergia.getEnergia(player.getUniqueId());
+                return new ClassBarManager.Bar((int) Math.floor(current), (float) (current / engenheiroEnergia.maxEnergia()));
+            });
+        }
+        engenheiroEnergia.setChangeListener(id -> {
+            Player player = getServer().getPlayer(id);
+            if (player != null) {
+                sidebarManager.update(player);
+                if (classBars != null) {
+                    classBars.update(player);
+                }
+            }
+        });
         furyManager.setChangeListener(id -> {
             Player player = getServer().getPlayer(id);
             if (player != null) {
@@ -490,7 +543,11 @@ public final class MinePlug extends JavaPlugin {
             combatDisplayTask.cancel();
         }
         if (placementManager != null) {
+            placementManager.finishAll();
             placementManager.clearAll();
+        }
+        if (engenheiroPassivas != null) {
+            engenheiroPassivas.removeAll();
         }
         if (buildManager != null) {
             buildManager.cancelAll();

@@ -13,6 +13,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 public final class ArrowItems {
 
     public static final String EXPLOSIVE_ID = "explosiva";
+    public static final String GRAPPLE_ID = "gancho";
 
     private final NamespacedKey arrowKey;
 
@@ -31,6 +32,33 @@ public final class ArrowItems {
         meta.getPersistentDataContainer().set(arrowKey, PersistentDataType.STRING, EXPLOSIVE_ID);
         item.setItemMeta(meta);
         return item;
+    }
+
+    /** Flecha Gancho do Engenheiro (só funciona na besta). */
+    public ItemStack createGrapple(int amount) {
+        ItemStack item = ShopUi.button(Material.ARROW, "§7Flecha Gancho",
+                "§7Só funciona na besta.",
+                "§5Somente Engenheiros");
+        item.setAmount(amount);
+        ItemMeta meta = item.getItemMeta();
+        meta.getPersistentDataContainer().set(arrowKey, PersistentDataType.STRING, GRAPPLE_ID);
+        item.setItemMeta(meta);
+        return item;
+    }
+
+    public boolean isGrapple(ItemStack item) {
+        if (item == null || item.getType() != Material.ARROW || !item.hasItemMeta()) {
+            return false;
+        }
+        return GRAPPLE_ID.equals(item.getItemMeta().getPersistentDataContainer().get(arrowKey, PersistentDataType.STRING));
+    }
+
+    public void markGrappleProjectile(PersistentDataContainer container) {
+        container.set(arrowKey, PersistentDataType.STRING, GRAPPLE_ID);
+    }
+
+    public boolean isGrappleProjectile(PersistentDataContainer container) {
+        return GRAPPLE_ID.equals(container.get(arrowKey, PersistentDataType.STRING));
     }
 
     public boolean isExplosive(ItemStack item) {

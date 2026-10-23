@@ -80,6 +80,7 @@ public final class BuildManager {
     private final File file;
     private final Map<UUID, OpenBuild> builds = new LinkedHashMap<>();
     private final Map<UUID, BukkitTask> borderTasks = new HashMap<>();
+    private PlantaManager plantas;
 
     public BuildManager(JavaPlugin plugin, ClassManager classes, ClaimManager claims, CombatManager combat,
                         EngenheiroSettings settings, StructureBooks books, StructureStore store) {
@@ -91,6 +92,11 @@ public final class BuildManager {
         this.books = books;
         this.store = store;
         this.file = new File(plugin.getDataFolder(), "construcoes-abertas.yml");
+    }
+
+    /** Liga a Planta (ela precisa deste gerenciador para saber quais livros estão presos a uma construção). */
+    public void setPlantas(PlantaManager plantas) {
+        this.plantas = plantas;
     }
 
     // ------------------------------------------------------------ consultas
@@ -371,45 +377,44 @@ public final class BuildManager {
 
     // ------------------------------------------------------------ salvar
 
-    /** Salva a construção do jogador no livro (depois da confirmação). Tudo no mesmo tick. */
-    public void save(Player player) {
-        OpenBuild build = builds.get(player.getUniqueId());
-        if (build == null) {
-            player.sendMessage("§cVocê não tem uma construção aberta.");
-            return;
-        }
+    /**
+     * Valida o salvar (livro vazio desta construção na mão, combate, blocos proibidos) e olha o volume. Retorna o
+     * resultado, ou null depois de avisar o jogador do que está errado.
+     */
+    private Scan checkSave(Player player, OpenBuild build) {
         if (!isEngineer(player)) {
             player.sendMessage("§cVocê não é mais Engenheiro.");
-            return;
+            return null;
         }
         ItemStack hand = player.getInventory().getItemInMainHand();
         if (!books.isEmpty(hand) || !build.bookId.equals(books.bookId(hand))) {
             player.sendMessage("§cVocê precisa estar com o livro desta construção na mão principal.");
-            return;
+            return null;
         }
         int wait = combat.secondsUntilCalm(player, settings.combatWaitSeconds());
         if (wait > 0) {
             player.sendMessage("§cVocê esteve em combate. Aguarde " + wait + "s para construir.");
-            return;
+            return null;
         }
-        World world = Bukkit.getWorld(build.world);
-        if (world == null) {
+        if (Bukkit.getWorld(build.world) == null) {
             player.sendMessage("§cO mundo da construção não está carregado.");
-            return;
+            return null;
         }
         Scan scan = scan(build);
         if (scan.count() == 0) {
             player.sendMessage("§cConstrua pelo menos 1 bloco acima do concreto branco.");
-            return;
+            return null;
         }
         if (!scan.forbidden().isEmpty()) {
             player.sendMessage("§cHá blocos proibidos na construção: " + scan.forbidden().stream()
                     .map(Material::name).sorted().toList());
-            return;
+            return null;
         }
+        return scan;
+    }
 
-        // Guarda a menor caixa que contém os blocos (sem entidades) e grava o arquivo ANTES de apagar qualquer coisa.
-        String structureId = UUID.randomUUID().toString();
+    /** Guarda a menor caixa que contém os blocos (sem entidades, com o conteúdo de baús e ejetores), ou null. */
+    private Structure capture(Player player, World world, Scan scan) {
         Location corner1 = new Location(world, scan.minX(), scan.minY(), scan.minZ());
         Location corner2 = new Location(world, scan.maxX(), scan.maxY(), scan.maxZ());
         try {
@@ -423,8 +428,36 @@ public final class BuildManager {
                 player.sendMessage("§cNão foi possível guardar a estrutura (tamanho inesperado). Nada foi alterado.");
                 plugin.getLogger().warning("Estrutura com tamanho inesperado: " + structure.getSize()
                         + " (esperado " + scan.sizeText() + ")");
-                return;
+                return null;
             }
+            return structure;
+        } catch (RuntimeException e) {
+            player.sendMessage("§cNão foi possível guardar a estrutura. Nada foi alterado.");
+            plugin.getLogger().severe("Falha ao guardar estrutura de " + player.getName() + ": " + e);
+            return null;
+        }
+    }
+
+    /** Salva a construção do jogador no livro (depois da confirmação). Tudo no mesmo tick. */
+    public void save(Player player) {
+        OpenBuild build = builds.get(player.getUniqueId());
+        if (build == null) {
+            player.sendMessage("§cVocê não tem uma construção aberta.");
+            return;
+        }
+        Scan scan = checkSave(player, build);
+        if (scan == null) {
+            return;
+        }
+        World world = Bukkit.getWorld(build.world);
+
+        // Grava o arquivo ANTES de apagar qualquer coisa.
+        String structureId = UUID.randomUUID().toString();
+        Structure structure = capture(player, world, scan);
+        if (structure == null) {
+            return;
+        }
+        try {
             store.save(structureId, structure);
         } catch (IOException | RuntimeException e) {
             player.sendMessage("§cNão foi possível salvar a estrutura. Nada foi alterado.");
@@ -440,6 +473,37 @@ public final class BuildManager {
         player.getInventory().setItemInMainHand(books.createFull(build.bookId, structureId,
                 scan.sizeX(), scan.sizeY(), scan.sizeZ(), scan.count(), player.getName()));
         player.sendMessage("§aEstrutura salva no livro!");
+    }
+
+    /** Se há uma Planta com espaço para guardar um projeto (para o botão do menu Construção). */
+    boolean plantaAvailable(Player player) {
+        return plantas != null && plantas.hasPlantaWithSpace(player);
+    }
+
+    /**
+     * Guarda a construção como projeto de uma Planta, com o nome dado. Os blocos FICAM no mundo; o chão volta e a
+     * área é fechada, como no cancelar. O livro vazio continua com o jogador.
+     */
+    public void saveProject(Player player, String name) {
+        OpenBuild build = builds.get(player.getUniqueId());
+        if (build == null) {
+            player.sendMessage("§cVocê não tem uma construção aberta.");
+            return;
+        }
+        Scan scan = checkSave(player, build);
+        if (scan == null) {
+            return;
+        }
+        Structure structure = capture(player, Bukkit.getWorld(build.world), scan);
+        if (structure == null || plantas == null
+                || !plantas.saveProject(player, name, scan.sizeText(), scan.count(), structure)) {
+            return;
+        }
+        restoreFloor(build);
+        builds.remove(build.owner);
+        stopBorder(build.owner);
+        saveFile();
+        player.sendMessage("§aProjeto \"" + name + "\" guardado na Planta! Os blocos ficaram no mundo.");
     }
 
     private static boolean hasSize(Structure structure, Scan scan) {

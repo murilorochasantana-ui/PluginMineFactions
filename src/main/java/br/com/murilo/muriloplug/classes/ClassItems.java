@@ -1,6 +1,8 @@
 package br.com.murilo.muriloplug.classes;
 
 import br.com.murilo.muriloplug.classes.arqueiro.ArrowItems;
+import br.com.murilo.muriloplug.classes.engenheiro.PlantaItems;
+import br.com.murilo.muriloplug.classes.engenheiro.SentinelaItems;
 import br.com.murilo.muriloplug.classes.engenheiro.StructureBooks;
 import br.com.murilo.muriloplug.classes.mago.GrimoireItems;
 import br.com.murilo.muriloplug.classes.mago.StaffItems;
@@ -26,6 +28,9 @@ public final class ClassItems {
     public static final String GRIMOIRE = "mago.grimorio";
     public static final String EXPLOSIVE_ARROW = "arqueiro.flecha_explosiva";
     public static final String STRUCTURE_BOOK = "engenheiro.livro_estrutura";
+    public static final String BLUEPRINT = "engenheiro.planta";
+    public static final String GRAPPLE_ARROW = "engenheiro.flecha_gancho";
+    public static final String SENTINEL = "engenheiro.sentinela";
     public static final String SUPPORT_LINK = "suporte.nucleo_vinculo";
     public static final String SUPPORT_ROOT = "suporte.estrela_prender";
     public static final String SUPPORT_HEAL = "suporte.coracao_cura";
@@ -34,6 +39,8 @@ public final class ClassItems {
 
     private static final int KIT_ARROWS = 16;
     private static final int KIT_BOOKS = 3;
+    private static final int KIT_GRAPPLE_ARROWS = 16;
+    private static final int KIT_SENTINELS = 2;
 
     /**
      * Um item registrado. No kit entram {@code kitCopies} itens criados com a quantidade {@code kitAmount} cada
@@ -54,6 +61,7 @@ public final class ClassItems {
     private final Map<String, Entry> entries = new LinkedHashMap<>();
 
     public ClassItems(StaffItems staffs, GrimoireItems grimoire, ArrowItems arrows, StructureBooks books,
+                      PlantaItems blueprints, SentinelaItems sentinels,
                       SuporteItems support) {
         for (StaffType type : StaffType.values()) {
             register(new Entry(STAFF_PREFIX + type.id(), PlayerClass.MAGO, 1, 1, amount -> staffs.create(type)));
@@ -61,6 +69,9 @@ public final class ClassItems {
         register(new Entry(GRIMOIRE, PlayerClass.MAGO, 1, 1, amount -> grimoire.create()));
         register(new Entry(EXPLOSIVE_ARROW, PlayerClass.ARQUEIRO, 1, KIT_ARROWS, arrows::createExplosive));
         register(new Entry(STRUCTURE_BOOK, PlayerClass.ENGENHEIRO, KIT_BOOKS, 1, amount -> books.createEmpty()));
+        register(new Entry(BLUEPRINT, PlayerClass.ENGENHEIRO, 1, 1, amount -> blueprints.create()));
+        register(new Entry(GRAPPLE_ARROW, PlayerClass.ENGENHEIRO, 1, KIT_GRAPPLE_ARROWS, arrows::createGrapple));
+        register(new Entry(SENTINEL, PlayerClass.ENGENHEIRO, 1, KIT_SENTINELS, sentinels::create));
         registerSupport(SUPPORT_LINK, SuporteItem.VINCULO, support);
         registerSupport(SUPPORT_ROOT, SuporteItem.PRENDER, support);
         registerSupport(SUPPORT_HEAL, SuporteItem.CURA, support);

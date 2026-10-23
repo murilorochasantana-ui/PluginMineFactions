@@ -6,6 +6,7 @@ import org.bukkit.structure.Structure;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.UUID;
 
 /** Arquivos das estruturas salvas: plugins/MinePlug/estruturas/&lt;id&gt;.nbt (o id é um UUID). */
@@ -30,6 +31,16 @@ public final class StructureStore {
     public int count() {
         String[] names = folder.list((dir, name) -> name.endsWith(".nbt"));
         return names == null ? 0 : names.length;
+    }
+
+    /** Copia um arquivo .nbt (de um projeto da Planta) para uma estrutura nova de uso único. */
+    public void copyFrom(String id, File source) throws IOException {
+        File file = file(id);
+        if (file == null) {
+            throw new IOException("id de estrutura inválido: " + id);
+        }
+        folder.mkdirs();
+        Files.copy(source.toPath(), file.toPath());
     }
 
     public void save(String id, Structure structure) throws IOException {

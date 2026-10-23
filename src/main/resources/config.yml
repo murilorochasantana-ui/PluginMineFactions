@@ -297,6 +297,52 @@ engenheiro:
   area-altura: 20
   # Depois de sair de combate, espera isto para marcar área ou salvar (cancelar pode a qualquer hora).
   espera-apos-combate-segundos: 60
+  # Espera depois do combate para COLOCAR uma estrutura.
+  espera-colocar-apos-combate-segundos: 15
+  construcao:
+    # A estrutura sobe uma camada (de baixo para cima) a cada tanto de ticks.
+    ticks-por-camada: 10
+  energia:
+    # A energia (barra de XP, 0 a maximo) sobe isto por segundo, sempre.
+    por-segundo: 2
+    maximo: 100
+  # Dano a menos de qualquer explosão (0.5 = 50%).
+  reducao-explosao: 0.5
+  reparo:
+    # Energia gasta para consertar um item por completo (Shift + clique direito).
+    custo: 80
+  dano:
+    # Ajuste do dano final: -0.3 = 30% menos, 0.3 = 30% a mais.
+    espada: -0.3
+    besta: 0.3
+    arco: -0.2
+  netherite:
+    # Nível da Lentidão para cada quantidade de peças de netherite vestidas.
+    lentidao-por-pecas:
+      1: 1
+      2: 1
+      3: 2
+      4: 2
+  ferro:
+    # Chance de choque a cada ação, por peça de ferro vestida (0.15 = 15%, até 60%).
+    chance-por-peca: 0.15
+    # Dano do choque (6 = 3 corações); ignora armadura.
+    dano-choque: 6
+  gancho:
+    # Recarga entre ganchos (s), distância máxima até o bloco, velocidade da puxada e proteção de queda (s).
+    recarga: 3
+    distancia-maxima: 30
+    velocidade: 1.4
+    protecao-queda-segundos: 3
+  sentinela:
+    # Sentinelas por Engenheiro, raio de detecção (blocos) e intervalo mínimo entre alertas da mesma sentinela (s).
+    maximo: 3
+    raio: 15
+    intervalo-alerta: 30
+  planta:
+    # Projetos que uma Planta guarda (no máximo 9, o tamanho do menu) e tamanho máximo do nome.
+    max-projetos: 9
+    nome-maximo: 20
   # Uma construção aberta por mais tempo que isto é cancelada sozinha (os blocos ficam, o chão volta).
   tempo-maximo-minutos: 120
   # Blocos que não podem entrar na estrutura. "*_BED" vale para qualquer material que termina em _BED.
