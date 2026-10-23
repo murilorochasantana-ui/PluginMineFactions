@@ -11,6 +11,8 @@ import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.World;
+import org.bukkit.damage.DamageSource;
+import org.bukkit.damage.DamageType;
 import org.bukkit.entity.AbstractArrow;
 import org.bukkit.entity.Arrow;
 import org.bukkit.entity.Entity;
@@ -52,9 +54,7 @@ public final class ArcherSkills implements Listener {
     private static final long CLICK_DEBOUNCE_MILLIS = 250L;
     private static final long EAGLE_PERIOD = 5L;
     private static final double RAIN_FALL_SPEED = 3.0;
-    private static final double RAIN_ARROW_DAMAGE = 2.0;
     private static final double RAIN_MAX_HEIGHT = 20.0;
-    private static final int RAIN_SPREAD_TICKS = 10;
     private static final int CIRCLE_POINTS = 32;
     private static final Particle.DustOptions CIRCLE_DUST = new Particle.DustOptions(Color.fromRGB(255, 70, 70), 1.4f);
     private static final Particle.DustOptions EAGLE_DUST = new Particle.DustOptions(Color.fromRGB(255, 40, 40), 1.6f);
@@ -187,16 +187,17 @@ public final class ArcherSkills implements Listener {
         int delay = settings.rainDelayTicks();
         player.playSound(player.getLocation(), Sound.ENTITY_ARROW_SHOOT, 1f, 0.6f);
         focus.warn(player, "§9Chuva de Flechas!");
-        showCircle(center, radius, delay);
+        showCircle(center, radius, delay + settings.rainWaves() * settings.rainIntervalTicks());
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
             if (player.isOnline()) {
-                dropArrows(player, center, radius);
+                dropDecorArrows(player, center, radius);
+                rainWave(player, center, radius, settings.rainWaves());
             }
         }, delay);
         return true;
     }
 
-    /** Círculo de partículas no chão durante o atraso (de 4 em 4 ticks). */
+    /** Círculo de partículas no chão durante o aviso e a chuva (de 4 em 4 ticks). */
     private void showCircle(Location center, double radius, int duration) {
         World world = center.getWorld();
         for (int tick = 0; tick <= duration; tick += 4) {
@@ -212,30 +213,65 @@ public final class ArcherSkills implements Listener {
         }
     }
 
-    /** As flechas caem do céu espalhadas na área, com o dano de uma flecha normal totalmente puxada. */
-    private void dropArrows(Player player, Location center, double radius) {
+    /** Uma onda: todo inimigo dentro da área agora leva o dano (acerto garantido); agenda a próxima. */
+    private void rainWave(Player player, Location center, double radius, int wavesLeft) {
+        if (!player.isOnline() || wavesLeft <= 0) {
+            return;
+        }
+        World world = center.getWorld();
+        double damage = settings.rainWaveDamage();
+        for (Entity nearby : world.getNearbyEntities(center, radius, radius + 4, radius)) {
+            if (!(nearby instanceof LivingEntity target) || !targets.isEnemy(player, target)) {
+                continue;
+            }
+            Vector offset = target.getLocation().toVector().subtract(center.toVector());
+            if (offset.getX() * offset.getX() + offset.getZ() * offset.getZ() > radius * radius) {
+                continue; // fora do círculo (a busca acima já limitou a coluna de altura)
+            }
+            hitFromRain(player, target, damage);
+        }
+        if (wavesLeft > 1) {
+            plugin.getServer().getScheduler().runTaskLater(plugin,
+                    () -> rainWave(player, center, radius, wavesLeft - 1), settings.rainIntervalTicks());
+        }
+    }
+
+    private void hitFromRain(Player player, LivingEntity target, double base) {
+        double amount = marks.isMarkedBy(player.getUniqueId(), target) ? base * (1 + settings.markBonus()) : base;
+        spawnDecorArrow(player, target.getLocation().add(0, target.getHeight() + 2.5, 0));
+        target.getWorld().playSound(target.getLocation(), Sound.ENTITY_ARROW_HIT, 0.5f, 1.2f);
+        target.setNoDamageTicks(0); // cada onda conta, apesar da imunidade do golpe anterior
+        DamageSource source = DamageSource.builder(DamageType.ARROW)
+                .withCausingEntity(player).withDirectEntity(player).build();
+        target.damage(amount, source);
+    }
+
+    /** Flechas de enfeite caindo espalhadas pela área, em instantes aleatórios da chuva. */
+    private void dropDecorArrows(Player player, Location center, double radius) {
         World world = center.getWorld();
         RayTraceResult ceiling = world.rayTraceBlocks(center.clone().add(0, 0.5, 0), new Vector(0, 1, 0),
                 RAIN_MAX_HEIGHT, FluidCollisionMode.NEVER, true);
         double height = ceiling == null ? RAIN_MAX_HEIGHT : Math.max(2, ceiling.getHitPosition().getY() - center.getY() - 1);
         ThreadLocalRandom random = ThreadLocalRandom.current();
-        for (int i = 0; i < settings.rainArrows(); i++) {
+        int span = Math.max(1, settings.rainWaves() * settings.rainIntervalTicks());
+        for (int i = 0; i < settings.rainDecorArrows(); i++) {
             double distance = radius * Math.sqrt(random.nextDouble());
             double angle = random.nextDouble(2 * Math.PI);
             Location from = center.clone().add(Math.cos(angle) * distance, height, Math.sin(angle) * distance);
             plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
                 if (player.isOnline()) {
-                    launchRainArrow(player, from);
+                    spawnDecorArrow(player, from);
                 }
-            }, random.nextInt(RAIN_SPREAD_TICKS + 1));
+            }, random.nextInt(span));
         }
     }
 
-    private void launchRainArrow(Player player, Location from) {
+    /** Flecha sem dano que cai e some ao tocar (o dano da Chuva vem das ondas). */
+    private void spawnDecorArrow(Player player, Location from) {
         World world = from.getWorld();
         AbstractArrow arrow = world.spawn(from, Arrow.class, spawned -> {
             spawned.setShooter(player);
-            spawned.setDamage(RAIN_ARROW_DAMAGE);
+            spawned.setDamage(0);
             spawned.setCritical(false);
             spawned.setPierceLevel(0);
             spawned.setPickupStatus(AbstractArrow.PickupStatus.DISALLOWED);
@@ -243,7 +279,6 @@ public final class ArcherSkills implements Listener {
             shots.register(spawned, ShotRegistry.Kind.RAIN, from);
         });
         damage.removeLater(arrow);
-        world.playSound(from, Sound.ENTITY_ARROW_SHOOT, 0.3f, 0.8f);
     }
 
     // ------------------------------------------------------------ Olhos de Águia

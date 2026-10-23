@@ -258,13 +258,20 @@ arqueiro:
     # Sem dano de queda por este tempo depois do Dash.
     protecao-queda-segundos: 2
   # Shift + clique esquerdo com o arco, mirando em um bloco.
+  # 5 ondas de 1.5 de dano em quem estiver na área (acerto garantido, a armadura reduz).
   chuva:
     custo: 40
-    flechas: 10
     raio: 4
     alcance: 40
-    # Tempo do círculo no chão antes das flechas caírem.
+    # Tempo do círculo no chão antes da chuva começar.
     atraso-segundos: 1
+    # A chuva dura ondas x intervalo-ticks (5 x 8 = 40 ticks = 2 segundos).
+    ondas: 5
+    intervalo-ticks: 8
+    # Dano de cada onda em cada inimigo dentro da área (vale a Marca do Caçador; sem headshot, distância nem Ultra Foco).
+    dano-por-onda: 1.5
+    # Flechas de enfeite espalhadas na área (sem dano, somem ao tocar o chão).
+    flechas-decorativas: 10
   # Clique esquerdo com o arco, mirando em um inimigo. O alvo fica brilhando para todos.
   marca:
     custo: 60

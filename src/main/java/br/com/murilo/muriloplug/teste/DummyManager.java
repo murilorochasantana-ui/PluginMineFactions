@@ -156,7 +156,7 @@ public final class DummyManager {
         }
         double health = dummy.type == TargetRelations.DummyType.ALIADO ? settings.allyStartHealth() : MAX_HEALTH;
         Zombie body = at.getWorld().spawn(at, Husk.class, zombie -> {
-            zombie.setBaby(false);
+            zombie.setAdult();
             zombie.setShouldBurnInDay(false);
             zombie.setCanBreakDoors(false);
             zombie.setCanPickupItems(false);

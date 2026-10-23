@@ -38,7 +38,10 @@ public final class ArqueiroSettings {
     public static final String DASH_DISTANCE = "arqueiro.dash.distancia";
     public static final String DASH_FALL_SECONDS = "arqueiro.dash.protecao-queda-segundos";
     public static final String RAIN_COST = "arqueiro.chuva.custo";
-    public static final String RAIN_ARROWS = "arqueiro.chuva.flechas";
+    public static final String RAIN_WAVES = "arqueiro.chuva.ondas";
+    public static final String RAIN_INTERVAL = "arqueiro.chuva.intervalo-ticks";
+    public static final String RAIN_WAVE_DAMAGE = "arqueiro.chuva.dano-por-onda";
+    public static final String RAIN_DECOR = "arqueiro.chuva.flechas-decorativas";
     public static final String RAIN_RADIUS = "arqueiro.chuva.raio";
     public static final String RAIN_RANGE = "arqueiro.chuva.alcance";
     public static final String RAIN_DELAY = "arqueiro.chuva.atraso-segundos";
@@ -104,7 +107,10 @@ public final class ArqueiroSettings {
         DEFAULTS.put(DASH_DISTANCE, 5);
         DEFAULTS.put(DASH_FALL_SECONDS, 2);
         DEFAULTS.put(RAIN_COST, 40);
-        DEFAULTS.put(RAIN_ARROWS, 10);
+        DEFAULTS.put(RAIN_WAVES, 5);
+        DEFAULTS.put(RAIN_INTERVAL, 8);
+        DEFAULTS.put(RAIN_WAVE_DAMAGE, 1.5);
+        DEFAULTS.put(RAIN_DECOR, 10);
         DEFAULTS.put(RAIN_RADIUS, 4);
         DEFAULTS.put(RAIN_RANGE, 40);
         DEFAULTS.put(RAIN_DELAY, 1);
@@ -296,8 +302,21 @@ public final class ArqueiroSettings {
         return Math.max(0, whole(RAIN_COST));
     }
 
-    public int rainArrows() {
-        return Math.max(1, whole(RAIN_ARROWS));
+    public int rainWaves() {
+        return Math.max(1, whole(RAIN_WAVES));
+    }
+
+    public int rainIntervalTicks() {
+        return Math.max(1, whole(RAIN_INTERVAL));
+    }
+
+    public double rainWaveDamage() {
+        return Math.max(0, number(RAIN_WAVE_DAMAGE));
+    }
+
+    /** Flechas de enfeite (sem dano) que caem espalhadas na área. */
+    public int rainDecorArrows() {
+        return Math.max(0, whole(RAIN_DECOR));
     }
 
     public double rainRadius() {

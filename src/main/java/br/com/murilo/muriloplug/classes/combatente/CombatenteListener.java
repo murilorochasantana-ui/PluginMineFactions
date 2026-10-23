@@ -128,7 +128,7 @@ public final class CombatenteListener implements Listener {
         player.setAbsorptionAmount(settings.lastBreathAbsorption());
         player.setFireTicks(0);
         player.setNoDamageTicks(20);
-        player.playEffect(EntityEffect.TOTEM_RESURRECT);
+        player.playEffect(EntityEffect.PROTECTED_FROM_DEATH);
         player.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, player.getLocation().add(0, 1, 0), 60, 0.5, 0.8, 0.5, 0.4);
         player.getWorld().playSound(player.getLocation(), Sound.ITEM_TOTEM_USE, 1f, 1f);
         fury.warn(player, "§6§lÚLTIMO SUSPIRO!");

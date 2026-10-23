@@ -71,8 +71,8 @@ public final class ArcherDamageListener implements Listener {
             return;
         }
         ShotRegistry.Shot shot = shots.get(arrow);
-        if (shot != null && shot.kind() == ShotRegistry.Kind.RAIN && victim.equals(shooter)) {
-            event.setCancelled(true); // a Chuva de Flechas não machuca o próprio Arqueiro
+        if (shot != null && shot.kind() == ShotRegistry.Kind.RAIN) {
+            event.setCancelled(true); // as flechas da Chuva são só enfeite; o dano vem das ondas
             return;
         }
         double multiplier = 1;

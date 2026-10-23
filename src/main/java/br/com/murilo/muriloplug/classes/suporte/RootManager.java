@@ -130,7 +130,7 @@ public final class RootManager implements Listener {
             double angle = i * Math.PI / 4;
             Location point = feet.clone().add(Math.cos(angle) * 0.6, 0.3 + (i % 2) * 0.6, Math.sin(angle) * 0.6);
             target.getWorld().spawnParticle(Particle.BLOCK, point, 2, 0.05, 0.1, 0.05, 0,
-                    Material.CHAIN.createBlockData());
+                    Material.IRON_CHAIN.createBlockData());
         }
         target.getWorld().spawnParticle(Particle.DUST, feet.clone().add(0, 0.1, 0), 6, 0.4, 0.05, 0.4, 0,
                 new Particle.DustOptions(Color.fromRGB(70, 110, 40), 1.0f));

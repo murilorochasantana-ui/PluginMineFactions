@@ -38,6 +38,17 @@ public final class EngenheiroSettings {
     public static final String SENTINEL_MAX = "engenheiro.sentinela.maximo";
     public static final String SENTINEL_RADIUS = "engenheiro.sentinela.raio";
     public static final String SENTINEL_ALERT = "engenheiro.sentinela.intervalo-alerta";
+    public static final String GOLEM_COST = "engenheiro.golem.custo-energia";
+    public static final String GOLEM_MAX = "engenheiro.golem.maximo";
+    public static final String GOLEM_HEALTH = "engenheiro.golem.vida";
+    public static final String GOLEM_DAMAGE = "engenheiro.golem.dano";
+    public static final String GOLEM_INTERVAL = "engenheiro.golem.intervalo-segundos";
+    public static final String GOLEM_REPAIR_HEALTH = "engenheiro.golem.reparo-vida";
+    public static final String GOLEM_REPAIR_COST = "engenheiro.golem.reparo-custo";
+    public static final String IRON_GOLEM_COST = "engenheiro.golem-ferro.custo-energia";
+    public static final String IRON_GOLEM_HEALTH = "engenheiro.golem-ferro.vida";
+    public static final String IRON_GOLEM_DAMAGE = "engenheiro.golem-ferro.dano";
+    public static final String IRON_GOLEM_INTERVAL = "engenheiro.golem-ferro.intervalo-segundos";
     public static final String PLANTA_MAX = "engenheiro.planta.max-projetos";
     public static final String PLANTA_NAME_MAX = "engenheiro.planta.nome-maximo";
 
@@ -70,6 +81,17 @@ public final class EngenheiroSettings {
         DEFAULTS.put(SENTINEL_MAX, 3);
         DEFAULTS.put(SENTINEL_RADIUS, 15);
         DEFAULTS.put(SENTINEL_ALERT, 30);
+        DEFAULTS.put(GOLEM_COST, 30);
+        DEFAULTS.put(GOLEM_MAX, 3);
+        DEFAULTS.put(GOLEM_HEALTH, 10);
+        DEFAULTS.put(GOLEM_DAMAGE, 6);
+        DEFAULTS.put(GOLEM_INTERVAL, 1.0);
+        DEFAULTS.put(GOLEM_REPAIR_HEALTH, 5);
+        DEFAULTS.put(GOLEM_REPAIR_COST, 15);
+        DEFAULTS.put(IRON_GOLEM_COST, 60);
+        DEFAULTS.put(IRON_GOLEM_HEALTH, 30);
+        DEFAULTS.put(IRON_GOLEM_DAMAGE, 8);
+        DEFAULTS.put(IRON_GOLEM_INTERVAL, 1.2);
         DEFAULTS.put(PLANTA_MAX, 9);
         DEFAULTS.put(PLANTA_NAME_MAX, 20);
         DEFAULTS.put(FORBIDDEN, List.of("BEDROCK", "SPAWNER", "TRIAL_SPAWNER", "VAULT", "COMMAND_BLOCK",
@@ -187,6 +209,51 @@ public final class EngenheiroSettings {
 
     public int sentinelAlertSeconds() {
         return Math.max(0, plugin.getConfig().getInt(SENTINEL_ALERT, 30));
+    }
+
+    public double golemEnergyCost() {
+        return Math.max(0, plugin.getConfig().getDouble(GOLEM_COST, 30));
+    }
+
+    /** Golems de Cobre ao mesmo tempo (o Golem de Ferro ocupa todas as vagas). */
+    public int golemMax() {
+        return Math.max(1, plugin.getConfig().getInt(GOLEM_MAX, 3));
+    }
+
+    public double golemHealth() {
+        return Math.max(1, plugin.getConfig().getDouble(GOLEM_HEALTH, 10));
+    }
+
+    public double golemDamage() {
+        return Math.max(0, plugin.getConfig().getDouble(GOLEM_DAMAGE, 6));
+    }
+
+    public double golemIntervalSeconds() {
+        return Math.max(0.1, plugin.getConfig().getDouble(GOLEM_INTERVAL, 1.0));
+    }
+
+    public double golemRepairHealth() {
+        return Math.max(0, plugin.getConfig().getDouble(GOLEM_REPAIR_HEALTH, 5));
+    }
+
+    public double golemRepairCost() {
+        return Math.max(0, plugin.getConfig().getDouble(GOLEM_REPAIR_COST, 15));
+    }
+
+    public double ironGolemEnergyCost() {
+        return Math.max(0, plugin.getConfig().getDouble(IRON_GOLEM_COST, 60));
+    }
+
+    public double ironGolemHealth() {
+        return Math.max(1, plugin.getConfig().getDouble(IRON_GOLEM_HEALTH, 30));
+    }
+
+    public double ironGolemDamage() {
+        return Math.max(0, plugin.getConfig().getDouble(IRON_GOLEM_DAMAGE, 8));
+    }
+
+    public double ironGolemIntervalSeconds() {
+        return Math.max(0.1, plugin.getConfig().getDouble(IRON_GOLEM_INTERVAL, 1.2));
     }
 
     /** Máximo de projetos que uma Planta guarda (a lista do menu tem 9 posições). */

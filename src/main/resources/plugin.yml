@@ -1,7 +1,7 @@
 name: MinePlug
 version: '${project.version}'
 main: br.com.murilo.muriloplug.MinePlug
-api-version: '1.21'
+api-version: '26.3'
 
 commands:
   claim:
@@ -43,7 +43,7 @@ commands:
     usage: /clan [criar|convidar|aceitar|negar|sair|expulsar|lider|desfazer|chat|info]
   classe:
     description: Abre o menu de classes (escolher) ou troca a sua classe atual.
-    usage: /classe [trocar] | admin staff <tipo> | admin mana <definir|dar> <jogador> <valor> | admin manamaxima <definir|resetar> <jogador> [valor] | admin flecha <explosiva|perfurante|gelo|fumaca|corrente|corda> <quantidade> | admin flecha <quantidade> [gancho] | admin sentinela <quantidade> | admin livro <quantidade> | admin planta
+    usage: /classe [trocar] | admin staff <tipo> | admin mana <definir|dar> <jogador> <valor> | admin manamaxima <definir|resetar> <jogador> [valor] | admin flecha <explosiva|perfurante|gelo|fumaca|corrente|corda> <quantidade> | admin flecha <quantidade> [gancho] | admin sentinela <quantidade> | admin golem <quantidade> | admin livro <quantidade> | admin planta
   grimorio:
     description: Abre o Grimório do Mago (aprender magias consumindo staffs e equipar até 4 magias).
     usage: /grimorio

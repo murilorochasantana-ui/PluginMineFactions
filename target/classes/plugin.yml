@@ -1,7 +1,7 @@
 name: MinePlug
 version: '1.0-SNAPSHOT'
 main: br.com.murilo.muriloplug.MinePlug
-api-version: '1.21'
+api-version: '26.3'
 
 commands:
   claim:

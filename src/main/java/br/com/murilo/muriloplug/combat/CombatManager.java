@@ -1,6 +1,7 @@
 package br.com.murilo.muriloplug.combat;
 
 import org.bukkit.Bukkit;
+import org.bukkit.entity.Golem;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
 import org.bukkit.event.EventHandler;
@@ -67,6 +68,10 @@ public final class CombatManager implements Listener {
         }
         if (event.getDamager() instanceof Projectile projectile && projectile.getShooter() instanceof Player shooter) {
             return shooter;
+        }
+        // Golem do Engenheiro: o golpe é do golem, mas o causador é o dono (combate, KDA e assistências).
+        if (event.getDamager() instanceof Golem && event.getDamageSource().getCausingEntity() instanceof Player owner) {
+            return owner;
         }
         return null;
     }

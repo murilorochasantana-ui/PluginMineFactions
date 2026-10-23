@@ -1,6 +1,6 @@
 package br.com.murilo.muriloplug.xp;
 
-import org.bukkit.GameRule;
+import org.bukkit.GameRules;
 import org.bukkit.World;
 import org.bukkit.entity.ExperienceOrb;
 import org.bukkit.entity.Player;
@@ -136,17 +136,13 @@ public final class XpListener implements Listener {
     }
 
     /**
-     * Desliga a Locator Bar do mundo. A API 1.21.4 não tem a constante (a regra é da 1.21.6+), então a regra é buscada
-     * pelo nome; se o servidor não a conhece, nada acontece.
+     * Desliga a Locator Bar do mundo.
      */
     public void disableLocatorBar(World world) {
         if (!settings.disableLocatorBar()) {
             return;
         }
-        GameRule<?> rule = GameRule.getByName("locatorBar");
-        if (rule != null && rule.getType() == Boolean.class) {
-            world.setGameRule((GameRule<Boolean>) rule, false);
-        }
+        world.setGameRule(GameRules.LOCATOR_BAR, false);
     }
 
     // ------------------------------------------------------------ encantamento
