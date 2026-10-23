@@ -20,11 +20,13 @@ public final class EngenheiroSidebar {
     private final EngenheiroSettings settings;
     private final GanchoManager hook;
     private final SentinelaManager sentinels;
+    private final GolemManager golems;
 
     public EngenheiroSidebar(ClassManager classes, EngenheiroEnergia energy, EngenheiroSettings settings,
-                             GanchoManager hook, SentinelaManager sentinels) {
+                             GanchoManager hook, SentinelaManager sentinels, GolemManager golems) {
         this.hook = hook;
         this.sentinels = sentinels;
+        this.golems = golems;
         this.classes = classes;
         this.energy = energy;
         this.settings = settings;
@@ -70,6 +72,33 @@ public final class EngenheiroSidebar {
             return null;
         }
         return ShopUi.text("§cSentinelas §f" + sentinels.count(player.getUniqueId()) + "/" + settings.sentinelMax());
+    }
+
+    /** "Golems [Item] 2/3 (30)". */
+    public Component golemLine(Player player) {
+        if (!isEngineer(player)) {
+            return null;
+        }
+        return ShopUi.text("§6Golems §7[Item] §f" + golems.copperCount(player.getUniqueId()) + "/" + settings.golemMax()
+                + " §8(" + (int) settings.golemEnergyCost() + ")");
+    }
+
+    /** "G. de Ferro [Shift+F] ✔ (60)". */
+    public Component ironGolemLine(Player player) {
+        if (!isEngineer(player)) {
+            return null;
+        }
+        return ShopUi.text("§fG. de Ferro §7[Shift+F] ")
+                .append(mark(golems.canFuse(player.getUniqueId())))
+                .append(ShopUi.text(" §8(" + (int) settings.ironGolemEnergyCost() + ")"));
+    }
+
+    /** "Reparar golem [Clique] (15)". */
+    public Component golemRepairLine(Player player) {
+        if (!isEngineer(player)) {
+            return null;
+        }
+        return ShopUi.text("§eReparar golem §7[Clique] §8(" + (int) settings.golemRepairCost() + ")");
     }
 
     private static Component mark(boolean usable) {

@@ -5,3 +5,5 @@ target/
 out/
 *.class
 *.log
+
+kipping*

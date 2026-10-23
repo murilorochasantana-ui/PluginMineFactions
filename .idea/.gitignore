@@ -1,10 +1,26 @@
-# Default ignored files
-/shelf/
-/workspace.xml
-# Editor-based HTTP Client requests
-/httpRequests/
-# Ignored default folder with query files
-/queries/
-# Datasource local storage ignored files
-/dataSources/
-/dataSources.local.xml
+# Build do Maven (gerado automaticamente)
+target/
+out/
+*.class
+*.jar
+!.mvn/wrapper/maven-wrapper.jar
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Logs e temporários
+*.log
+*.tmp
+*.bak
+
+# Sistema operacional
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# Arquivos de servidor de teste (se algum dia ficarem dentro do projeto)
+server/
+run/

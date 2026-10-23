@@ -68,6 +68,8 @@ import br.com.murilo.muriloplug.classes.engenheiro.EngenheiroPassivas;
 import br.com.murilo.muriloplug.classes.engenheiro.EngenheiroReparo;
 import br.com.murilo.muriloplug.classes.engenheiro.EngenheiroSidebar;
 import br.com.murilo.muriloplug.classes.engenheiro.GanchoManager;
+import br.com.murilo.muriloplug.classes.engenheiro.GolemItems;
+import br.com.murilo.muriloplug.classes.engenheiro.GolemManager;
 import br.com.murilo.muriloplug.classes.engenheiro.PlantaItems;
 import br.com.murilo.muriloplug.classes.engenheiro.SentinelaItems;
 import br.com.murilo.muriloplug.classes.engenheiro.SentinelaManager;
@@ -178,6 +180,7 @@ public final class MinePlug extends JavaPlugin {
     private SuporteHealth suporteHealth;
     private FlightManager flightManager;
     private NightVisionManager nightVision;
+    private GolemManager golemManager;
 
     @Override
     public void onEnable() {
@@ -410,6 +413,12 @@ public final class MinePlug extends JavaPlugin {
         ganchoManager.setTestMode(testMode);
         getServer().getPluginManager().registerEvents(ganchoManager, this);
         SentinelaItems sentinelaItems = new SentinelaItems(this, engenheiroSettings);
+        GolemItems golemItems = new GolemItems(this, engenheiroSettings);
+        golemManager = new GolemManager(this, classManager, authManager, targetRelations, combatManager,
+                engenheiroSettings, golemItems, engenheiroEnergia, engenheiroAcoes);
+        golemManager.setTestMode(testMode);
+        getServer().getPluginManager().registerEvents(golemManager, this);
+        golemManager.start();
         SentinelaManager sentinelaManager = new SentinelaManager(this, classManager, claimManager, authManager,
                 targetRelations, engenheiroSettings, sentinelaItems, engenheiroAcoes);
         sentinelaManager.load();
@@ -421,6 +430,10 @@ public final class MinePlug extends JavaPlugin {
         int oldScrolls = shopManager.migrate(suporteItems::upgradeLegacy) + marketManager.migrate(suporteItems::upgradeLegacy);
         if (oldScrolls > 0) {
             getLogger().info("Pergaminhos antigos trocados na loja e no mercado: " + oldScrolls);
+        }
+        int oldGolems = shopManager.migrate(golemItems::upgradeLegacy) + marketManager.migrate(golemItems::upgradeLegacy);
+        if (oldGolems > 0) {
+            getLogger().info("Golems de Cobre antigos trocados na loja e no mercado: " + oldGolems);
         }
         SuporteCooldowns suporteCooldowns = new SuporteCooldowns();
         suporteCooldowns.setTestMode(testMode);
@@ -451,7 +464,7 @@ public final class MinePlug extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new SuporteListener(classManager, authManager, suporteItems,
                 suporteSettings, suporteCooldowns, suporteTargets, suporteAssists, linkManager, rootManager,
                 flightManager), this);
-        ClassItems classItems = new ClassItems(staffItems, grimoireItems, arrowItems, structureBooks, plantaItems, sentinelaItems, suporteItems);
+        ClassItems classItems = new ClassItems(staffItems, grimoireItems, arrowItems, structureBooks, plantaItems, sentinelaItems, golemItems, suporteItems);
         ClassCommand classCommand = new ClassCommand(classManager, combatManager, classItems, manaManager);
         getCommand("classe").setExecutor(classCommand);
         getCommand("classe").setTabCompleter(classCommand);
@@ -483,8 +496,14 @@ public final class MinePlug extends JavaPlugin {
         PlayerScoreboards scoreboards = new PlayerScoreboards();
         NametagManager nametagManager = new NametagManager(scoreboards, combatManager, clanManager);
         SidebarManager sidebarManager = new SidebarManager(scoreboards, combatManager, statsManager, economyManager, clanManager, classManager, manaManager, arqueiroSidebar, furyManager, magoSettings,
-                new EngenheiroSidebar(classManager, engenheiroEnergia, engenheiroSettings, ganchoManager, sentinelaManager),
+                new EngenheiroSidebar(classManager, engenheiroEnergia, engenheiroSettings, ganchoManager, sentinelaManager, golemManager),
                 testMode);
+        golemManager.setChangeListener(id -> {
+            Player player = getServer().getPlayer(id);
+            if (player != null) {
+                sidebarManager.update(player);
+            }
+        });
         shotModes.setChangeListener(id -> {
             Player player = getServer().getPlayer(id);
             if (player != null) {
@@ -635,6 +654,9 @@ public final class MinePlug extends JavaPlugin {
         }
         if (combatDisplayTask != null) {
             combatDisplayTask.cancel();
+        }
+        if (golemManager != null) {
+            golemManager.shutdown();
         }
         if (placementManager != null) {
             placementManager.finishAll();

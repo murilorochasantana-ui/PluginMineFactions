@@ -45,6 +45,8 @@ public final class EngenheiroSettings {
     public static final String GOLEM_INTERVAL = "engenheiro.golem.intervalo-segundos";
     public static final String GOLEM_REPAIR_HEALTH = "engenheiro.golem.reparo-vida";
     public static final String GOLEM_REPAIR_COST = "engenheiro.golem.reparo-custo";
+    public static final String GOLEM_KNOCKBACK = "engenheiro.golem.empurrao";
+    public static final String IRON_GOLEM_KNOCKBACK = "engenheiro.golem-ferro.empurrao";
     public static final String IRON_GOLEM_COST = "engenheiro.golem-ferro.custo-energia";
     public static final String IRON_GOLEM_HEALTH = "engenheiro.golem-ferro.vida";
     public static final String IRON_GOLEM_DAMAGE = "engenheiro.golem-ferro.dano";
@@ -88,6 +90,8 @@ public final class EngenheiroSettings {
         DEFAULTS.put(GOLEM_INTERVAL, 1.0);
         DEFAULTS.put(GOLEM_REPAIR_HEALTH, 5);
         DEFAULTS.put(GOLEM_REPAIR_COST, 15);
+        DEFAULTS.put(GOLEM_KNOCKBACK, 0.4);
+        DEFAULTS.put(IRON_GOLEM_KNOCKBACK, 0.4);
         DEFAULTS.put(IRON_GOLEM_COST, 60);
         DEFAULTS.put(IRON_GOLEM_HEALTH, 30);
         DEFAULTS.put(IRON_GOLEM_DAMAGE, 8);
@@ -238,6 +242,15 @@ public final class EngenheiroSettings {
 
     public double golemRepairCost() {
         return Math.max(0, plugin.getConfig().getDouble(GOLEM_REPAIR_COST, 15));
+    }
+
+    /** Fração do empurrão normal que os golpes do Golem de Cobre dão (0.4 = 40%). */
+    public double golemKnockback() {
+        return Math.max(0, plugin.getConfig().getDouble(GOLEM_KNOCKBACK, 0.4));
+    }
+
+    public double ironGolemKnockback() {
+        return Math.max(0, plugin.getConfig().getDouble(IRON_GOLEM_KNOCKBACK, 0.4));
     }
 
     public double ironGolemEnergyCost() {

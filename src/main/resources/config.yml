@@ -453,12 +453,15 @@ engenheiro:
     intervalo-segundos: 1.0
     reparo-vida: 5
     reparo-custo: 15
+    # Fração do empurrão normal dos golpes do golem (0.4 = 40%).
+    empurrao: 0.4
   golem-ferro:
     # Shift + F com 3 Golems de Cobre vivos os junta em 1 Golem de Ferro.
     custo-energia: 60
     vida: 30
     dano: 8
     intervalo-segundos: 1.2
+    empurrao: 0.4
   planta:
     # Projetos que uma Planta guarda (no máximo 9, o tamanho do menu) e tamanho máximo do nome.
     max-projetos: 9

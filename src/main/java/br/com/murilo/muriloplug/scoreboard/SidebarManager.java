@@ -58,7 +58,7 @@ public final class SidebarManager {
     private final EngenheiroSidebar engineer;
     /** Linhas na ordem de exibição, de cima para baixo. Uma linha que devolve null não aparece. */
     private final List<Line> lines = List.of(this::testLine, this::moneyLine, this::clanLine, this::classLine, this::focusLine, this::modeLine,
-            this::jumpLine, this::dashLine, this::rainLine, this::markLine, this::ultraLine, this::berserkLine, this::chargeLine, this::tauntLine, this::leapLine, this::energyLine, this::repairLine, this::hookLine, this::sentinelLine, this::manaLine, this::combatLine, this::killsLine, this::kdaLine);
+            this::jumpLine, this::dashLine, this::rainLine, this::markLine, this::ultraLine, this::berserkLine, this::chargeLine, this::tauntLine, this::leapLine, this::energyLine, this::repairLine, this::hookLine, this::sentinelLine, this::golemLine, this::ironGolemLine, this::golemRepairLine, this::manaLine, this::combatLine, this::killsLine, this::kdaLine);
     /** Último texto enviado para cada linha de cada jogador, para só reenviar o que mudou. */
     private final Map<UUID, Component[]> lastRendered = new HashMap<>();
     /** Última pontuação (posição) enviada para cada linha de cada jogador. */
@@ -242,6 +242,18 @@ public final class SidebarManager {
 
     private Component sentinelLine(Player player) {
         return engineer.sentinelLine(player);
+    }
+
+    private Component golemLine(Player player) {
+        return engineer.golemLine(player);
+    }
+
+    private Component ironGolemLine(Player player) {
+        return engineer.ironGolemLine(player);
+    }
+
+    private Component golemRepairLine(Player player) {
+        return engineer.golemRepairLine(player);
     }
 
     private static Component mark(boolean usable) {
