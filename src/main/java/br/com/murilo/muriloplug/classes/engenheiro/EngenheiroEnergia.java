@@ -1,5 +1,6 @@
 package br.com.murilo.muriloplug.classes.engenheiro;
 
+import br.com.murilo.muriloplug.teste.TestMode;
 import br.com.murilo.muriloplug.classes.ClassManager;
 import br.com.murilo.muriloplug.classes.PlayerClass;
 import br.com.murilo.muriloplug.classes.PlayerClassChangeEvent;
@@ -29,6 +30,7 @@ public final class EngenheiroEnergia implements Listener {
     private final EngenheiroSettings settings;
     private final Map<UUID, Double> energy = new HashMap<>();
     private Consumer<UUID> changeListener = id -> { };
+    private TestMode test = TestMode.inactive();
 
     public EngenheiroEnergia(JavaPlugin plugin, ClassManager classes, EngenheiroSettings settings) {
         this.plugin = plugin;
@@ -56,7 +58,15 @@ public final class EngenheiroEnergia implements Listener {
         }
     }
 
+    /** Modo Teste dos administradores: sem custos nem recargas. */
+    public void setTestMode(TestMode test) {
+        this.test = test;
+    }
+
     public double getEnergia(UUID id) {
+        if (test.isActive(id)) {
+            return settings.energyMax(); // Modo Teste: energia sempre máxima
+        }
         return Math.min(settings.energyMax(), energy.getOrDefault(id, 0.0));
     }
 
@@ -70,6 +80,9 @@ public final class EngenheiroEnergia implements Listener {
 
     /** Gasta a energia se houver o bastante. Retorna false (sem gastar nada) se não houver. */
     public boolean gastarEnergia(UUID id, double amount) {
+        if (test.isActive(id)) {
+            return true; // Modo Teste: não gasta
+        }
         double current = getEnergia(id);
         if (current < amount) {
             return false;

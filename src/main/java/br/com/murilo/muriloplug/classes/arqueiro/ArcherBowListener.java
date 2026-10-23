@@ -1,5 +1,6 @@
 package br.com.murilo.muriloplug.classes.arqueiro;
 
+import br.com.murilo.muriloplug.teste.TestMode;
 import br.com.murilo.muriloplug.classes.ClassManager;
 import br.com.murilo.muriloplug.classes.PlayerClass;
 import org.bukkit.Color;
@@ -55,6 +56,7 @@ public final class ArcherBowListener implements Listener {
     private final Map<UUID, Burst> bursts = new HashMap<>();
     /** Momento (ms) do último tiro de Flecha Explosiva de cada Arqueiro. */
     private final Map<UUID, Long> lastExplosive = new HashMap<>();
+    private TestMode test = TestMode.inactive();
 
     public ArcherBowListener(JavaPlugin plugin, ClassManager classes, ArqueiroSettings settings,
                              ShotModes modes, ArrowItems arrows, ShotRegistry shots, UltraFocus ultra,
@@ -67,6 +69,11 @@ public final class ArcherBowListener implements Listener {
         this.shots = shots;
         this.ultra = ultra;
         this.focus = focus;
+    }
+
+    /** Modo Teste dos administradores: sem custos nem recargas. */
+    public void setTestMode(TestMode test) {
+        this.test = test;
     }
 
     private boolean isArcher(Player player) {
@@ -120,12 +127,14 @@ public final class ArcherBowListener implements Listener {
         if (!modes.isBurst(player.getUniqueId()) || !(arrow instanceof Arrow || arrow instanceof SpectralArrow)) {
             return;
         }
-        int wait = modes.cooldownRemainingSeconds(player.getUniqueId());
+        int wait = test.isActive(player) ? 0 : modes.cooldownRemainingSeconds(player.getUniqueId());
         if (wait > 0) {
             focus.warn(player, "§cRajada em recarga: " + wait + "s");
             return;
         }
-        modes.startCooldown(player.getUniqueId(), settings.burstCooldownSeconds());
+        if (!test.isActive(player)) {
+            modes.startCooldown(player.getUniqueId(), settings.burstCooldownSeconds());
+        }
         startBurst(player, event.getBow(), arrow);
     }
 
@@ -153,19 +162,21 @@ public final class ArcherBowListener implements Listener {
             }
             return true;
         }
-        int wait = explosiveWaitSeconds(id);
+        int wait = test.isActive(player) ? 0 : explosiveWaitSeconds(id);
         if (wait > 0) {
             event.setCancelled(true);
             player.updateInventory();
             focus.warn(player, "§cFlecha Explosiva em recarga: " + wait + "s");
             return false;
         }
-        lastExplosive.put(id, System.currentTimeMillis());
+        if (!test.isActive(player)) {
+            lastExplosive.put(id, System.currentTimeMillis());
+        }
         arrows.markProjectile(arrow.getPersistentDataContainer());
         arrow.setPickupStatus(AbstractArrow.PickupStatus.DISALLOWED);
         // Com Infinidade o jogo não gasta a flecha; a explosiva sempre gasta (no criativo nada é gasto).
         if (event.getBow() != null && event.getBow().containsEnchantment(Enchantment.INFINITY)
-                && player.getGameMode() != GameMode.CREATIVE) {
+                && player.getGameMode() != GameMode.CREATIVE && !test.isActive(player)) {
             takeOne(player.getInventory(), ammo);
         }
         return true;

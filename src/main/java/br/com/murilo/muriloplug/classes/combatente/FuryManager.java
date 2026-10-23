@@ -1,5 +1,6 @@
 package br.com.murilo.muriloplug.classes.combatente;
 
+import br.com.murilo.muriloplug.teste.TestMode;
 import br.com.murilo.muriloplug.auth.AuthManager;
 import br.com.murilo.muriloplug.classes.ClassManager;
 import br.com.murilo.muriloplug.classes.PlayerClass;
@@ -54,6 +55,9 @@ public final class FuryManager implements Listener {
     /** Fim (ms) da recarga do Provocar de cada Combatente. */
     private final Map<UUID, Long> tauntUntil = new HashMap<>();
     private Consumer<UUID> changeListener = id -> { };
+    private TestMode test = TestMode.inactive();
+    /** Modo Teste: fim (ms) do Berserker, que dura um tempo fixo em vez de gastar Fúria. */
+    private final Map<UUID, Long> testBerserkEnd = new HashMap<>();
     private boolean areaDamage;
     private int ticks;
 
@@ -71,6 +75,19 @@ public final class FuryManager implements Listener {
         this.changeListener = changeListener;
     }
 
+    /** Modo Teste dos administradores: Fúria sempre máxima, sem gasto nem recarga. */
+    public void setTestMode(TestMode test) {
+        this.test = test;
+    }
+
+    public TestMode testMode() {
+        return test;
+    }
+
+    public boolean isTest(UUID id) {
+        return test.isActive(id);
+    }
+
     public CombatenteSettings settings() {
         return settings;
     }
@@ -78,6 +95,9 @@ public final class FuryManager implements Listener {
     // ------------------------------------------------------------ consulta
 
     public double fury(UUID id) {
+        if (test.isActive(id)) {
+            return settings.furyMax();
+        }
         return fury.getOrDefault(id, 0.0);
     }
 
@@ -91,6 +111,9 @@ public final class FuryManager implements Listener {
 
     /** Segundos restantes (arredondados para cima) da recarga do Provocar, ou 0. */
     public int tauntCooldownSeconds(UUID id) {
+        if (test.isActive(id)) {
+            return 0;
+        }
         Long until = tauntUntil.get(id);
         if (until == null) {
             return 0;
@@ -101,6 +124,9 @@ public final class FuryManager implements Listener {
 
     /** Inicia a recarga do Provocar (só depois de ele acontecer de verdade). */
     public void startTauntCooldown(UUID id) {
+        if (test.isActive(id)) {
+            return;
+        }
         long millis = settings.tauntCooldownMillis();
         if (millis > 0) {
             tauntUntil.put(id, System.currentTimeMillis() + millis);
@@ -121,6 +147,9 @@ public final class FuryManager implements Listener {
 
     /** Gasta Fúria. Retorna false (sem gastar) se não houver o bastante. */
     public boolean spend(UUID id, double cost) {
+        if (test.isActive(id)) {
+            return true;
+        }
         if (fury(id) < cost) {
             return false;
         }
@@ -130,6 +159,7 @@ public final class FuryManager implements Listener {
 
     /** Zera a Fúria e acaba com o Berserker (morte, saída, troca de classe, Último Suspiro). */
     public void reset(UUID id) {
+        testBerserkEnd.remove(id);
         boolean had = fury.remove(id) != null | berserk.remove(id);
         lastActivity.remove(id);
         if (had) {
@@ -212,6 +242,20 @@ public final class FuryManager implements Listener {
                     reset(id);
                     continue;
                 }
+                if (test.isActive(id)) {
+                    // Modo Teste: o Berserker dura um tempo fixo e não gasta Fúria.
+                    long end = testBerserkEnd.computeIfAbsent(id, k -> now + test.berserkerSeconds() * 1000L);
+                    if (now >= end) {
+                        reset(id);
+                        continue;
+                    }
+                    player.getWorld().spawnParticle(Particle.ANGRY_VILLAGER, player.getLocation().add(0, 1, 0),
+                            3, 0.4, 0.6, 0.4, 0);
+                    if (secondTick) {
+                        showBerserkBar(player);
+                    }
+                    continue;
+                }
                 double left = fury(id) - settings.berserkerDrainPerSecond() / TICKS_PER_SECOND;
                 if (left <= 0) {
                     reset(id);
@@ -225,6 +269,9 @@ public final class FuryManager implements Listener {
                     showBerserkBar(player);
                 }
                 continue;
+            }
+            if (test.isActive(id)) {
+                continue; // Modo Teste: a Fúria fica no máximo
             }
             if (combat.isInCombat(player)) {
                 lastActivity.put(id, now);
@@ -260,6 +307,9 @@ public final class FuryManager implements Listener {
             return;
         }
         berserk.add(id);
+        if (test.isActive(id)) {
+            testBerserkEnd.put(id, System.currentTimeMillis() + test.berserkerSeconds() * 1000L);
+        }
         player.getWorld().playSound(player.getLocation(), Sound.ENTITY_RAVAGER_ROAR, 1f, 1f);
         showBerserkBar(player);
         changeListener.accept(id);

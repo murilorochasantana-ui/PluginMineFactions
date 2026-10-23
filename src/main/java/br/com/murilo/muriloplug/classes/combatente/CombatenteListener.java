@@ -114,6 +114,9 @@ public final class CombatenteListener implements Listener {
             return;
         }
         UUID id = player.getUniqueId();
+        if (fury.isTest(id) && !fury.testMode().lastBreathActive()) {
+            return; // Modo Teste: o Último Suspiro não ativa (teste.ultimo-suspiro-ativo)
+        }
         if (fury.fury(id) < settings.lastBreathMinimum() || event.getFinalDamage() < player.getHealth()) {
             return;
         }

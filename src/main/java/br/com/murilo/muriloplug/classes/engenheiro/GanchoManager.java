@@ -1,5 +1,6 @@
 package br.com.murilo.muriloplug.classes.engenheiro;
 
+import br.com.murilo.muriloplug.teste.TestMode;
 import br.com.murilo.muriloplug.classes.ClassManager;
 import br.com.murilo.muriloplug.classes.GrapplePull;
 import br.com.murilo.muriloplug.classes.PlayerClass;
@@ -39,6 +40,7 @@ public final class GanchoManager implements Listener {
     /** Momento (ms) do último tiro de gancho de cada Engenheiro. */
     private final Map<UUID, Long> lastShot = new HashMap<>();
     private final Map<UUID, Long> lastWarning = new HashMap<>();
+    private TestMode test = TestMode.inactive();
 
     public GanchoManager(JavaPlugin plugin, ClassManager classes, EngenheiroSettings settings, ArrowItems arrows,
                          EngenheiroAcoes actions, GrapplePull pull) {
@@ -55,7 +57,15 @@ public final class GanchoManager implements Listener {
     }
 
     /** Segundos até poder atirar outro gancho (arredondados para cima), ou 0. */
+    /** Modo Teste dos administradores: sem custos nem recargas. */
+    public void setTestMode(TestMode test) {
+        this.test = test;
+    }
+
     public int remainingSeconds(UUID id) {
+        if (test.isActive(id)) {
+            return 0;
+        }
         Long last = lastShot.get(id);
         if (last == null) {
             return 0;
@@ -92,7 +102,9 @@ public final class GanchoManager implements Listener {
             deny(event, player, "§cGancho em recarga: " + wait + "s");
             return;
         }
-        lastShot.put(id, System.currentTimeMillis());
+        if (!test.isActive(id)) {
+            lastShot.put(id, System.currentTimeMillis());
+        }
         if (event.getProjectile() instanceof AbstractArrow arrow) {
             arrows.markGrappleProjectile(arrow.getPersistentDataContainer());
             arrow.setPickupStatus(AbstractArrow.PickupStatus.DISALLOWED);

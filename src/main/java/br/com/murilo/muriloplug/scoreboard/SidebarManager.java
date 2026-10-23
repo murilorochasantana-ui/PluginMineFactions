@@ -1,5 +1,6 @@
 package br.com.murilo.muriloplug.scoreboard;
 
+import br.com.murilo.muriloplug.teste.TestMode;
 import br.com.murilo.muriloplug.classes.ClassManager;
 import br.com.murilo.muriloplug.classes.PlayerClass;
 import br.com.murilo.muriloplug.classes.arqueiro.ArqueiroSidebar;
@@ -52,10 +53,11 @@ public final class SidebarManager {
     private final ManaManager mana;
     private final MagoSettings magoSettings;
     private final ArqueiroSidebar archer;
+    private final TestMode test;
     private final FuryManager fury;
     private final EngenheiroSidebar engineer;
     /** Linhas na ordem de exibição, de cima para baixo. Uma linha que devolve null não aparece. */
-    private final List<Line> lines = List.of(this::moneyLine, this::clanLine, this::classLine, this::focusLine, this::modeLine,
+    private final List<Line> lines = List.of(this::testLine, this::moneyLine, this::clanLine, this::classLine, this::focusLine, this::modeLine,
             this::jumpLine, this::dashLine, this::rainLine, this::markLine, this::ultraLine, this::berserkLine, this::chargeLine, this::tauntLine, this::leapLine, this::energyLine, this::repairLine, this::hookLine, this::sentinelLine, this::manaLine, this::combatLine, this::killsLine, this::kdaLine);
     /** Último texto enviado para cada linha de cada jogador, para só reenviar o que mudou. */
     private final Map<UUID, Component[]> lastRendered = new HashMap<>();
@@ -64,7 +66,9 @@ public final class SidebarManager {
 
     public SidebarManager(PlayerScoreboards boards, CombatManager combat, StatsManager stats,
                           EconomyManager economy, ClanManager clans, ClassManager classes, ManaManager mana,
-                          ArqueiroSidebar archer, FuryManager fury, MagoSettings magoSettings, EngenheiroSidebar engineer) {
+                          ArqueiroSidebar archer, FuryManager fury, MagoSettings magoSettings, EngenheiroSidebar engineer,
+                          TestMode test) {
+        this.test = test;
         this.engineer = engineer;
         this.magoSettings = magoSettings;
         this.fury = fury;
@@ -242,6 +246,11 @@ public final class SidebarManager {
 
     private static Component mark(boolean usable) {
         return usable ? Component.text("✔", NamedTextColor.GREEN) : Component.text("✖", NamedTextColor.RED);
+    }
+
+    /** Só aparece para quem está com o Modo Teste ligado. */
+    private Component testLine(Player player) {
+        return test.isActive(player) ? ShopUi.text("§d§lMODO TESTE") : null;
     }
 
     private Component clanLine(Player player) {

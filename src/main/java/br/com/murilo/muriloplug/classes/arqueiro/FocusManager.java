@@ -1,5 +1,6 @@
 package br.com.murilo.muriloplug.classes.arqueiro;
 
+import br.com.murilo.muriloplug.teste.TestMode;
 import br.com.murilo.muriloplug.classes.ClassManager;
 import br.com.murilo.muriloplug.classes.PlayerClass;
 import br.com.murilo.muriloplug.classes.PlayerClassChangeEvent;
@@ -37,6 +38,7 @@ public final class FocusManager implements Listener {
     /** Último momento (ms) de uma mensagem de habilidade, que tem prioridade sobre a dica da action bar. */
     private final Map<UUID, Long> lastWarning = new HashMap<>();
     private Consumer<UUID> changeListener = id -> { };
+    private TestMode test = TestMode.inactive();
 
     public FocusManager(JavaPlugin plugin, ClassManager classes, ArqueiroSettings settings, CombatManager combat) {
         this.plugin = plugin;
@@ -51,7 +53,12 @@ public final class FocusManager implements Listener {
     }
 
     public int get(UUID id) {
-        return focus.getOrDefault(id, 0);
+        return test.isActive(id) ? settings.focusMax() : focus.getOrDefault(id, 0);
+    }
+
+    /** Modo Teste dos administradores: sem custos nem recargas. */
+    public void setTestMode(TestMode test) {
+        this.test = test;
     }
 
     public int max() {
@@ -71,6 +78,9 @@ public final class FocusManager implements Listener {
 
     /** Gasta Foco. Retorna false (sem gastar) se não houver o bastante. */
     public boolean spend(UUID id, int cost) {
+        if (test.isActive(id)) {
+            return true; // Modo Teste: não gasta
+        }
         if (get(id) < cost) {
             return false;
         }

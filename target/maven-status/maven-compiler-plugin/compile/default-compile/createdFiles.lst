@@ -155,6 +155,7 @@ br\com\murilo\muriloplug\classes\ClassItems$Entry.class
 br\com\murilo\muriloplug\home\HomeTeleportManager.class
 br\com\murilo\muriloplug\classes\engenheiro\BuildConfirmMenu.class
 br\com\murilo\muriloplug\tpa\TpaManager$Request.class
+br\com\murilo\muriloplug\teste\TestMode.class
 br\com\murilo\muriloplug\classes\engenheiro\EngenheiroEnergia.class
 br\com\murilo\muriloplug\tpa\TpaManager.class
 br\com\murilo\muriloplug\auth\AuthManager$Session.class

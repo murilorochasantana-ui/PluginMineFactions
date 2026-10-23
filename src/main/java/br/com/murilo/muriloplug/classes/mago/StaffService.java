@@ -1,5 +1,6 @@
 package br.com.murilo.muriloplug.classes.mago;
 
+import br.com.murilo.muriloplug.teste.TestMode;
 import br.com.murilo.muriloplug.auth.AuthManager;
 import br.com.murilo.muriloplug.shop.ShopUi;
 import br.com.murilo.muriloplug.teste.StatusRegistry;
@@ -51,6 +52,7 @@ public final class StaffService {
     /** Fim da recarga (ms) de cada staff de cada jogador. */
     private final Map<UUID, Map<StaffType, Long>> cooldowns = new HashMap<>();
     private final Map<UUID, BukkitRunnable> charges = new HashMap<>();
+    private TestMode test = TestMode.inactive();
     private final Map<UUID, Long> lastWarning = new HashMap<>();
 
     public StaffService(JavaPlugin plugin, ManaManager mana, AuthManager auth, StaffItems items,
@@ -238,19 +240,41 @@ public final class StaffService {
         int cost = free ? 0 : settings.manaCost(type);
         mana.spend(id, cost);
         arcane.gain(id); // depois do dano da magia: ela usa os acúmulos que já existiam
+        boolean testing = test.isActive(id);
         double seconds = settings.cooldownSeconds(type);
-        cooldowns.computeIfAbsent(id, k -> new EnumMap<>(StaffType.class))
-                .put(type, System.currentTimeMillis() + (long) (seconds * 1000));
-        // Um modelo da staff leva o grupo de recarga dela: a animação vale para todas as staffs da magia, seja a magia
-        // lançada pela staff ou pelo Grimório.
-        player.setCooldown(items.create(type), (int) Math.ceil(seconds * 20));
-        String spent = free ? "§bMagia grátis!" : "§b-" + cost + " mana";
+        if (testing) {
+            // Modo Teste: sem recarga; tira também a animação de 1s que o item põe sozinho ao ser usado.
+            plugin.getServer().getScheduler().runTask(plugin, () -> player.setCooldown(items.create(type), 0));
+        } else {
+            cooldowns.computeIfAbsent(id, k -> new EnumMap<>(StaffType.class))
+                    .put(type, System.currentTimeMillis() + (long) (seconds * 1000));
+            // Um modelo da staff leva o grupo de recarga dela: a animação vale para todas as staffs da magia, seja a
+            // magia lançada pela staff ou pelo Grimório.
+            player.setCooldown(items.create(type), (int) Math.ceil(seconds * 20));
+        }
+        String spent = testing ? "§dModo Teste: sem custo" : free ? "§bMagia grátis!" : "§b-" + cost + " mana";
         // Depois de consumir a mana grátis: o teleporte abre a janela da próxima.
         String next = type == StaffType.TELEPORTE && combos.armFreeCast(id) ? " §8| §bPróxima magia grátis!" : "";
         actionBar(player, spent + " (" + mana.get(id) + "/" + mana.max(id) + ")" + next + arcane.label(id));
     }
 
+    /** Modo Teste dos administradores: sem mana nem recarga. */
+    public void setTestMode(TestMode test) {
+        this.test = test;
+    }
+
+    /** Ao ligar o Modo Teste: zera as recargas em andamento e a animação nas staffs. */
+    public void clearCooldowns(Player player) {
+        cooldowns.remove(player.getUniqueId());
+        for (StaffType type : StaffType.values()) {
+            player.setCooldown(items.create(type), 0);
+        }
+    }
+
     private long cooldownRemainingMillis(Player player, StaffType type) {
+        if (test.isActive(player)) {
+            return 0;
+        }
         Map<StaffType, Long> own = cooldowns.get(player.getUniqueId());
         Long until = own == null ? null : own.get(type);
         return until == null ? 0 : until - System.currentTimeMillis();

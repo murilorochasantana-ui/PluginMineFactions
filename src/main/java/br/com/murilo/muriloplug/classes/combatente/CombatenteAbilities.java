@@ -218,7 +218,7 @@ public final class CombatenteAbilities implements Listener {
         }
         long now = System.currentTimeMillis();
         Long last = lastDash.get(id);
-        if (last != null && now - last < settings.dashIntervalMillis()) {
+        if (last != null && now - last < settings.dashIntervalMillis() && !fury.isTest(id)) {
             return;
         }
         lastDash.put(id, now);

@@ -1,5 +1,6 @@
 package br.com.murilo.muriloplug.classes.mago;
 
+import br.com.murilo.muriloplug.teste.TestMode;
 import br.com.murilo.muriloplug.classes.ClassManager;
 import br.com.murilo.muriloplug.classes.PlayerClass;
 import br.com.murilo.muriloplug.classes.PlayerClassChangeEvent;
@@ -35,6 +36,7 @@ public final class ManaManager implements Listener {
     /** Momento (ms) em que começou a contagem do próximo ponto de mana de cada Mago que não está com a mana cheia. */
     private final Map<UUID, Long> regenFrom = new HashMap<>();
     private Consumer<UUID> changeListener = id -> { };
+    private TestMode test = TestMode.inactive();
 
     public ManaManager(JavaPlugin plugin, ClassManager classes, MagoSettings settings, CombatManager combat) {
         this.plugin = plugin;
@@ -45,6 +47,11 @@ public final class ManaManager implements Listener {
 
     public void setChangeListener(Consumer<UUID> changeListener) {
         this.changeListener = changeListener;
+    }
+
+    /** Modo Teste dos administradores: sem custos nem recargas. */
+    public void setTestMode(TestMode test) {
+        this.test = test;
     }
 
     public boolean isMage(UUID player) {
@@ -86,6 +93,9 @@ public final class ManaManager implements Listener {
     /** Mana atual (sempre entre 0 e o máximo). Um Mago ainda sem registro conta como cheio. */
     public int get(UUID player) {
         int max = max(player);
+        if (test.isActive(player)) {
+            return max; // Modo Teste: a mana é sempre máxima
+        }
         return Math.min(mana.getOrDefault(player, max), max);
     }
 
@@ -94,6 +104,9 @@ public final class ManaManager implements Listener {
     }
 
     public void spend(UUID player, int cost) {
+        if (test.isActive(player)) {
+            return;
+        }
         int current = get(player);
         if (current >= max(player)) {
             regenFrom.put(player, System.currentTimeMillis());

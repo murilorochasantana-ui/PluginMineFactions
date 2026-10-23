@@ -1,5 +1,6 @@
 package br.com.murilo.muriloplug.classes.arqueiro;
 
+import br.com.murilo.muriloplug.teste.TestMode;
 import br.com.murilo.muriloplug.classes.ClassManager;
 import br.com.murilo.muriloplug.classes.GrapplePull;
 import br.com.murilo.muriloplug.classes.PlayerClass;
@@ -71,6 +72,7 @@ public final class SpecialArrowListener implements Listener {
     private final Map<UUID, Long> lastRope = new HashMap<>();
     /** Flechas de Fumaça que já criaram a nuvem. */
     private final Set<UUID> smoked = new HashSet<>();
+    private TestMode test = TestMode.inactive();
 
     public SpecialArrowListener(JavaPlugin plugin, ClassManager classes, ArqueiroSettings settings, ArrowItems arrows,
                                 ShotRegistry shots, UltraFocus ultra, FocusManager focus, ArcherTargets targets,
@@ -88,6 +90,11 @@ public final class SpecialArrowListener implements Listener {
         this.roots = roots;
         this.statuses = statuses;
         this.pull = pull;
+    }
+
+    /** Modo Teste dos administradores: sem custos nem recargas. */
+    public void setTestMode(TestMode test) {
+        this.test = test;
     }
 
     private boolean isArcher(Player player) {
@@ -122,7 +129,7 @@ public final class SpecialArrowListener implements Listener {
             return;
         }
         if (type == SpecialArrow.CORDA) {
-            int wait = ropeWaitSeconds(player.getUniqueId());
+            int wait = test.isActive(player) ? 0 : ropeWaitSeconds(player.getUniqueId());
             if (wait > 0) {
                 deny(event, player, "§cCorda em recarga: " + wait + "s");
                 return;
@@ -132,12 +139,15 @@ public final class SpecialArrowListener implements Listener {
             return;
         }
         if (type == SpecialArrow.CORDA) {
-            lastRope.put(player.getUniqueId(), System.currentTimeMillis());
+            if (!test.isActive(player)) {
+                lastRope.put(player.getUniqueId(), System.currentTimeMillis());
+            }
         }
         arrows.markProjectile(arrow.getPersistentDataContainer(), type);
         arrow.setPickupStatus(AbstractArrow.PickupStatus.DISALLOWED);
         // Com Infinidade o jogo não gasta a flecha; a especial sempre gasta (no criativo nada é gasto).
-        if (bow.containsEnchantment(Enchantment.INFINITY) && player.getGameMode() != GameMode.CREATIVE) {
+        if (bow.containsEnchantment(Enchantment.INFINITY) && player.getGameMode() != GameMode.CREATIVE
+                && !test.isActive(player)) {
             ArcherBowListener.takeOne(player.getInventory(), ammo);
         }
         if (type == SpecialArrow.PERFURANTE) {

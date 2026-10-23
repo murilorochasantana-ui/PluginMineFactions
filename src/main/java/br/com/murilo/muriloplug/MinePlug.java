@@ -1,5 +1,6 @@
 package br.com.murilo.muriloplug;
 
+import br.com.murilo.muriloplug.teste.TestMode;
 import br.com.murilo.muriloplug.auth.AuthCommand;
 import br.com.murilo.muriloplug.auth.AuthConnectionListener;
 import br.com.murilo.muriloplug.auth.AuthManager;
@@ -164,6 +165,7 @@ public final class MinePlug extends JavaPlugin {
     private StaffService staffService;
     private DummyManager dummyManager;
     private ArcherMobility archerMobility;
+    private TestMode testMode;
     private HunterMark hunterMark;
     private FocusManager focusManager;
     private ShotRegistry shotRegistry;
@@ -212,6 +214,11 @@ public final class MinePlug extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new ClaimsMenuListener(), this);
 
         CombatManager combatManager = new CombatManager();
+        testMode = new TestMode(this);
+        getServer().getPluginManager().registerEvents(testMode, this);
+        testMode.start();
+        getCommand("teste").setExecutor(testMode);
+        getCommand("teste").setTabCompleter(testMode);
         getServer().getPluginManager().registerEvents(combatManager, this);
         getServer().getPluginManager().registerEvents(new CombatCommandListener(this, combatManager), this);
 
@@ -295,6 +302,7 @@ public final class MinePlug extends JavaPlugin {
 
         MagoSettings magoSettings = new MagoSettings(this);
         manaManager = new ManaManager(this, classManager, magoSettings, combatManager);
+        manaManager.setTestMode(testMode);
         getServer().getPluginManager().registerEvents(manaManager, this);
         manaManager.start();
         manaManager.initOnline();
@@ -314,6 +322,8 @@ public final class MinePlug extends JavaPlugin {
         staffService = new StaffService(this, manaManager, authManager, staffItems, magoSettings,
                 spellTargets, arcanePower, grimoireItems, grimoireManager, statusRegistry);
         getServer().getPluginManager().registerEvents(new MagoWeaponListener(classManager, magoSettings, arcanePower), this);
+        staffService.setTestMode(testMode);
+        testMode.addEnableHook(staffService::clearCooldowns);
         getServer().getPluginManager().registerEvents(new StaffListener(staffService, authManager), this);
         getServer().getPluginManager().registerEvents(new MagoWeaknessListener(classManager, magoSettings), this);
 
@@ -322,6 +332,7 @@ public final class MinePlug extends JavaPlugin {
         ShotModes shotModes = new ShotModes();
         getServer().getPluginManager().registerEvents(shotModes, this);
         focusManager = new FocusManager(this, classManager, arqueiroSettings, combatManager);
+        focusManager.setTestMode(testMode);
         getServer().getPluginManager().registerEvents(focusManager, this);
         focusManager.start();
         shotRegistry = new ShotRegistry();
@@ -333,6 +344,7 @@ public final class MinePlug extends JavaPlugin {
         ultraFocus.start();
         archerBow = new ArcherBowListener(this, classManager, arqueiroSettings, shotModes, arrowItems, shotRegistry,
                 ultraFocus, focusManager);
+        archerBow.setTestMode(testMode);
         getServer().getPluginManager().registerEvents(archerBow, this);
         getServer().getPluginManager().registerEvents(new ExplosiveArrowListener(this, arqueiroSettings, arrowItems, targetRelations), this);
         getServer().getPluginManager().registerEvents(new ArcherWeaknessListener(classManager, arqueiroSettings), this);
@@ -356,6 +368,7 @@ public final class MinePlug extends JavaPlugin {
         getServer().getPluginManager().registerEvents(combatenteHealth, this);
         combatenteHealth.applyOnline();
         furyManager = new FuryManager(this, classManager, combatenteSettings, authManager, combatManager);
+        furyManager.setTestMode(testMode);
         getServer().getPluginManager().registerEvents(furyManager, this);
         furyManager.start();
         getServer().getPluginManager().registerEvents(new CombatenteAbilities(this, classManager, combatenteSettings,
@@ -367,6 +380,7 @@ public final class MinePlug extends JavaPlugin {
         buildManager = new BuildManager(this, classManager, claimManager, combatManager, engenheiroSettings,
                 structureBooks, structureStore);
         EngenheiroEnergia engenheiroEnergia = new EngenheiroEnergia(this, classManager, engenheiroSettings);
+        engenheiroEnergia.setTestMode(testMode);
         getServer().getPluginManager().registerEvents(engenheiroEnergia, this);
         engenheiroEnergia.start();
         EngenheiroAcoes engenheiroAcoes = new EngenheiroAcoes(classManager, engenheiroSettings);
@@ -393,6 +407,7 @@ public final class MinePlug extends JavaPlugin {
         GrapplePull grapplePull = new GrapplePull(this);
         getServer().getPluginManager().registerEvents(grapplePull, this);
         GanchoManager ganchoManager = new GanchoManager(this, classManager, engenheiroSettings, arrowItems, engenheiroAcoes, grapplePull);
+        ganchoManager.setTestMode(testMode);
         getServer().getPluginManager().registerEvents(ganchoManager, this);
         SentinelaItems sentinelaItems = new SentinelaItems(this, engenheiroSettings);
         SentinelaManager sentinelaManager = new SentinelaManager(this, classManager, claimManager, authManager,
@@ -402,11 +417,14 @@ public final class MinePlug extends JavaPlugin {
         sentinelaManager.start();
         SuporteSettings suporteSettings = new SuporteSettings(this);
         SuporteItems suporteItems = new SuporteItems(this, suporteSettings);
+        suporteItems.setTestMode(testMode);
         int oldScrolls = shopManager.migrate(suporteItems::upgradeLegacy) + marketManager.migrate(suporteItems::upgradeLegacy);
         if (oldScrolls > 0) {
             getLogger().info("Pergaminhos antigos trocados na loja e no mercado: " + oldScrolls);
         }
         SuporteCooldowns suporteCooldowns = new SuporteCooldowns();
+        suporteCooldowns.setTestMode(testMode);
+        testMode.addEnableHook(suporteCooldowns::clearAll);
         SuporteTargets suporteTargets = new SuporteTargets(authManager, targetRelations);
         SuporteAssists suporteAssists = new SuporteAssists();
         statsManager.setExtraAssistants(suporteAssists::supportersOf);
@@ -420,9 +438,11 @@ public final class MinePlug extends JavaPlugin {
         RootManager rootManager = new RootManager(this, suporteSettings, suporteTargets, combatManager, damageTracker, statusRegistry);
         getServer().getPluginManager().registerEvents(rootManager, this);
         rootManager.start();
-        getServer().getPluginManager().registerEvents(new SpecialArrowListener(this, classManager, arqueiroSettings,
+        SpecialArrowListener specialArrows = new SpecialArrowListener(this, classManager, arqueiroSettings,
                 arrowItems, shotRegistry, ultraFocus, focusManager, archerTargets, targetRelations, rootManager,
-                statusRegistry, grapplePull), this);
+                statusRegistry, grapplePull);
+        specialArrows.setTestMode(testMode);
+        getServer().getPluginManager().registerEvents(specialArrows, this);
         flightManager = new FlightManager(this, classManager, suporteSettings, suporteCooldowns);
         getServer().getPluginManager().registerEvents(flightManager, this);
         flightManager.start();
@@ -463,7 +483,8 @@ public final class MinePlug extends JavaPlugin {
         PlayerScoreboards scoreboards = new PlayerScoreboards();
         NametagManager nametagManager = new NametagManager(scoreboards, combatManager, clanManager);
         SidebarManager sidebarManager = new SidebarManager(scoreboards, combatManager, statsManager, economyManager, clanManager, classManager, manaManager, arqueiroSidebar, furyManager, magoSettings,
-                new EngenheiroSidebar(classManager, engenheiroEnergia, engenheiroSettings, ganchoManager, sentinelaManager));
+                new EngenheiroSidebar(classManager, engenheiroEnergia, engenheiroSettings, ganchoManager, sentinelaManager),
+                testMode);
         shotModes.setChangeListener(id -> {
             Player player = getServer().getPlayer(id);
             if (player != null) {
@@ -504,6 +525,12 @@ public final class MinePlug extends JavaPlugin {
                 return new ClassBarManager.Bar((int) Math.floor(current), (float) (current / engenheiroEnergia.maxEnergia()));
             });
         }
+        testMode.setChangeListener(player -> {
+            sidebarManager.update(player);
+            if (classBars != null) {
+                classBars.update(player);
+            }
+        });
         if (classBars != null) {
             classBars.register(PlayerClass.ARQUEIRO, player -> {
                 int current = focusManager.get(player.getUniqueId());
@@ -597,6 +624,9 @@ public final class MinePlug extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (testMode != null) {
+            testMode.clear();
+        }
         if (dummyManager != null) {
             dummyManager.shutdown();
         }
@@ -726,6 +756,7 @@ public final class MinePlug extends JavaPlugin {
         changed |= addMissing(config, CombatCommandListener.PATH, java.util.List.of("grimorio"));
         changed |= XpSettings.addMissing(config);
         changed |= DummySettings.addMissing(config);
+        changed |= TestMode.addMissing(config);
         changed |= MagoSettings.addMissing(config);
         changed |= ArqueiroSettings.addMissing(config);
         changed |= CombatenteSettings.addMissing(config);

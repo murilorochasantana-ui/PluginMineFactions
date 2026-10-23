@@ -1,5 +1,6 @@
 package br.com.murilo.muriloplug.classes.suporte;
 
+import br.com.murilo.muriloplug.teste.TestMode;
 import br.com.murilo.muriloplug.shop.ShopUi;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -29,6 +30,7 @@ public final class SuporteItems {
     private final NamespacedKey itemKey;
     private final NamespacedKey usesKey;
     private final NamespacedKey maxUsesKey;
+    private TestMode test = TestMode.inactive();
     private final NamespacedKey uuidKey;
 
     public SuporteItems(JavaPlugin plugin, SuporteSettings settings) {
@@ -122,7 +124,15 @@ public final class SuporteItems {
      * Gasta 1 uso do item que está na mão principal (se for de usos limitados), atualiza a lore e remove o item
      * quando chega a 0.
      */
+    /** Modo Teste dos administradores: sem custos nem recargas. */
+    public void setTestMode(TestMode test) {
+        this.test = test;
+    }
+
     public void consumeUse(Player player) {
+        if (test.isActive(player)) {
+            return; // Modo Teste: os usos não diminuem
+        }
         ItemStack hand = player.getInventory().getItemInMainHand();
         SuporteItem type = read(hand);
         if (type == null) {
