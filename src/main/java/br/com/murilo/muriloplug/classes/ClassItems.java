@@ -44,12 +44,15 @@ public final class ClassItems {
     public static final String SUPPORT_HEAL = "suporte.coracao_cura";
     public static final String SUPPORT_SCROLL = "suporte.pergaminho_velocidade";
     public static final String SUPPORT_FLIGHT = "suporte.pena_voo";
+    public static final String SUPPORT_SHIELD = "suporte.escudo_sagrado";
+    public static final String SUPPORT_TOTEM = "suporte.totem_cura";
 
     private static final int KIT_ARROWS = 16;
     private static final int KIT_BOOKS = 3;
     private static final int KIT_GRAPPLE_ARROWS = 16;
     private static final int KIT_SENTINELS = 2;
     private static final int KIT_GOLEMS = 3;
+    private static final int KIT_TOTEMS = 3;
 
     /**
      * Um item registrado. No kit entram {@code kitCopies} itens criados com a quantidade {@code kitAmount} cada
@@ -92,6 +95,13 @@ public final class ClassItems {
         registerSupport(SUPPORT_HEAL, SuporteItem.CURA, support);
         registerSupport(SUPPORT_SCROLL, SuporteItem.PERGAMINHO, support);
         registerSupport(SUPPORT_FLIGHT, SuporteItem.VOO, support);
+        registerSupport(SUPPORT_SHIELD, SuporteItem.ESCUDO, support);
+        // Totem de Cura: empilha, 1 pilha de 3 no kit.
+        register(new Entry(SUPPORT_TOTEM, PlayerClass.SUPORTE, 1, KIT_TOTEMS, amount -> {
+            ItemStack totem = support.create(SuporteItem.TOTEM);
+            totem.setAmount(amount);
+            return totem;
+        }));
     }
 
     /** Flecha especial do Arqueiro: 1 pilha de 16 no kit. */
@@ -111,7 +121,7 @@ public final class ClassItems {
         };
     }
 
-    /** Item do Suporte: 1 de cada no kit (os de usos limitados saem cada um com o seu UUID). */
+    /** Item do Suporte: 1 de cada no kit. */
     private void registerSupport(String id, SuporteItem type, SuporteItems support) {
         register(new Entry(id, PlayerClass.SUPORTE, 1, 1, amount -> support.create(type)));
     }

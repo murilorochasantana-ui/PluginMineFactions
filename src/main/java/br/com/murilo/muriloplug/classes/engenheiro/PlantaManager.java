@@ -1,5 +1,6 @@
 package br.com.murilo.muriloplug.classes.engenheiro;
 
+import br.com.murilo.muriloplug.classes.SilenceManager;
 import br.com.murilo.muriloplug.auth.AuthManager;
 import br.com.murilo.muriloplug.shop.ShopUi;
 import io.papermc.paper.event.player.AsyncChatEvent;
@@ -199,6 +200,9 @@ public final class PlantaManager implements Listener {
         }
         if (!builds.isEngineer(player)) {
             player.sendMessage("§cSomente Engenheiros podem usar a Planta.");
+            return;
+        }
+        if (SilenceManager.blocks(player)) {
             return;
         }
         ItemStack hand = player.getInventory().getItemInMainHand();

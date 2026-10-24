@@ -75,6 +75,15 @@ public final class HunterMark implements Listener {
         }
     }
 
+    /** Tira todas as marcas que estão neste alvo (Purificar do Suporte). */
+    public void clearTarget(UUID target) {
+        for (Map.Entry<UUID, Mark> entry : Map.copyOf(marks).entrySet()) {
+            if (entry.getValue().target().equals(target)) {
+                clear(entry.getKey());
+            }
+        }
+    }
+
     public void clearAll() {
         for (UUID archer : Set.copyOf(marks.keySet())) {
             clear(archer);

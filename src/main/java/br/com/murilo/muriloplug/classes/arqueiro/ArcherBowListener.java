@@ -1,5 +1,6 @@
 package br.com.murilo.muriloplug.classes.arqueiro;
 
+import br.com.murilo.muriloplug.classes.SilenceManager;
 import br.com.murilo.muriloplug.teste.TestMode;
 import br.com.murilo.muriloplug.classes.ClassManager;
 import br.com.murilo.muriloplug.classes.PlayerClass;
@@ -88,6 +89,9 @@ public final class ArcherBowListener implements Listener {
             return;
         }
         event.setCancelled(true);
+        if (SilenceManager.blocks(player)) {
+            return;
+        }
         boolean burst = modes.toggle(player.getUniqueId());
         focus.warn(player, burst ? "§6Modo: rajada de 3" : "§aModo: 1 flecha");
         player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1f, burst ? 1.4f : 1f);
@@ -111,7 +115,7 @@ public final class ArcherBowListener implements Listener {
         SpecialArrow special = arrows.typeOfProjectile(arrow.getPersistentDataContainer());
         shot.setSpecial(special);
         // O Ultra Foco não vale para a Flecha Explosiva: ele continua armado para o próximo tiro.
-        if (special != SpecialArrow.EXPLOSIVA && ultra.tryFire(player)) {
+        if (special != SpecialArrow.EXPLOSIVA && !SilenceManager.isSilenced(player) && ultra.tryFire(player)) {
             shot.setUltra(true);
             ultra.trail(arrow);
         }
@@ -126,6 +130,9 @@ public final class ArcherBowListener implements Listener {
         }
         if (!modes.isBurst(player.getUniqueId()) || !(arrow instanceof Arrow || arrow instanceof SpectralArrow)) {
             return;
+        }
+        if (SilenceManager.blocks(player)) {
+            return; // silenciado: sai só a flecha normal, sem rajada
         }
         int wait = test.isActive(player) ? 0 : modes.cooldownRemainingSeconds(player.getUniqueId());
         if (wait > 0) {
@@ -152,6 +159,11 @@ public final class ArcherBowListener implements Listener {
         }
         if (!(event.getProjectile() instanceof AbstractArrow arrow)) {
             return true;
+        }
+        if (SilenceManager.blocks(player)) {
+            event.setCancelled(true);
+            player.updateInventory();
+            return false;
         }
         UUID id = player.getUniqueId();
         if (event.getForce() < settings.explosiveMinForce()) {

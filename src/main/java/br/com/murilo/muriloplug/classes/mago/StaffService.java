@@ -259,6 +259,11 @@ public final class StaffService {
     }
 
     /** Modo Teste dos administradores: sem mana nem recarga. */
+    /** Tira as marcas de combo (Gelo e Vento) deste alvo (Purificar do Suporte). */
+    public void clearComboMarks(UUID target) {
+        combos.clearMarks(target);
+    }
+
     public void setTestMode(TestMode test) {
         this.test = test;
     }

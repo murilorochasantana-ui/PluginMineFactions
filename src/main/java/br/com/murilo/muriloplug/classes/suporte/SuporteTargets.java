@@ -28,6 +28,10 @@ public final class SuporteTargets {
         return relations.isAlly(a, b);
     }
 
+    public boolean isEnemy(Player a, LivingEntity b) {
+        return relations.isEnemy(a, b);
+    }
+
     /**
      * Primeiro alvo na mira até {@code range} blocos, sem atravessar parede: um jogador (vivo, logado, fora do
      * espectador) ou um boneco de teste.
@@ -51,9 +55,19 @@ public final class SuporteTargets {
 
     /** O próprio Suporte e os aliados vivos (jogadores e bonecos aliados) a até {@code radius} blocos dele. */
     public List<LivingEntity> group(Player support, double radius) {
+        return around(support, support.getLocation(), radius);
+    }
+
+    /**
+     * O Suporte (se estiver no raio) e os aliados vivos dele (jogadores e bonecos aliados) a até {@code radius}
+     * blocos de {@code center}.
+     */
+    public List<LivingEntity> around(Player support, Location center, double radius) {
         List<LivingEntity> found = new ArrayList<>();
-        found.add(support);
-        Location center = support.getLocation();
+        if (!support.isDead() && support.getWorld().equals(center.getWorld())
+                && support.getLocation().distance(center) <= radius) {
+            found.add(support);
+        }
         for (Player other : center.getWorld().getNearbyPlayers(center, radius)) {
             if (isAlly(support, other) && !other.isDead() && other.getGameMode() != GameMode.SPECTATOR
                     && auth.isLoggedIn(other.getUniqueId()) && other.getLocation().distance(center) <= radius) {

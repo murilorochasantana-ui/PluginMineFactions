@@ -12,6 +12,8 @@ import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
+import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.damage.DamageSource;
 import org.bukkit.damage.DamageType;
 import org.bukkit.entity.Entity;
@@ -34,8 +36,10 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Vínculo do Núcleo Pesado: um Suporte com um aliado. Rastro roxo visível para todos, e o aliado passa parte do
- * dano que leva para o Suporte (com um tipo de dano que a armadura reduz e sem atacante, então não vira KDA).
+ * Vínculo do Núcleo Pesado: um Suporte com um aliado. Rastro roxo visível para todos. O aliado leva menos dano
+ * (resistência, antes da divisão) e passa parte do que sobra para o Suporte (com um tipo de dano que a armadura reduz
+ * e sem atacante, então não vira KDA), o que dá Harmonia ao Suporte. Também recebe parte das autocuras do Suporte e
+ * pode ser salvo de um golpe mortal pela {@link TrocaEquivalente}.
  */
 public final class LinkManager implements Listener {
 
@@ -53,6 +57,8 @@ public final class LinkManager implements Listener {
     private final SuporteTargets targets;
     private final SuporteAssists assists;
     private final StatusRegistry statuses;
+    private final HarmoniaManager harmony;
+    private final TrocaEquivalente swap;
     /** Suporte -> aliado vinculado. */
     private final Map<UUID, UUID> bySupport = new HashMap<>();
     /** Aliado vinculado -> Suporte. */
@@ -63,8 +69,10 @@ public final class LinkManager implements Listener {
 
     public LinkManager(JavaPlugin plugin, ClassManager classes, ClanManager clans, AuthManager auth,
                        SuporteSettings settings, SuporteTargets targets, SuporteAssists assists,
-                       StatusRegistry statuses) {
+                       StatusRegistry statuses, HarmoniaManager harmony, TrocaEquivalente swap) {
         this.statuses = statuses;
+        this.harmony = harmony;
+        this.swap = swap;
         this.plugin = plugin;
         this.classes = classes;
         this.clans = clans;
@@ -82,6 +90,34 @@ public final class LinkManager implements Listener {
     public void endAll() {
         bySupport.clear();
         byAlly.clear();
+    }
+
+    /** Aliado vinculado ao Suporte (vivo e carregado), ou null. */
+    public LivingEntity linkedAlly(UUID support) {
+        UUID allyId = bySupport.get(support);
+        Entity found = allyId == null ? null : Bukkit.getEntity(allyId);
+        return found instanceof LivingEntity living && !living.isDead() ? living : null;
+    }
+
+    /**
+     * O Suporte curou a si mesmo: o aliado vinculado (por perto) recebe {@code vinculo.cura-compartilhada} dessa cura.
+     * Retorna quanto o aliado curou de fato.
+     */
+    public double shareSelfHeal(Player support, double healed) {
+        LivingEntity ally = linkedAlly(support.getUniqueId());
+        double amount = healed * settings.linkSharedHeal();
+        if (ally == null || amount <= 0 || !tooClose(support, ally)) {
+            return 0;
+        }
+        AttributeInstance max = ally.getAttribute(Attribute.MAX_HEALTH);
+        double limit = max == null ? 20 : max.getValue();
+        double before = ally.getHealth();
+        ally.setHealth(Math.min(limit, before + amount));
+        double gained = ally.getHealth() - before;
+        if (gained > 0) {
+            ally.getWorld().spawnParticle(Particle.HEART, ally.getLocation().add(0, 1.8, 0), 3, 0.3, 0.2, 0.3, 0);
+        }
+        return gained;
     }
 
     // ------------------------------------------------------------ uso do item
@@ -127,10 +163,11 @@ public final class LinkManager implements Listener {
         }
         statuses.add(allyId, "Vinculado", StatusRegistry.INDEFINITE);
         int percent = (int) Math.round(settings.linkPercent() * 100);
-        support.sendMessage("§5Você se vinculou a " + nameOf(aimed) + "§5: ele leva " + percent
-                + "% menos dano e você recebe essa parte.");
-        tell(aimed, "§5" + support.getName() + " se vinculou a você: você leva " + percent
-                + "% menos dano e ele recebe essa parte.");
+        int resistance = (int) Math.round(settings.linkResistance() * 100);
+        support.sendMessage("§5Você se vinculou a " + nameOf(aimed) + "§5: ele leva " + resistance
+                + "% menos dano e você recebe " + percent + "% do dano dele.");
+        tell(aimed, "§5" + support.getName() + " se vinculou a você: você leva " + resistance
+                + "% menos dano e ele recebe " + percent + "% do seu dano.");
         support.getWorld().playSound(support.getLocation(), Sound.BLOCK_BEACON_ACTIVATE, 0.8f, 1.4f);
     }
 
@@ -245,22 +282,34 @@ public final class LinkManager implements Listener {
         if (support == null || support.isDead() || !tooClose(support, ally)) {
             return;
         }
+        // Resistência do vinculado, antes da divisão.
+        double resistance = settings.linkResistance();
+        if (resistance > 0) {
+            event.setDamage(event.getDamage() * (1 - resistance));
+        }
         double finalDamage = event.getFinalDamage();
         if (finalDamage <= 0) {
             return;
         }
-        // Com a vida baixa, o Suporte não divide: o aliado recebe tudo.
+        double share = 0;
         if (support.getHealth() <= settings.linkStopHealth()) {
-            warnLowHealth(support);
+            warnLowHealth(support); // com a vida baixa, o Suporte não divide: o aliado recebe tudo
+        } else {
+            // Nunca deixa o Suporte morrer só pelo vínculo (a armadura ainda reduz um pouco mais).
+            share = Math.max(0, Math.min(finalDamage * settings.linkPercent(), support.getHealth() - 1));
+        }
+        if (share > 0) {
+            event.setDamage(event.getDamage() * (1 - share / finalDamage));
+        }
+        // O que sobrou ainda mataria: a Troca Equivalente pode salvar (e aí o dano não chega a ser dividido).
+        if (event.getFinalDamage() >= ally.getHealth() && swap.tryRescue(support, ally)) {
+            event.setCancelled(true);
             return;
         }
-        // Nunca deixa o Suporte morrer só pelo vínculo (a armadura ainda reduz um pouco mais).
-        double share = Math.min(finalDamage * settings.linkPercent(), support.getHealth() - 1);
-        if (share <= 0) {
-            return;
+        if (share > 0) {
+            pass(support, share);
+            harmony.addForLink(supportId, share);
         }
-        event.setDamage(event.getDamage() * (1 - share / finalDamage));
-        pass(support, share);
     }
 
     /** Aplica a parte no Suporte sem atacante (não entra no KDA) e sem lhe dar imunidade. */

@@ -1,5 +1,6 @@
 package br.com.murilo.muriloplug.classes.engenheiro;
 
+import br.com.murilo.muriloplug.classes.SilenceManager;
 import br.com.murilo.muriloplug.auth.AuthManager;
 import br.com.murilo.muriloplug.classes.PlayerClass;
 import br.com.murilo.muriloplug.classes.PlayerClassChangeEvent;
@@ -98,6 +99,9 @@ public final class BuildListener implements Listener {
         }
         if (!builds.isEngineer(player)) {
             warn(player, "§cSomente Engenheiros podem usar este livro.");
+            return;
+        }
+        if (SilenceManager.blocks(player)) {
             return;
         }
         if (books.isFull(item)) {

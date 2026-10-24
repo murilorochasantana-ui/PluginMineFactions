@@ -1,5 +1,6 @@
 package br.com.murilo.muriloplug.classes.engenheiro;
 
+import br.com.murilo.muriloplug.classes.SilenceManager;
 import br.com.murilo.muriloplug.auth.AuthManager;
 import br.com.murilo.muriloplug.classes.ClassManager;
 import br.com.murilo.muriloplug.classes.PlayerClass;
@@ -251,6 +252,9 @@ public final class GolemManager implements Listener {
             player.sendMessage("§5Somente Engenheiros");
             return;
         }
+        if (SilenceManager.blocks(player)) {
+            return;
+        }
         if (hasIronGolem(id)) {
             player.sendMessage("§cEnquanto o Golem de Ferro existir, não dá para invocar Golems de Cobre.");
             return;
@@ -332,6 +336,9 @@ public final class GolemManager implements Listener {
                 || !(clicked instanceof Mob golem) || !auth.isLoggedIn(owner)) {
             return;
         }
+        if (SilenceManager.blocks(player)) {
+            return;
+        }
         if (golem instanceof IronGolem) {
             player.sendMessage("§cO Golem de Ferro não pode ser consertado.");
             return;
@@ -372,7 +379,7 @@ public final class GolemManager implements Listener {
         }
         event.setCancelled(true); // Shift + F do Engenheiro é a fusão: não troca o item de mão
         UUID id = player.getUniqueId();
-        if (!auth.isLoggedIn(id)) {
+        if (!auth.isLoggedIn(id) || SilenceManager.blocks(player)) {
             return;
         }
         long now = System.currentTimeMillis();

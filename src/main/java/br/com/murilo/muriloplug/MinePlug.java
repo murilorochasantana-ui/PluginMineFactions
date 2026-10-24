@@ -27,6 +27,7 @@ import br.com.murilo.muriloplug.classes.KitMenusListener;
 import br.com.murilo.muriloplug.classes.ClassBarManager;
 import br.com.murilo.muriloplug.classes.PlayerClass;
 import br.com.murilo.muriloplug.classes.PlayerClassChangeEvent;
+import br.com.murilo.muriloplug.classes.SilenceManager;
 import br.com.murilo.muriloplug.teste.BonecoCommand;
 import br.com.murilo.muriloplug.teste.DummyListener;
 import br.com.murilo.muriloplug.teste.DummyManager;
@@ -94,17 +95,29 @@ import br.com.murilo.muriloplug.classes.mago.SpellTargets;
 import br.com.murilo.muriloplug.classes.mago.StaffItems;
 import br.com.murilo.muriloplug.classes.mago.StaffListener;
 import br.com.murilo.muriloplug.classes.mago.StaffService;
+import br.com.murilo.muriloplug.classes.suporte.EloDrenante;
+import br.com.murilo.muriloplug.classes.suporte.EscudoSagrado;
 import br.com.murilo.muriloplug.classes.suporte.FlightManager;
+import br.com.murilo.muriloplug.classes.suporte.HarmoniaManager;
 import br.com.murilo.muriloplug.classes.suporte.LinkManager;
+import br.com.murilo.muriloplug.classes.suporte.Maldicao;
 import br.com.murilo.muriloplug.classes.suporte.NightVisionManager;
+import br.com.murilo.muriloplug.classes.suporte.Purificar;
 import br.com.murilo.muriloplug.classes.suporte.RootManager;
+import br.com.murilo.muriloplug.classes.suporte.Silencio;
+import br.com.murilo.muriloplug.classes.suporte.Socorrista;
+import br.com.murilo.muriloplug.classes.suporte.SuporteArmas;
 import br.com.murilo.muriloplug.classes.suporte.SuporteAssists;
 import br.com.murilo.muriloplug.classes.suporte.SuporteCooldowns;
 import br.com.murilo.muriloplug.classes.suporte.SuporteHealth;
 import br.com.murilo.muriloplug.classes.suporte.SuporteItems;
 import br.com.murilo.muriloplug.classes.suporte.SuporteListener;
 import br.com.murilo.muriloplug.classes.suporte.SuporteSettings;
+import br.com.murilo.muriloplug.classes.suporte.SuporteSidebar;
 import br.com.murilo.muriloplug.classes.suporte.SuporteTargets;
+import br.com.murilo.muriloplug.classes.suporte.TrocaEquivalente;
+import br.com.murilo.muriloplug.classes.suporte.TotemCura;
+import br.com.murilo.muriloplug.classes.suporte.TrocaLugar;
 import br.com.murilo.muriloplug.combat.CombatCommandListener;
 import br.com.murilo.muriloplug.combat.CombatManager;
 import br.com.murilo.muriloplug.economy.EconomyManager;
@@ -180,6 +193,9 @@ public final class MinePlug extends JavaPlugin {
     private SuporteHealth suporteHealth;
     private FlightManager flightManager;
     private NightVisionManager nightVision;
+    private TrocaEquivalente trocaEquivalente;
+    private EscudoSagrado escudoSagrado;
+    private TotemCura totemCura;
     private GolemManager golemManager;
 
     @Override
@@ -374,8 +390,9 @@ public final class MinePlug extends JavaPlugin {
         furyManager.setTestMode(testMode);
         getServer().getPluginManager().registerEvents(furyManager, this);
         furyManager.start();
-        getServer().getPluginManager().registerEvents(new CombatenteAbilities(this, classManager, combatenteSettings,
-                furyManager, targetRelations, authManager, statusRegistry), this);
+        CombatenteAbilities combatenteAbilities = new CombatenteAbilities(this, classManager, combatenteSettings,
+                furyManager, targetRelations, authManager, statusRegistry);
+        getServer().getPluginManager().registerEvents(combatenteAbilities, this);
         EngenheiroSettings engenheiroSettings = new EngenheiroSettings(this);
         StructureBooks structureBooks = new StructureBooks(this, engenheiroSettings);
         StructureStore structureStore = new StructureStore(this);
@@ -426,10 +443,10 @@ public final class MinePlug extends JavaPlugin {
         sentinelaManager.start();
         SuporteSettings suporteSettings = new SuporteSettings(this);
         SuporteItems suporteItems = new SuporteItems(this, suporteSettings);
-        suporteItems.setTestMode(testMode);
-        int oldScrolls = shopManager.migrate(suporteItems::upgradeLegacy) + marketManager.migrate(suporteItems::upgradeLegacy);
-        if (oldScrolls > 0) {
-            getLogger().info("Pergaminhos antigos trocados na loja e no mercado: " + oldScrolls);
+        // Itens antigos do Suporte (Pergaminho de livro com pena, itens com usos): atualizados na loja e no mercado.
+        int oldSupportItems = shopManager.migrate(suporteItems::upgrade) + marketManager.migrate(suporteItems::upgrade);
+        if (oldSupportItems > 0) {
+            getLogger().info("Itens antigos do Suporte atualizados na loja e no mercado: " + oldSupportItems);
         }
         int oldGolems = shopManager.migrate(golemItems::upgradeLegacy) + marketManager.migrate(golemItems::upgradeLegacy);
         if (oldGolems > 0) {
@@ -444,10 +461,45 @@ public final class MinePlug extends JavaPlugin {
         suporteHealth = new SuporteHealth(this, classManager, suporteSettings);
         getServer().getPluginManager().registerEvents(suporteHealth, this);
         suporteHealth.applyOnline();
+        HarmoniaManager harmonia = new HarmoniaManager(this, classManager, suporteSettings);
+        harmonia.setTestMode(testMode);
+        getServer().getPluginManager().registerEvents(harmonia, this);
+        harmonia.start();
+        trocaEquivalente = new TrocaEquivalente(this, classManager, suporteSettings, suporteCooldowns, statusRegistry,
+                suporteItems);
+        getCommand("troca").setExecutor(trocaEquivalente);
+        trocaEquivalente.setTestMode(testMode);
+        trocaEquivalente.load();
+        getServer().getPluginManager().registerEvents(trocaEquivalente, this);
+        trocaEquivalente.start();
         LinkManager linkManager = new LinkManager(this, classManager, clanManager, authManager, suporteSettings,
-                suporteTargets, suporteAssists, statusRegistry);
+                suporteTargets, suporteAssists, statusRegistry, harmonia, trocaEquivalente);
         getServer().getPluginManager().registerEvents(linkManager, this);
         linkManager.start();
+        EloDrenante eloDrenante = new EloDrenante(suporteSettings, linkManager, harmonia, statusRegistry);
+        getServer().getPluginManager().registerEvents(eloDrenante, this);
+        TrocaLugar trocaLugar = new TrocaLugar(suporteSettings, linkManager);
+        getServer().getPluginManager().registerEvents(trocaLugar, this);
+        Socorrista socorrista = new Socorrista(this, classManager, suporteSettings, suporteTargets);
+        getServer().getPluginManager().registerEvents(socorrista, this);
+        socorrista.start();
+        escudoSagrado = new EscudoSagrado(this, suporteSettings, suporteTargets, suporteAssists, statusRegistry);
+        getServer().getPluginManager().registerEvents(escudoSagrado, this);
+        escudoSagrado.start();
+        Purificar purificar = new Purificar(suporteSettings, suporteTargets, suporteAssists, statusRegistry);
+        totemCura = new TotemCura(this, classManager, claimManager, suporteSettings, suporteTargets, targetRelations,
+                statusRegistry, suporteItems);
+        totemCura.setTestMode(testMode);
+        getServer().getPluginManager().registerEvents(totemCura, this);
+        totemCura.start();
+        Silencio silencio = new Silencio(this, suporteSettings, suporteTargets, combatManager, damageTracker,
+                statusRegistry);
+        getServer().getPluginManager().registerEvents(silencio, this);
+        silencio.start();
+        Maldicao maldicao = new Maldicao(this, suporteSettings, suporteTargets, combatManager, damageTracker,
+                statusRegistry);
+        getServer().getPluginManager().registerEvents(maldicao, this);
+        maldicao.start();
         RootManager rootManager = new RootManager(this, suporteSettings, suporteTargets, combatManager, damageTracker, statusRegistry);
         getServer().getPluginManager().registerEvents(rootManager, this);
         rootManager.start();
@@ -461,9 +513,21 @@ public final class MinePlug extends JavaPlugin {
         flightManager.start();
         nightVision = new NightVisionManager(this, classManager, authManager);
         getServer().getPluginManager().registerEvents(nightVision, this);
+        getCommand("visao").setExecutor(nightVision);
         getServer().getPluginManager().registerEvents(new SuporteListener(classManager, authManager, suporteItems,
-                suporteSettings, suporteCooldowns, suporteTargets, suporteAssists, linkManager, rootManager,
-                flightManager), this);
+                suporteSettings, suporteCooldowns, suporteTargets, suporteAssists, harmonia, linkManager, rootManager,
+                flightManager, trocaEquivalente, eloDrenante, trocaLugar, escudoSagrado, purificar, totemCura, silencio,
+                maldicao), this);
+        SuporteSidebar suporteSidebar = new SuporteSidebar(classManager, suporteSettings, harmonia, suporteCooldowns,
+                linkManager, trocaEquivalente, eloDrenante, suporteItems, totemCura);
+        // Purificar: como terminar o efeito real de cada marca negativa (além de tirar a marca).
+        statusRegistry.registerCleanser("Preso", entity -> rootManager.release(entity.getUniqueId()));
+        statusRegistry.registerCleanser("Marcado", entity -> hunterMark.clearTarget(entity.getUniqueId()));
+        statusRegistry.registerCleanser("Congelado", entity -> staffService.clearComboMarks(entity.getUniqueId()));
+        statusRegistry.registerCleanser("Empurrado", entity -> staffService.clearComboMarks(entity.getUniqueId()));
+        statusRegistry.registerCleanser("Provocado", combatenteAbilities::clearProvoked);
+        statusRegistry.registerCleanser("Silenciado", entity -> SilenceManager.clear(entity.getUniqueId()));
+        statusRegistry.registerCleanser("Amaldiçoado", entity -> maldicao.clear(entity.getUniqueId()));
         ClassItems classItems = new ClassItems(staffItems, grimoireItems, arrowItems, structureBooks, plantaItems, sentinelaItems, golemItems, suporteItems);
         ClassCommand classCommand = new ClassCommand(classManager, combatManager, classItems, manaManager);
         getCommand("classe").setExecutor(classCommand);
@@ -490,6 +554,7 @@ public final class MinePlug extends JavaPlugin {
         // Depois do PvP 1.8: o HIGH do Combatente roda depois do ajuste do machado.
         getServer().getPluginManager().registerEvents(new CombatenteListener(classManager, combatenteSettings, furyManager), this);
         getServer().getPluginManager().registerEvents(new EngenheiroArmas(classManager, engenheiroSettings), this);
+        getServer().getPluginManager().registerEvents(new SuporteArmas(classManager, suporteSettings), this);
         // Por último entre os listeners de dano em HIGHEST: o Escudo de Mana mede o dano final já ajustado pelos outros.
         getServer().getPluginManager().registerEvents(new ManaShieldListener(manaManager, magoSettings), this);
 
@@ -497,7 +562,7 @@ public final class MinePlug extends JavaPlugin {
         NametagManager nametagManager = new NametagManager(scoreboards, combatManager, clanManager);
         SidebarManager sidebarManager = new SidebarManager(scoreboards, combatManager, statsManager, economyManager, clanManager, classManager, manaManager, arqueiroSidebar, furyManager, magoSettings,
                 new EngenheiroSidebar(classManager, engenheiroEnergia, engenheiroSettings, ganchoManager, sentinelaManager, golemManager),
-                testMode);
+                suporteSidebar, testMode);
         golemManager.setChangeListener(id -> {
             Player player = getServer().getPlayer(id);
             if (player != null) {
@@ -548,6 +613,27 @@ public final class MinePlug extends JavaPlugin {
             sidebarManager.update(player);
             if (classBars != null) {
                 classBars.update(player);
+            }
+        });
+        if (classBars != null) {
+            classBars.register(PlayerClass.SUPORTE, player -> {
+                double current = harmonia.getHarmonia(player.getUniqueId());
+                return new ClassBarManager.Bar((int) Math.floor(current), (float) (current / harmonia.maxHarmonia()));
+            });
+        }
+        trocaEquivalente.setChangeListener(id -> {
+            Player player = getServer().getPlayer(id);
+            if (player != null) {
+                sidebarManager.update(player);
+            }
+        });
+        harmonia.setChangeListener(id -> {
+            Player player = getServer().getPlayer(id);
+            if (player != null) {
+                sidebarManager.update(player);
+                if (classBars != null) {
+                    classBars.update(player);
+                }
             }
         });
         if (classBars != null) {
@@ -674,9 +760,20 @@ public final class MinePlug extends JavaPlugin {
         if (nightVision != null) {
             nightVision.removeAll();
         }
+        // A penalidade da Troca Equivalente sai antes da vida extra (senão a vida máxima passaria de 1 para baixo).
+        if (trocaEquivalente != null) {
+            trocaEquivalente.endAll();
+        }
         if (suporteHealth != null) {
             suporteHealth.removeAll();
         }
+        if (escudoSagrado != null) {
+            escudoSagrado.endAll();
+        }
+        if (totemCura != null) {
+            totemCura.endAll();
+        }
+        SilenceManager.clearAll();
         if (furyManager != null) {
             furyManager.endAll();
         }

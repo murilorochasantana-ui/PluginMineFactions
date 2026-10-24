@@ -1,5 +1,6 @@
 package br.com.murilo.muriloplug.classes.mago;
 
+import br.com.murilo.muriloplug.classes.SilenceManager;
 import br.com.murilo.muriloplug.auth.AuthManager;
 import org.bukkit.block.Block;
 import org.bukkit.damage.DamageType;
@@ -59,6 +60,9 @@ public final class StaffListener implements Listener {
             service.warnNotMage(player);
             return;
         }
+        if (SilenceManager.blocks(player)) {
+            return;
+        }
         StaffType type = service.spellOf(player, event.getItem());
         if (type == null) {
             service.warnNoSpell(player); // Grimório sem magia equipada
@@ -86,6 +90,9 @@ public final class StaffListener implements Listener {
 
     /** Shift + esquerdo com o Grimório troca de magia; nos demais casos dispara o Míssil Arcano. */
     private void leftAction(Player player, ItemStack item) {
+        if (SilenceManager.blocks(player)) {
+            return;
+        }
         if (player.isSneaking() && service.isGrimoire(item)) {
             service.cycleSpell(player);
         } else {

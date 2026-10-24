@@ -52,6 +52,12 @@ public final class MagoCombos {
         statuses.add(target, "Empurrado", settings.number(BASE + "vento-marca-segundos"));
     }
 
+    /** Tira as marcas do Gelo e do Vento deste alvo (Purificar do Suporte). */
+    public void clearMarks(UUID target) {
+        iced.remove(target);
+        pushed.remove(target);
+    }
+
     // ------------------------------------------------------------ Choque Térmico (Gelo -> Fogo)
 
     /**

@@ -488,13 +488,32 @@ engenheiro:
     - REINFORCED_DEEPSLATE
     - "*_BED"
 
-# Classe Suporte (vínculo, prender, cura, velocidade, voo e fraqueza).
+# Classe Suporte (Harmonia, vínculo, prender, cura, velocidade, voo, Troca Equivalente, Elo Drenante...).
+# "custo" = Harmonia gasta; "recarga" em segundos.
 suporte:
-  # Vida máxima a menos (4 = 2 corações: 8 corações no total).
-  vida-reduzida: 4
+  # Vida máxima a mais (16 = 8 corações: 18 corações no total).
+  vida-extra: 16
+  # Fraqueza: dano a menos com espada, machado, maça, tridente, lança e projéteis de arco/besta/tridente (0.4 = 40%).
+  penalidade-arma: 0.4
+  # Harmonia (barra de XP, de 0 a maxima). Começa em 0 ao entrar e ao renascer.
+  harmonia:
+    maxima: 100
+    # Por ponto de vida curado em aliados ou em si mesmo (0.5 = +1 a cada 2 de vida).
+    por-cura: 0.5
+    # Por ponto de dano que o vínculo tirou do aliado (0.5 = +1 a cada 2 de dano).
+    por-vinculo: 0.5
+    # Passiva Recompensa: por assistência (além do dinheiro).
+    por-assistencia: 10
+    # +regen a cada regen-intervalo-segundos.
+    regen: 1
+    regen-intervalo-segundos: 2
   vinculo:
     # Parte do dano final do aliado que passa para o Suporte (0.35 = 35%).
     porcentagem: 0.35
+    # Dano a menos do aliado vinculado, aplicado antes da divisão (0.1 = 10%).
+    resistencia: 0.1
+    # Parte das autocuras do Suporte que o aliado vinculado também recebe (0.5 = metade).
+    cura-compartilhada: 0.5
     # Com a vida do Suporte neste valor ou menos (4 = 2 corações), o vínculo para de dividir dano.
     parar-com-vida: 4
     # O vínculo acaba se os dois ficarem mais longe que isto (blocos).
@@ -505,24 +524,94 @@ suporte:
     segundos: 1.5
     alcance: 20
     recarga: 8
-    usos: 25
+    custo: 25
   cura:
     # 6 de vida = 3 corações.
     quantidade: 6
     raio: 6
     recarga: 8
-    usos: 8
+    custo: 30
   pergaminho:
     # 1 = Velocidade I.
     nivel: 1
     segundos: 8
     raio: 8
     recarga: 20
+    custo: 20
   voo:
     segundos: 5
     recarga: 15
+    custo: 15
     # Depois do voo, o dano da próxima queda é cancelado por até este tempo.
     protecao-queda-segundos: 10
+    # Velocidade de voo durante o voo da Pena (o padrão do jogo é 0.1). Volta à de antes quando o voo acaba.
+    velocidade: 0.04
+    # Velocidade horizontal máxima voando (blocos por tick), inclusive correndo.
+    velocidade-maxima: 0.6
+    # Quantos blocos acima do ponto onde começou a voar o Suporte pode subir.
+    altura-maxima: 8
+  # Troca Equivalente (Shift + clique direito com o Núcleo liga/desliga). Não gasta Harmonia.
+  troca:
+    # Vida do aliado salvo (8 = 4 corações).
+    vida-aliado: 8
+    # Vida máxima do Suporte durante a penalidade (6 = 3 corações) e por quanto tempo.
+    vida-maxima: 6
+    segundos: 60
+    recarga-segundos: 180
+  # Elo Drenante (Shift + clique esquerdo com o Núcleo): dano do Suporte vira cura no vinculado.
+  elo:
+    segundos: 5
+    # Fração do dano final que vira cura (1.0 = 100%).
+    porcentagem: 1.0
+    custo: 35
+    recarga: 20
+  # Troca de Lugar (Shift + clique esquerdo com a Pena) com o aliado vinculado.
+  troca-lugar:
+    distancia: 30
+    custo: 20
+    recarga: 15
+    protecao-queda-segundos: 3
+  # Passiva Socorrista: aliado a até "raio" blocos abaixo de "vida" (0.3 = 30% da vida máxima) dá Velocidade.
+  socorrista:
+    raio: 15
+    vida: 0.3
+    segundos: 3
+    # 2 = Velocidade II.
+    nivel: 2
+    recarga: 10
+  # Escudo Sagrado (item; clique direito no aliado na mira, ou no ar para você): absorção (8 = 4 corações).
+  escudo:
+    absorcao: 8
+    segundos: 6
+    alcance: 15
+    custo: 35
+    recarga: 12
+  # Purificar (Shift + clique esquerdo com o Coração): tira efeitos ruins seus e dos aliados no raio.
+  purificar:
+    raio: 8
+    custo: 30
+    recarga: 10
+  # Totem de Cura (item de uso único, vendido na /loja; clique direito em um bloco): Regeneração (nivel 2 = II) aos
+  # aliados no raio até ser destruído pelos inimigos ("vida"). Sem Harmonia, sem recarga, sem tempo limite.
+  # "maximo" = totens ativos por Suporte. Só onde o Suporte pode construir.
+  totem:
+    vida: 50
+    nivel: 2
+    raio: 6
+    maximo: 1
+  # Silêncio (Shift + clique esquerdo com a Estrela): o inimigo na mira não usa habilidades de classe.
+  silencio:
+    segundos: 10
+    alcance: 20
+    custo: 40
+    recarga: 20
+  # Maldição (Shift + clique esquerdo com o Pergaminho): o inimigo na mira causa menos dano (0.2 = 20%).
+  maldicao:
+    reducao: 0.2
+    segundos: 5
+    alcance: 20
+    custo: 25
+    recarga: 15
 
 # Bonecos de teste (/boneco): um inimigo e um aliado que recebem dano, curas e efeitos e mostram tudo em cima deles.
 teste:

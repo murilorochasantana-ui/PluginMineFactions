@@ -50,10 +50,17 @@ public enum PlayerClass {
             "§cFraqueza: armadura de netherite deixa lento;",
             "§carmadura de ferro dá choque nas suas ações."),
     SUPORTE("Suporte", "§b", Material.GOLDEN_APPLE, true,
-            "§7Vincula-se a um aliado e divide o dano.",
-            "§7Prende inimigos, cura e acelera o clan.",
-            "§7Voa por alguns segundos com a pena.",
-            "§cFraqueza: vida máxima de 8 corações.");
+            "§7Vida máxima de 18 corações.",
+            "§7Harmonia (barra de XP): sobe curando, pelo",
+            "§7vínculo, por assistência e com o tempo.",
+            "§7Vínculo: o aliado leva 10% menos dano e você",
+            "§7divide 35% do dano dele. Elo Drenante e",
+            "§7Troca Equivalente (salva o vinculado da morte).",
+            "§7Prende, cura, acelera, voa e troca de lugar.",
+            "§7Escudo Sagrado, Purificar, Totem de Cura,",
+            "§7Silêncio e Maldição (Shift + clique nos itens).",
+            "§7Passivas: Socorrista e Recompensa. /visao",
+            "§cFraqueza: 40% menos dano com armas.");
 
     private final String displayName;
     private final String color;

@@ -1,5 +1,6 @@
 package br.com.murilo.muriloplug.classes.engenheiro;
 
+import br.com.murilo.muriloplug.classes.SilenceManager;
 import br.com.murilo.muriloplug.teste.TestMode;
 import br.com.murilo.muriloplug.classes.ClassManager;
 import br.com.murilo.muriloplug.classes.GrapplePull;
@@ -95,6 +96,11 @@ public final class GanchoManager implements Listener {
         boolean crossbow = event.getBow() != null && event.getBow().getType() == Material.CROSSBOW;
         if (!isEngineer(player) || !crossbow) {
             deny(event, player, "§cA Flecha Gancho só funciona na besta e só para Engenheiros.");
+            return;
+        }
+        if (SilenceManager.blocks(player)) {
+            event.setCancelled(true); // a flecha não é gasta
+            player.updateInventory();
             return;
         }
         int wait = remainingSeconds(id);

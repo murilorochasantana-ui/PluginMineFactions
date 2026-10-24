@@ -9,12 +9,14 @@ import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.Locale;
+import java.util.UUID;
 
 /**
  * Quem é inimigo e quem é aliado de quem, num lugar só: as habilidades de todas as classes usam isto em vez de olhar
  * "Player" e "mesmo clan" por conta própria. Jogador: aliado = mesmo clan, inimigo = não ser do clan. Boneco de teste
- * inimigo é inimigo de todos e o aliado é aliado de todos. Mobs são inimigos. (Estar logado, vivo ou no espectador é
- * conferido por quem escolhe o alvo.)
+ * inimigo é inimigo de todos e o aliado é aliado de todos. Mobs são inimigos. O Totem de Cura do Suporte é inimigo
+ * de quem não é do clan do dono e nunca é aliado (ninguém o cura nem o fortalece). (Estar logado, vivo ou no
+ * espectador é conferido por quem escolhe o alvo.)
  */
 public final class TargetRelations {
 
@@ -46,10 +48,30 @@ public final class TargetRelations {
 
     private final ClanManager clans;
     private final NamespacedKey dummyKey;
+    private final NamespacedKey totemKey;
 
     public TargetRelations(JavaPlugin plugin, ClanManager clans) {
         this.clans = clans;
         this.dummyKey = new NamespacedKey(plugin, "boneco");
+        this.totemKey = new NamespacedKey(plugin, "suporte_totem");
+    }
+
+    /** Chave do PersistentDataContainer que marca as entidades do Totem de Cura (valor: UUID do dono). */
+    public NamespacedKey totemKey() {
+        return totemKey;
+    }
+
+    /** Dono do Totem de Cura, ou null se a entidade não é um totem. */
+    public UUID totemOwner(Entity entity) {
+        String raw = entity.getPersistentDataContainer().get(totemKey, PersistentDataType.STRING);
+        if (raw == null) {
+            return null;
+        }
+        try {
+            return UUID.fromString(raw);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
     }
 
     NamespacedKey dummyKey() {
@@ -66,6 +88,10 @@ public final class TargetRelations {
     }
 
     public boolean isEnemy(Player origin, LivingEntity target) {
+        UUID totem = totemOwner(target);
+        if (totem != null) {
+            return !totem.equals(origin.getUniqueId()) && !clans.isSameClan(origin.getUniqueId(), totem);
+        }
         DummyType dummy = dummyType(target);
         if (dummy != null) {
             return dummy == DummyType.INIMIGO;
@@ -77,6 +103,9 @@ public final class TargetRelations {
     }
 
     public boolean isAlly(Player origin, LivingEntity target) {
+        if (totemOwner(target) != null) {
+            return false;
+        }
         DummyType dummy = dummyType(target);
         if (dummy != null) {
             return dummy == DummyType.ALIADO;

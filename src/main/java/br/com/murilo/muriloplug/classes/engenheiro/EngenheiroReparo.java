@@ -1,5 +1,6 @@
 package br.com.murilo.muriloplug.classes.engenheiro;
 
+import br.com.murilo.muriloplug.classes.SilenceManager;
 import br.com.murilo.muriloplug.auth.AuthManager;
 import br.com.murilo.muriloplug.classes.ClassManager;
 import br.com.murilo.muriloplug.classes.PlayerClass;
@@ -109,6 +110,9 @@ public final class EngenheiroReparo implements Listener {
             if (!isUsedWhileSneaking(item)) {
                 player.sendMessage("§eEste item não está danificado.");
             }
+            return;
+        }
+        if (SilenceManager.blocks(player)) {
             return;
         }
         double cost = settings.repairCost();

@@ -1,5 +1,6 @@
 package br.com.murilo.muriloplug.classes.arqueiro;
 
+import br.com.murilo.muriloplug.classes.SilenceManager;
 import br.com.murilo.muriloplug.auth.AuthManager;
 import br.com.murilo.muriloplug.classes.ClassManager;
 import br.com.murilo.muriloplug.classes.PlayerClass;
@@ -143,7 +144,7 @@ public final class UltraFocus implements Listener {
             return;
         }
         event.setCancelled(true);
-        if (!auth.isLoggedIn(id)) {
+        if (!auth.isLoggedIn(id) || SilenceManager.blocks(player)) {
             return;
         }
         if (armed.remove(id)) {

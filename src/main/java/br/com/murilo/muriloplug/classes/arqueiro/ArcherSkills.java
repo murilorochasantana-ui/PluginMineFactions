@@ -1,5 +1,6 @@
 package br.com.murilo.muriloplug.classes.arqueiro;
 
+import br.com.murilo.muriloplug.classes.SilenceManager;
 import br.com.murilo.muriloplug.auth.AuthManager;
 import br.com.murilo.muriloplug.classes.ClassManager;
 import br.com.murilo.muriloplug.classes.PlayerClass;
@@ -135,6 +136,9 @@ public final class ArcherSkills implements Listener {
             return false;
         }
         lastClick.put(id, now);
+        if (SilenceManager.blocks(player)) {
+            return false;
+        }
         return player.isSneaking() ? rain(player) : mark(player);
     }
 

@@ -43,7 +43,7 @@ commands:
     usage: /clan [criar|convidar|aceitar|negar|sair|expulsar|lider|desfazer|chat|info]
   classe:
     description: Abre o menu de classes (escolher) ou troca a sua classe atual.
-    usage: /classe [trocar] | admin staff <tipo> | admin mana <definir|dar> <jogador> <valor> | admin manamaxima <definir|resetar> <jogador> [valor] | admin flecha <explosiva|perfurante|gelo|fumaca|corrente|corda> <quantidade> | admin flecha <quantidade> [gancho] | admin sentinela <quantidade> | admin golem <quantidade> | admin livro <quantidade> | admin planta
+    usage: /classe [trocar] | admin staff <tipo> | admin mana <definir|dar> <jogador> <valor> | admin manamaxima <definir|resetar> <jogador> [valor] | admin flecha <explosiva|perfurante|gelo|fumaca|corrente|corda> <quantidade> | admin flecha <quantidade> [gancho] | admin sentinela <quantidade> | admin golem <quantidade> | admin totem <quantidade> | admin livro <quantidade> | admin planta
   grimorio:
     description: Abre o Grimório do Mago (aprender magias consumindo staffs e equipar até 4 magias).
     usage: /grimorio
@@ -73,6 +73,12 @@ commands:
   boneco:
     description: Cria e controla os bonecos de teste (um inimigo e um aliado) que recebem dano, curas e efeitos.
     usage: /boneco <inimigo|aliado|remover|removertodos|vida <valor>|dano <valor>|armadura <tipo>|resetar>
+  visao:
+    description: Liga ou desliga a visão noturna do Suporte.
+    usage: /visao
+  troca:
+    description: Liga ou desliga a Troca Equivalente do Suporte.
+    usage: /troca
 
 permissions:
   mineplug.claim.bypass:

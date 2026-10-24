@@ -1,5 +1,6 @@
 package br.com.murilo.muriloplug.classes.engenheiro;
 
+import br.com.murilo.muriloplug.classes.SilenceManager;
 import br.com.murilo.muriloplug.auth.AuthManager;
 import br.com.murilo.muriloplug.claim.ClaimManager;
 import br.com.murilo.muriloplug.classes.ClassManager;
@@ -164,7 +165,7 @@ public final class SentinelaManager implements Listener {
         if (!classes.hasClass(id, PlayerClass.ENGENHEIRO)) {
             event.setCancelled(true);
             player.sendMessage("§cSomente Engenheiros podem usar a Sentinela.");
-        } else if (!auth.isLoggedIn(id)) {
+        } else if (!auth.isLoggedIn(id) || SilenceManager.blocks(player)) {
             event.setCancelled(true);
         } else if (!claims.canBuild(player, event.getBlockPlaced().getLocation())) {
             event.setCancelled(true);

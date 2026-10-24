@@ -6,6 +6,9 @@ import br.com.murilo.muriloplug.classes.PlayerClass;
 import br.com.murilo.muriloplug.classes.PlayerClassChangeEvent;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandExecutor;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -13,7 +16,6 @@ import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
-import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
@@ -23,10 +25,10 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Passiva do Suporte: Shift + F liga/desliga a Visão Noturna (efeito infinito, sem partículas nem ícone). A escolha
- * fica na memória e o efeito volta ao renascer, ao tomar leite e ao entrar. Sem agachar, o F funciona normal.
+ * Passiva do Suporte: o comando /visao liga/desliga a Visão Noturna (efeito infinito, sem partículas nem ícone). A
+ * escolha fica na memória e o efeito volta ao renascer, ao tomar leite e ao entrar; sai ao trocar de classe.
  */
-public final class NightVisionManager implements Listener {
+public final class NightVisionManager implements Listener, CommandExecutor {
 
     private final JavaPlugin plugin;
     private final ClassManager classes;
@@ -66,16 +68,20 @@ public final class NightVisionManager implements Listener {
         });
     }
 
-    @EventHandler(ignoreCancelled = true)
-    public void onSwap(PlayerSwapHandItemsEvent event) {
-        Player player = event.getPlayer();
-        UUID id = player.getUniqueId();
-        if (!player.isSneaking() || !classes.hasClass(id, PlayerClass.SUPORTE)) {
-            return;
+    /** /visao: liga ou desliga (só para Suportes). */
+    @Override
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage("§cSó jogadores podem usar este comando.");
+            return true;
         }
-        event.setCancelled(true);
+        UUID id = player.getUniqueId();
         if (!auth.isLoggedIn(id)) {
-            return;
+            return true;
+        }
+        if (!classes.hasClass(id, PlayerClass.SUPORTE)) {
+            player.sendMessage("§cSomente Suportes podem usar a visão noturna.");
+            return true;
         }
         if (enabled.remove(id)) {
             remove(player);
@@ -85,6 +91,7 @@ public final class NightVisionManager implements Listener {
             apply(player);
             player.sendMessage("§aVisão noturna ligada");
         }
+        return true;
     }
 
     @EventHandler

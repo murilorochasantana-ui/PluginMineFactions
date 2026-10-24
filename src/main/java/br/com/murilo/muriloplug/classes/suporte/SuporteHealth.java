@@ -19,8 +19,9 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.util.ArrayList;
 
 /**
- * Fraqueza do Suporte: vida máxima menor (AttributeModifier mineplug:suporte_vida). Como o modificador é salvo
- * junto com o jogador, ele é removido ao sair, ao desligar o plugin e ao trocar de classe.
+ * Vida máxima extra do Suporte (AttributeModifier mineplug:suporte_vida, +16 = 18 corações). A chave é a mesma da
+ * antiga fraqueza (-4), então quem ainda tiver o modificador antigo recebe o novo no lugar. Não cura ao colocar. Como
+ * o modificador é salvo junto com o jogador, ele é removido ao sair, ao desligar o plugin e ao trocar de classe.
  */
 public final class SuporteHealth implements Listener {
 
@@ -51,30 +52,34 @@ public final class SuporteHealth implements Listener {
         if (max == null) {
             return;
         }
-        double reduced = settings.reducedHealth();
-        if (!classes.hasClass(player.getUniqueId(), PlayerClass.SUPORTE) || reduced <= 0) {
+        double extra = settings.extraHealth();
+        if (!classes.hasClass(player.getUniqueId(), PlayerClass.SUPORTE) || extra <= 0) {
             remove(player);
             return;
         }
         AttributeModifier current = find(max);
-        if (current != null && current.getAmount() == -reduced) {
+        if (current != null && current.getAmount() == extra) {
             return;
         }
         if (current != null) {
             max.removeModifier(current);
         }
-        max.addModifier(new AttributeModifier(key, -reduced, AttributeModifier.Operation.ADD_NUMBER));
+        max.addModifier(new AttributeModifier(key, extra, AttributeModifier.Operation.ADD_NUMBER));
         if (player.getHealth() > max.getValue()) {
             player.setHealth(max.getValue());
         }
     }
 
-    /** Tira o modificador. */
+    /** Tira o modificador e, se a vida atual passar da nova máxima, baixa para a máxima. */
     private void remove(Player player) {
         AttributeInstance max = player.getAttribute(Attribute.MAX_HEALTH);
         AttributeModifier current = max == null ? null : find(max);
-        if (current != null) {
-            max.removeModifier(current);
+        if (current == null) {
+            return;
+        }
+        max.removeModifier(current);
+        if (player.getHealth() > max.getValue()) {
+            player.setHealth(max.getValue());
         }
     }
 

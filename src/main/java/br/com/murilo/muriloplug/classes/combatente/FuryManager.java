@@ -1,5 +1,6 @@
 package br.com.murilo.muriloplug.classes.combatente;
 
+import br.com.murilo.muriloplug.classes.SilenceManager;
 import br.com.murilo.muriloplug.teste.TestMode;
 import br.com.murilo.muriloplug.auth.AuthManager;
 import br.com.murilo.muriloplug.classes.ClassManager;
@@ -298,7 +299,7 @@ public final class FuryManager implements Listener {
             return;
         }
         event.setCancelled(true);
-        if (!auth.isLoggedIn(id) || berserk.contains(id)) {
+        if (!auth.isLoggedIn(id) || berserk.contains(id) || SilenceManager.blocks(player)) {
             return;
         }
         double minimum = settings.berserkerMinimum();

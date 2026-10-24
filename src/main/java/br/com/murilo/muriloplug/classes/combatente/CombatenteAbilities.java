@@ -1,5 +1,6 @@
 package br.com.murilo.muriloplug.classes.combatente;
 
+import br.com.murilo.muriloplug.classes.SilenceManager;
 import br.com.murilo.muriloplug.auth.AuthManager;
 import br.com.murilo.muriloplug.classes.ClassManager;
 import br.com.murilo.muriloplug.classes.PlayerClass;
@@ -136,7 +137,8 @@ public final class CombatenteAbilities implements Listener {
         }
         // Golpe crítico (caindo, depois de pular) em um inimigo, com Fúria para pagar.
         if (event.getCause() == DamageCause.ENTITY_ATTACK && event.getDamager() == attacker && event.isCritical()
-                && isEnemy(attacker, event.getEntity()) && fury.spend(id, settings.leapCost())) {
+                && isEnemy(attacker, event.getEntity()) && !SilenceManager.isSilenced(attacker)
+                && fury.spend(id, settings.leapCost())) {
             event.setDamage(event.getDamage() * (1 + settings.leapBonus()));
             pendingLeap = event;
         }
@@ -209,7 +211,7 @@ public final class CombatenteAbilities implements Listener {
         }
         event.setCancelled(true);
         UUID id = player.getUniqueId();
-        if (!auth.isLoggedIn(id)) {
+        if (!auth.isLoggedIn(id) || SilenceManager.blocks(player)) {
             return;
         }
         if (fury.isBerserk(id)) {
@@ -341,7 +343,8 @@ public final class CombatenteAbilities implements Listener {
         UUID id = player.getUniqueId();
         long now = System.currentTimeMillis();
         Long last = lastTaunt.get(id);
-        if ((last != null && now - last < TAUNT_DEBOUNCE_MILLIS) || !auth.isLoggedIn(id)) {
+        if ((last != null && now - last < TAUNT_DEBOUNCE_MILLIS) || !auth.isLoggedIn(id)
+                || SilenceManager.blocks(player)) {
             return;
         }
         lastTaunt.put(id, now);
@@ -383,6 +386,13 @@ public final class CombatenteAbilities implements Listener {
         world.playSound(player.getLocation(), Sound.ENTITY_EVOKER_PREPARE_ATTACK, 1f, 0.6f);
         world.spawnParticle(Particle.ANGRY_VILLAGER, player.getLocation().add(0, 1.5, 0), 12, 0.6, 0.3, 0.6, 0);
         fury.warn(player, "§6Provocar! §7(" + enemies.size() + " inimigo(s))");
+    }
+
+    /** Tira o Provocar deste inimigo (bônus de dano e brilho) na hora (Purificar do Suporte). */
+    public void clearProvoked(LivingEntity enemy) {
+        if (provoked.remove(enemy.getUniqueId()) != null) {
+            enemy.removePotionEffect(PotionEffectType.GLOWING);
+        }
     }
 
     // ------------------------------------------------------------ dica das teclas

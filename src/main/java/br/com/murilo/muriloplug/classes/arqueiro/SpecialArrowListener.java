@@ -1,5 +1,6 @@
 package br.com.murilo.muriloplug.classes.arqueiro;
 
+import br.com.murilo.muriloplug.classes.SilenceManager;
 import br.com.murilo.muriloplug.teste.TestMode;
 import br.com.murilo.muriloplug.classes.ClassManager;
 import br.com.murilo.muriloplug.classes.GrapplePull;
@@ -126,6 +127,11 @@ public final class SpecialArrowListener implements Listener {
         ItemStack bow = event.getBow();
         if (!isArcher(player) || bow == null || bow.getType() != Material.BOW) {
             deny(event, player, "§cEsta flecha só funciona com ARCO e só para Arqueiros.");
+            return;
+        }
+        if (SilenceManager.blocks(player)) {
+            event.setCancelled(true); // a flecha especial não é gasta
+            player.updateInventory();
             return;
         }
         if (type == SpecialArrow.CORDA) {

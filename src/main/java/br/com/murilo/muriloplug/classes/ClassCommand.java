@@ -113,6 +113,17 @@ public final class ClassCommand implements CommandExecutor, TabCompleter {
             }
             return;
         }
+        if (args.length == 3 && args[1].equalsIgnoreCase("totem")) {
+            int amount = args[2].matches("\\d{1,2}") ? Integer.parseInt(args[2]) : 0;
+            if (amount < 1 || amount > MAX_ARROWS_GIVEN) {
+                player.sendMessage("§cUso: /classe admin totem <quantidade de 1 a " + MAX_ARROWS_GIVEN + ">");
+            } else {
+                var leftover = player.getInventory().addItem(items.create(ClassItems.SUPPORT_TOTEM, amount));
+                player.sendMessage(leftover.isEmpty() ? "§aVocê recebeu " + amount + " Totem(ns) de Cura."
+                        : "§cSeu inventário está cheio.");
+            }
+            return;
+        }
         if (args.length == 2 && args[1].equalsIgnoreCase("planta")) {
             var leftover = player.getInventory().addItem(items.create(ClassItems.BLUEPRINT, 1));
             player.sendMessage(leftover.isEmpty() ? "§aVocê recebeu uma Planta de Engenharia."
@@ -259,13 +270,13 @@ public final class ClassCommand implements CommandExecutor, TabCompleter {
         if (args.length == 1) {
             options = admin ? List.of("trocar", "admin") : List.of("trocar");
         } else if (admin && args.length == 2 && args[0].equalsIgnoreCase("admin")) {
-            options = List.of("staff", "mana", "manamaxima", "flecha", "livro", "planta", "sentinela", "golem");
+            options = List.of("staff", "mana", "manamaxima", "flecha", "livro", "planta", "sentinela", "golem", "totem");
         } else if (admin && args.length == 3 && args[0].equalsIgnoreCase("admin")) {
             switch (args[1].toLowerCase(Locale.ROOT)) {
                 case "staff" -> options = staffIds();
                 case "flecha" -> options = Arrays.stream(SpecialArrow.values()).map(SpecialArrow::id).toList();
                 case "sentinela" -> options = List.of("1", "16", "64");
-                case "golem" -> options = List.of("1", "3", "16");
+                case "golem", "totem" -> options = List.of("1", "3", "16");
                 case "livro" -> options = List.of("1", "5", "10");
                 case "mana" -> options = List.of("definir", "dar");
                 case "manamaxima" -> options = List.of("definir", "resetar");

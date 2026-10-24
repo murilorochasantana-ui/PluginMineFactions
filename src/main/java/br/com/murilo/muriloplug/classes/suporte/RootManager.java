@@ -103,6 +103,12 @@ public final class RootManager implements Listener {
         return true;
     }
 
+    /** Solta na hora (Purificar). */
+    public void release(UUID id) {
+        rootedUntil.remove(id);
+        statuses.remove(id, "Preso");
+    }
+
     /** Prende a entidade (sem andar nem pular) pelo tempo dado, com o status "Preso" e as correntes. */
     public void hold(LivingEntity target, double seconds) {
         rootedUntil.put(target.getUniqueId(), System.currentTimeMillis() + (long) (seconds * 1000));

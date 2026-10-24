@@ -1,5 +1,6 @@
 package br.com.murilo.muriloplug.classes.arqueiro;
 
+import br.com.murilo.muriloplug.classes.SilenceManager;
 import br.com.murilo.muriloplug.auth.AuthManager;
 import br.com.murilo.muriloplug.classes.ClassManager;
 import br.com.murilo.muriloplug.classes.PlayerClass;
@@ -121,7 +122,7 @@ public final class ArcherMobility implements Listener {
         event.setCancelled(true);
         UUID id = player.getUniqueId();
         if (!event.isFlying() || player.isOnGround() || player.isInsideVehicle() || player.isGliding()
-                || !auth.isLoggedIn(id) || jumped.contains(id)) {
+                || !auth.isLoggedIn(id) || jumped.contains(id) || SilenceManager.blocks(player)) {
             return;
         }
         int cost = settings.jumpCost();
@@ -153,7 +154,7 @@ public final class ArcherMobility implements Listener {
         }
         event.setCancelled(true);
         UUID id = player.getUniqueId();
-        if (!auth.isLoggedIn(id) || dashing.contains(id)) {
+        if (!auth.isLoggedIn(id) || dashing.contains(id) || SilenceManager.blocks(player)) {
             return;
         }
         int cost = settings.dashCost();

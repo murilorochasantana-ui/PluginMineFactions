@@ -8,6 +8,7 @@ import br.com.murilo.muriloplug.classes.combatente.FuryManager;
 import br.com.murilo.muriloplug.classes.engenheiro.EngenheiroSidebar;
 import br.com.murilo.muriloplug.classes.mago.MagoSettings;
 import br.com.murilo.muriloplug.classes.mago.ManaManager;
+import br.com.murilo.muriloplug.classes.suporte.SuporteSidebar;
 import br.com.murilo.muriloplug.combat.CombatManager;
 import br.com.murilo.muriloplug.shop.ShopUi;
 import br.com.murilo.muriloplug.clan.Clan;
@@ -25,6 +26,7 @@ import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Score;
 import org.bukkit.scoreboard.Scoreboard;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -56,9 +58,9 @@ public final class SidebarManager {
     private final TestMode test;
     private final FuryManager fury;
     private final EngenheiroSidebar engineer;
+    private final SuporteSidebar support;
     /** Linhas na ordem de exibição, de cima para baixo. Uma linha que devolve null não aparece. */
-    private final List<Line> lines = List.of(this::testLine, this::moneyLine, this::clanLine, this::classLine, this::focusLine, this::modeLine,
-            this::jumpLine, this::dashLine, this::rainLine, this::markLine, this::ultraLine, this::berserkLine, this::chargeLine, this::tauntLine, this::leapLine, this::energyLine, this::repairLine, this::hookLine, this::sentinelLine, this::golemLine, this::ironGolemLine, this::golemRepairLine, this::manaLine, this::combatLine, this::killsLine, this::kdaLine);
+    private final List<Line> lines;
     /** Último texto enviado para cada linha de cada jogador, para só reenviar o que mudou. */
     private final Map<UUID, Component[]> lastRendered = new HashMap<>();
     /** Última pontuação (posição) enviada para cada linha de cada jogador. */
@@ -67,8 +69,9 @@ public final class SidebarManager {
     public SidebarManager(PlayerScoreboards boards, CombatManager combat, StatsManager stats,
                           EconomyManager economy, ClanManager clans, ClassManager classes, ManaManager mana,
                           ArqueiroSidebar archer, FuryManager fury, MagoSettings magoSettings, EngenheiroSidebar engineer,
-                          TestMode test) {
+                          SuporteSidebar support, TestMode test) {
         this.test = test;
+        this.support = support;
         this.engineer = engineer;
         this.magoSettings = magoSettings;
         this.fury = fury;
@@ -80,6 +83,15 @@ public final class SidebarManager {
         this.stats = stats;
         this.economy = economy;
         this.clans = clans;
+        List<Line> order = new ArrayList<>(List.of(this::testLine, this::moneyLine, this::clanLine, this::classLine));
+        // Habilidades do Suporte (só para Suportes): uma linha reservada para cada uma, logo abaixo da classe.
+        for (int i = 0; i < support.size(); i++) {
+            int index = i;
+            order.add(player -> support.line(player, index));
+        }
+        order.addAll(List.of(this::focusLine, this::modeLine,
+            this::jumpLine, this::dashLine, this::rainLine, this::markLine, this::ultraLine, this::berserkLine, this::chargeLine, this::tauntLine, this::leapLine, this::energyLine, this::repairLine, this::hookLine, this::sentinelLine, this::golemLine, this::ironGolemLine, this::golemRepairLine, this::manaLine, this::combatLine, this::killsLine, this::kdaLine));
+        this.lines = List.copyOf(order);
     }
 
     /** Cria o objetivo do sidebar no scoreboard do jogador e desenha as linhas. */
