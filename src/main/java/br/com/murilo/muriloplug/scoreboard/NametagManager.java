@@ -21,11 +21,17 @@ public final class NametagManager {
     private final PlayerScoreboards boards;
     private final CombatManager combat;
     private final ClanManager clans;
+    /** Algo a mais depois de " [Combate]" (ex: o "$" vermelho de quem tem recompensa na cabeça). */
+    private java.util.function.Function<java.util.UUID, Component> extraSuffix = id -> Component.empty();
 
     public NametagManager(PlayerScoreboards boards, CombatManager combat, ClanManager clans) {
         this.boards = boards;
         this.combat = combat;
         this.clans = clans;
+    }
+
+    public void setExtraSuffix(java.util.function.Function<java.util.UUID, Component> extraSuffix) {
+        this.extraSuffix = extraSuffix;
     }
 
     /** Jogador entrou: cria no scoreboard dele os teams de todos e o team dele no scoreboard dos outros. */
@@ -69,7 +75,8 @@ public final class NametagManager {
         }
         Clan clan = clans.getClan(target.getUniqueId());
         team.prefix(clan == null ? Component.empty() : Component.text("[" + clan.tag() + "] ", NamedTextColor.GOLD));
-        team.suffix(Component.text(SUFFIX, combat.isInCombat(target) ? NamedTextColor.RED : NamedTextColor.GREEN));
+        team.suffix(Component.text(SUFFIX, combat.isInCombat(target) ? NamedTextColor.RED : NamedTextColor.GREEN)
+                .append(extraSuffix.apply(target.getUniqueId())));
     }
 
     /** Nome do team baseado no UUID (16 caracteres, o limite do Minecraft). */

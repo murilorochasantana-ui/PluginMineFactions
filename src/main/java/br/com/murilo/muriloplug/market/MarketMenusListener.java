@@ -104,7 +104,7 @@ public final class MarketMenusListener implements Listener {
             } else if (listing.seller().equals(player.getUniqueId())) {
                 later(() -> SellMenu.openEdit(player, listing, menu.page()));
             } else {
-                later(() -> MarketPurchaseMenu.open(player, listing, menu.page()));
+                later(() -> MarketPurchaseMenu.open(player, listing, menu.page(), economy));
             }
         } else if (slot == MarketMenu.PREVIOUS_SLOT && menu.page() > 0) {
             menu.changePage(-1);
@@ -154,8 +154,8 @@ public final class MarketMenusListener implements Listener {
         }
 
         long price = listing.price();
-        // 3. Saldo e 4. espaço no inventário (nesta ordem, sem cobrar nada ainda).
-        if (!economy.has(buyerId, price)) {
+        // 3. Saldo + notas e 4. espaço no inventário (nesta ordem, sem cobrar nada ainda).
+        if (economy.available(buyer) < price) {
             notEnoughMoney(buyer, price);
             return;
         }
@@ -165,8 +165,8 @@ public final class MarketMenusListener implements Listener {
             return;
         }
 
-        // 5. Cobra o comprador.
-        if (!economy.withdraw(buyerId, price)) {
+        // 5. Cobra o comprador (saldo primeiro; o que faltar sai das notas, com troco em notas).
+        if (!economy.cobrar(buyer, price)) {
             notEnoughMoney(buyer, price);
             return;
         }
@@ -198,7 +198,7 @@ public final class MarketMenusListener implements Listener {
 
     private void notEnoughMoney(Player player, long price) {
         player.sendMessage("§cVocê não tem dinheiro suficiente. Preço: " + EconomyManager.format(price)
-                + ", seu saldo: " + EconomyManager.format(economy.getBalance(player.getUniqueId())) + ".");
+                + ", disponível (saldo + notas): " + EconomyManager.format(economy.available(player)) + ".");
     }
 
     // ------------------------------------------------------- vender / editar

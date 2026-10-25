@@ -91,8 +91,11 @@ public final class MarketMenu implements MarketHolder {
             inventory.setItem(NEXT_SLOT, ShopUi.button(Material.ARROW, "§ePróxima página"));
         }
         inventory.setItem(SELL_SLOT, ShopUi.button(Material.LIME_DYE, "§a§lVender item"));
-        inventory.setItem(BALANCE_SLOT, ShopUi.button(Material.GOLD_INGOT,
-                "§6Saldo: §a" + EconomyManager.format(economy.getBalance(viewer))));
+        Player player = Bukkit.getPlayer(viewer);
+        inventory.setItem(BALANCE_SLOT, player == null
+                ? ShopUi.button(Material.GOLD_INGOT, "§6Saldo: §a" + EconomyManager.format(economy.getBalance(viewer)))
+                : ShopUi.button(Material.GOLD_INGOT, "§6Disponível: §a" + EconomyManager.format(economy.available(player)),
+                ShopUi.moneyLore(player, economy)));
         inventory.setItem(MY_LISTINGS_SLOT, ShopUi.button(Material.CHEST,
                 "§e§lMeus anúncios (" + market.count(viewer) + ")"));
     }

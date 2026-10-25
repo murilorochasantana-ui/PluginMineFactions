@@ -15,9 +15,21 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
 
 public final class ClaimManager {
+
+    /** Situação dos claims de um dono, vinda do sistema de bases dos clans. */
+    public enum Weakness {
+        /** Protegido normalmente. */
+        NONE,
+        /** Em dívida (enfraquecido): inimigos podem abrir baús e containers. */
+        IN_DEBT,
+        /** Núcleo destruído: inimigos podem quebrar, colocar e abrir. */
+        VULNERABLE
+    }
 
     public static final int MAX_CLAIMS = 9;
 
@@ -28,6 +40,7 @@ public final class ClaimManager {
     /** Claims de cada jogador, na ordem de criação. */
     private final Map<UUID, List<Claim>> claims = new LinkedHashMap<>();
     private ClanManager clans;
+    private Function<UUID, Weakness> weakness = owner -> Weakness.NONE;
 
     public ClaimManager(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -71,6 +84,38 @@ public final class ClaimManager {
     /** Membros do mesmo clan do dono usam o claim como se tivessem trust (nada é salvo: sair do clan tira o acesso). */
     private boolean isSameClanAsOwner(Player player, Claim claim) {
         return clans != null && clans.isSameClan(player.getUniqueId(), claim.owner());
+    }
+
+    /** Liga a situação (vulnerável/em dívida) dos claims de cada dono. */
+    public void setWeakness(Function<UUID, Weakness> weakness) {
+        this.weakness = weakness;
+    }
+
+    public Weakness weaknessOf(UUID owner) {
+        return weakness.apply(owner);
+    }
+
+    /**
+     * Se um inimigo (quem não pode construir no claim) pode mexer nele mesmo assim: quebrar/colocar só com o claim
+     * vulnerável; abrir containers ({@code container}) com o claim vulnerável ou em dívida.
+     */
+    public boolean isOpenToEnemy(Claim claim, boolean container) {
+        Weakness state = weakness.apply(claim.owner());
+        return state == Weakness.VULNERABLE || (container && state == Weakness.IN_DEBT);
+    }
+
+    /** Todos os jogadores que têm pelo menos um claim. */
+    public Set<UUID> owners() {
+        return Set.copyOf(claims.keySet());
+    }
+
+    /** Soma das áreas (blocos²) dos claims do jogador. */
+    public long totalArea(UUID owner) {
+        long area = 0;
+        for (Claim claim : claims.getOrDefault(owner, List.of())) {
+            area += (long) claim.width() * claim.depth();
+        }
+        return area;
     }
 
     /** Liga o sistema de clans (criado depois do ClaimManager). */

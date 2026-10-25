@@ -12,10 +12,14 @@ import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.regex.Pattern;
 
 /** Atende /clan (com subcomandos) e o atalho /c (chat do clan). */
@@ -24,9 +28,19 @@ public final class ClanCommand implements CommandExecutor, TabCompleter {
     private static final Pattern TAG_PATTERN = Pattern.compile("[A-Za-z0-9]{2,4}");
     private static final Pattern NAME_PATTERN = Pattern.compile("[A-Za-z0-9 _-]{3,16}");
     private static final Set<String> RESERVED_TAGS = Set.of(
-            "criar", "convidar", "aceitar", "negar", "sair", "expulsar", "lider", "desfazer", "chat", "info");
+            "criar", "convidar", "aceitar", "negar", "sair", "expulsar", "lider", "desfazer", "chat", "info",
+            "nucleo", "top", "pagar", "raids", "admin");
     private static final List<String> SUBCOMMANDS = List.of(
             "criar", "convidar", "aceitar", "negar", "sair", "expulsar", "lider", "desfazer", "chat", "info");
+
+    /** Subcomando acrescentado por outro sistema (base do clan, raids...). */
+    public record Extra(String description, BiConsumer<Player, String[]> handler,
+                        BiFunction<Player, String[], List<String>> tab) {
+    }
+
+    private final Map<String, Extra> extras = new LinkedHashMap<>();
+    /** Linhas a mais no menu de informações do clan (quem vê, clan visto). */
+    private BiFunction<Player, Clan, List<String>> extraInfo = (viewer, clan) -> List.of();
 
     private final ClanManager clans;
     private final ClanInvites invites;
@@ -39,6 +53,15 @@ public final class ClanCommand implements CommandExecutor, TabCompleter {
         this.clans = clans;
         this.invites = invites;
         this.stats = stats;
+    }
+
+    /** Acrescenta o subcomando {@code /clan <name>} (aparece na ajuda e no tab). */
+    public void register(String name, Extra extra) {
+        extras.put(name.toLowerCase(Locale.ROOT), extra);
+    }
+
+    public void setExtraInfo(BiFunction<Player, Clan, List<String>> extraInfo) {
+        this.extraInfo = extraInfo;
     }
 
     @Override
@@ -56,8 +79,13 @@ public final class ClanCommand implements CommandExecutor, TabCompleter {
             if (own == null) {
                 help(player);
             } else {
-                ClanInfoMenu.open(player, own, clans, stats, classes);
+                ClanInfoMenu.open(player, own, clans, stats, classes, extraInfo.apply(player, own));
             }
+            return true;
+        }
+        Extra extra = extras.get(args[0].toLowerCase(Locale.ROOT));
+        if (extra != null) {
+            extra.handler().accept(player, args);
             return true;
         }
 
@@ -89,6 +117,11 @@ public final class ClanCommand implements CommandExecutor, TabCompleter {
         player.sendMessage("§e/clan desfazer §7- apaga o clan (líder)");
         player.sendMessage("§e/clan chat <mensagem> §7ou §e/c <mensagem> §7- chat do clan");
         player.sendMessage("§e/clan info [TAG] §7- mostra um clan");
+        for (Map.Entry<String, Extra> entry : extras.entrySet()) {
+            if (!entry.getValue().description().isEmpty()) {
+                player.sendMessage("§e/clan " + entry.getKey() + " §7- " + entry.getValue().description());
+            }
+        }
     }
 
     // ------------------------------------------------------------------ criar
@@ -308,7 +341,7 @@ public final class ClanCommand implements CommandExecutor, TabCompleter {
                 return;
             }
         }
-        ClanInfoMenu.open(player, clan, clans, stats, classes);
+        ClanInfoMenu.open(player, clan, clans, stats, classes, extraInfo.apply(player, clan));
     }
 
     // --------------------------------------------------------------- auxiliares
@@ -345,7 +378,13 @@ public final class ClanCommand implements CommandExecutor, TabCompleter {
             return List.of();
         }
         if (args.length == 1) {
-            return SUBCOMMANDS;
+            List<String> all = new ArrayList<>(SUBCOMMANDS);
+            all.addAll(extras.keySet());
+            return all;
+        }
+        Extra extra = extras.get(args[0].toLowerCase(Locale.ROOT));
+        if (extra != null) {
+            return extra.tab().apply(player, args);
         }
         if (args.length != 2) {
             return List.of();

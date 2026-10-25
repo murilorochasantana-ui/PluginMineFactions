@@ -61,6 +61,8 @@ public final class SidebarManager {
     private final SuporteSidebar support;
     /** Linhas na ordem de exibição, de cima para baixo. Uma linha que devolve null não aparece. */
     private final List<Line> lines;
+    /** Onde entram as linhas de {@link #addMoneyLine} (logo abaixo de "Em notas", na ordem em que são adicionadas). */
+    private int moneyInsertIndex;
     /** Último texto enviado para cada linha de cada jogador, para só reenviar o que mudou. */
     private final Map<UUID, Component[]> lastRendered = new HashMap<>();
     /** Última pontuação (posição) enviada para cada linha de cada jogador. */
@@ -83,15 +85,27 @@ public final class SidebarManager {
         this.stats = stats;
         this.economy = economy;
         this.clans = clans;
-        List<Line> order = new ArrayList<>(List.of(this::testLine, this::moneyLine, this::clanLine, this::classLine));
+        List<Line> order = new ArrayList<>(List.of(this::testLine, this::moneyLine, this::notesLine, this::clanLine,
+                this::classLine));
+        moneyInsertIndex = 3;
         // Habilidades do Suporte (só para Suportes): uma linha reservada para cada uma, logo abaixo da classe.
         for (int i = 0; i < support.size(); i++) {
             int index = i;
             order.add(player -> support.line(player, index));
         }
         order.addAll(List.of(this::focusLine, this::modeLine,
-            this::jumpLine, this::dashLine, this::rainLine, this::markLine, this::ultraLine, this::berserkLine, this::chargeLine, this::tauntLine, this::leapLine, this::energyLine, this::repairLine, this::hookLine, this::sentinelLine, this::golemLine, this::ironGolemLine, this::golemRepairLine, this::manaLine, this::combatLine, this::killsLine, this::kdaLine));
-        this.lines = List.copyOf(order);
+            this::jumpLine, this::dashLine, this::rainLine, this::markLine, this::ultraLine, this::berserkLine, this::chargeLine, this::tauntLine, this::leapLine, this::energyLine, this::hookLine, this::sentinelLine, this::golemLine, this::ironGolemLine, this::golemRepairLine, this::manaLine, this::combatLine, this::killsLine, this::kdaLine));
+        this.lines = order;
+    }
+
+    /**
+     * Acrescenta uma linha logo abaixo do dinheiro (manutenção, recompensa...). Chamar só no onEnable, antes de
+     * qualquer {@link #setup}. A linha devolve null quando não deve aparecer.
+     */
+    public void addMoneyLine(java.util.function.Function<Player, Component> line) {
+        lines.add(moneyInsertIndex++, line::apply);
+        lastRendered.clear();
+        lastScores.clear();
     }
 
     /** Cria o objetivo do sidebar no scoreboard do jogador e desenha as linhas. */
@@ -244,10 +258,6 @@ public final class SidebarManager {
         return engineer.energyLine(player);
     }
 
-    private Component repairLine(Player player) {
-        return engineer.repairLine(player);
-    }
-
     private Component hookLine(Player player) {
         return engineer.hookLine(player);
     }
@@ -297,6 +307,12 @@ public final class SidebarManager {
         return Component.text("Dinheiro: ", NamedTextColor.WHITE)
                 .append(Component.text(EconomyManager.format(economy.getBalance(player.getUniqueId())),
                         NamedTextColor.GREEN));
+    }
+
+    /** "Em notas: $X": soma das notas de dinheiro no inventário (atualiza a cada segundo). */
+    private Component notesLine(Player player) {
+        long notes = economy.notas() == null ? 0 : economy.notas().count(player);
+        return ShopUi.text("§7Em notas: §a" + EconomyManager.format(notes));
     }
 
     private Component combatLine(Player player) {

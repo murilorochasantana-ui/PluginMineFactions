@@ -45,17 +45,6 @@ public final class EngenheiroSidebar {
         return ShopUi.text("§bEnergia: §f" + (int) energy.getEnergia(id) + "/" + (int) energy.maxEnergia());
     }
 
-    /** "Reparar item [Shift+Clique] ✔ (80)". */
-    public Component repairLine(Player player) {
-        if (!isEngineer(player)) {
-            return null;
-        }
-        double cost = settings.repairCost();
-        return ShopUi.text("§aReparar item §7[Shift+Clique] ")
-                .append(mark(energy.temEnergia(player.getUniqueId(), cost)))
-                .append(ShopUi.text(" §8(" + (int) cost + ")"));
-    }
-
     /** "Gancho [Besta] ✔" (ou ✖ 2s durante a recarga). */
     public Component hookLine(Player player) {
         if (!isEngineer(player)) {

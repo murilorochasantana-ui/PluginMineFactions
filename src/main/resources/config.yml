@@ -4,11 +4,163 @@ economia:
   recompensa-kill: 100
   # Recompensa para cada jogador que ganha assistência.
   recompensa-assistencia: 30
+  # Notas de dinheiro: o dinheiro como item (cai na morte, vai para baús, pode ser roubado).
+  notas:
+    # Valores das notas (o /money sacar usa as maiores possíveis).
+    valores: [1, 10, 100, 1000, 10000]
+    # Modelo (item_model) de cada nota.
+    modelos:
+      '1': minecraft:paper
+      '10': minecraft:paper
+      '100': minecraft:paper
+      '1000': minecraft:paper
+      '10000': minecraft:paper
+    # Taxa do /money depositar (0.05 = 5%; o dinheiro da taxa some do jogo).
+    taxa-deposito: 0.05
+    # true: kill, assistência, vendas ao servidor e eventos pagam em notas. false: direto no saldo.
+    recompensas-em-notas: true
+    # Maior valor de um /money sacar.
+    saque-maximo: 10000000
+  # Venda de itens ao servidor (/vender). Preço atual = preço base x multiplicador.
+  vender:
+    # Cada unidade vendida (por qualquer jogador) baixa o multiplicador do item nisto, até o mínimo.
+    queda-por-unidade: 0.002
+    minimo: 0.3
+    # A cada hora o multiplicador recupera esta fração do que falta para 1.0.
+    recuperacao-por-hora: 0.05
+    # Preço base por unidade (o OP muda no jogo com /vender admin preco e /vender admin remover).
+    precos:
+      # Minérios e lingotes
+      COAL: 2.0
+      CHARCOAL: 1.0
+      RAW_COPPER: 1.0
+      COPPER_INGOT: 1.5
+      RAW_IRON: 4.0
+      IRON_INGOT: 5.0
+      RAW_GOLD: 6.0
+      GOLD_INGOT: 8.0
+      REDSTONE: 1.0
+      LAPIS_LAZULI: 2.0
+      QUARTZ: 2.0
+      EMERALD: 25.0
+      DIAMOND: 60.0
+      NETHERITE_SCRAP: 150.0
+      NETHERITE_INGOT: 650.0
+      # Colheitas
+      WHEAT: 0.5
+      CARROT: 0.3
+      POTATO: 0.3
+      BEETROOT: 0.4
+      MELON_SLICE: 0.2
+      PUMPKIN: 1.0
+      SUGAR_CANE: 0.4
+      COCOA_BEANS: 0.5
+      SWEET_BERRIES: 0.3
+      # Madeiras básicas
+      OAK_LOG: 1.0
+      SPRUCE_LOG: 1.0
+      BIRCH_LOG: 1.0
+      JUNGLE_LOG: 1.0
+      ACACIA_LOG: 1.0
+      DARK_OAK_LOG: 1.0
+      MANGROVE_LOG: 1.0
+      CHERRY_LOG: 1.0
+      # Drops de mobs
+      ROTTEN_FLESH: 0.2
+      BONE: 1.0
+      ARROW: 0.5
+      FEATHER: 0.5
+      STRING: 1.0
+      COBWEB: 5.0
+      LEATHER: 3.0
+      GUNPOWDER: 3.0
+      SLIME_BALL: 4.0
+      BLAZE_ROD: 12.0
+      ENDER_PEARL: 15.0
+  # Conserto pago (/reparar): (durabilidade que falta / máxima) x preço do material.
+  reparo:
+    precos:
+      couro: 50
+      madeira: 30
+      pedra: 60
+      ouro: 150
+      ferro: 250
+      diamante: 800
+      netherite: 1500
+      outros: 300
+    # Item encantado custa isto vezes mais.
+    multiplicador-encantado: 1.5
 
 # Clans.
 clan:
   # Máximo de membros por clan (incluindo o líder).
   max-membros: 2
+  # Núcleo do Clan: só explosões tiram pontos dele.
+  nucleo:
+    vida: 10
+    # Uma explosão a até esta distância (blocos) tira 1 ponto (2 se o clan estiver em dívida).
+    raio-explosao: 4
+    # Núcleo destruído: o clan fica vulnerável (inimigos quebram, colocam e abrem baús nos claims dos membros).
+    vulneravel-minutos: 30
+    # Para o jogador que acendeu a TNT que deu o último golpe (em notas).
+    recompensa: 5000
+    espera-recolocar-horas: 2
+    # Regenera 1 ponto a cada tanto de minutos sem ataques.
+    regenera-minutos: 10
+    # /clan nucleo recolher só depois de tanto tempo sem o Núcleo ser atacado.
+    recolher-sem-ataque-minutos: 10
+  cofre:
+    vida: 6
+    # Distância máxima do Núcleo para colocar o Cofre.
+    distancia-maxima: 10
+    # Juros por dia (aplicados aos poucos a cada hora) e o saldo máximo que rende.
+    juros-dia: 0.02
+    teto-juros: 100000
+    # Parte do saldo que cai no chão em notas quando o Cofre é destruído (e durante a vulnerabilidade).
+    perda: 0.3
+    perda-vulneravel: 0.5
+  poder:
+    kill: 1
+    nucleo-destruido: 10
+    raid-defendido: 2
+    nucleo-perdido: 5
+  # Manutenção diária de todos os claims dos membros: área x por-bloco x (1 + Poder x peso-poder).
+  manutencao:
+    horario: "20:00"
+    por-bloco: 0.5
+    peso-poder: 0.01
+
+# Registro de raids.
+raid:
+  # O raid acaba depois de tanto tempo sem explosões ou ataques.
+  fim-apos-minutos: 5
+  # Aviso "BASE SOB ATAQUE" no máximo a cada tanto de minutos.
+  aviso-a-cada-minutos: 2
+  # TNT sem dono conhecido: inimigos a até esta distância contam como atacantes.
+  raio-atacantes: 64
+
+# Eventos.
+eventos:
+  airdrop:
+    # Minutos entre um airdrop e outro (sorteado entre os dois) e jogadores online necessários.
+    intervalo-min: 90
+    intervalo-max: 150
+    minimo-jogadores: 4
+    # Minutos até o baú sumir depois de cair.
+    duracao: 10
+    # Distância mínima de qualquer claim e raio máximo a partir do centro da borda do mundo.
+    distancia-claims: 50
+    raio-maximo: 3000
+    # Quantos itens o baú sorteia da tabela (/airdrop admin editar).
+    itens-min: 4
+    itens-max: 8
+    contagem-segundos: 60
+  recompensa:
+    # Valor da recompensa de cada nível de contrato (I a V).
+    valores: [1000, 3000, 8000, 20000, 50000]
+    # A recompensa expira depois deste tempo com o alvo online (offline o tempo pausa).
+    duracao-horas: 2
+    modelo-contrato: minecraft:map
 
 # XP: o servidor não tem XP. A barra de XP mostra o recurso da classe (ex: a mana do Mago).
 xp:
@@ -24,6 +176,7 @@ xp:
 combate:
   comandos-bloqueados:
     - grimorio
+    - reparar
 
 # PvP estilo 1.8.
 pvp:
@@ -412,9 +565,6 @@ engenheiro:
     maximo: 100
   # Dano a menos de qualquer explosão (0.5 = 50%).
   reducao-explosao: 0.5
-  reparo:
-    # Energia gasta para consertar um item por completo (Shift + clique direito).
-    custo: 80
   dano:
     # Ajuste do dano final: -0.3 = 30% menos, 0.3 = 30% a mais.
     espada: -0.3

@@ -61,6 +61,16 @@ public final class ShopUi {
         return item;
     }
 
+    /** Linhas "Saldo / Em notas / Total disponível" das telas de compra. */
+    public static String[] moneyLore(org.bukkit.entity.Player player, EconomyManager economy) {
+        long balance = economy.getBalance(player.getUniqueId());
+        long notes = economy.notas() == null ? 0 : economy.notas().count(player);
+        return new String[]{
+                "§7Saldo: §a" + EconomyManager.format(balance),
+                "§7Em notas: §a" + EconomyManager.format(notes),
+                "§7Total disponível: §a" + EconomyManager.format(economy.available(player))};
+    }
+
     /** Número com separador de milhar, sem o cifrão: 1.250. */
     public static String number(long value) {
         return String.format(Locale.of("pt", "BR"), "%,d", value);

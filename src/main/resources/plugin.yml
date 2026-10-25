@@ -30,17 +30,29 @@ commands:
     description: Pede para um jogador vir até você.
     usage: /tpaqui <jogador>
   money:
-    description: Mostra o seu saldo ou o de outro jogador, ou envia dinheiro para alguém (administradores também podem dar, tirar e definir saldo).
-    usage: /money [jogador] | pay <jogador> <valor> | admin <dar|tirar|definir> <jogador> <valor>
+    description: Mostra o seu saldo (e as notas no inventário), envia dinheiro, saca em notas ou deposita notas (administradores também podem dar, tirar e definir saldo).
+    usage: /money [jogador] | pay <jogador> <valor> | sacar <valor> | depositar [mao] | admin <dar|tirar|definir> <jogador> <valor>
   loja:
     description: Abre a loja do servidor (administradores também podem gerenciar os itens).
     usage: /loja [admin]
   mercado:
     description: Abre o mercado entre jogadores (comprar, vender e gerenciar seus anúncios pelo menu).
     usage: /mercado
+  vender:
+    description: Vende itens ao servidor (baú de venda, item da mão) e mostra os preços atuais.
+    usage: /vender | mao | precos | admin preco <valor> | admin remover
+  reparar:
+    description: Conserta o item da mão (ou tudo o que está vestido) pagando com dinheiro.
+    usage: /reparar [tudo]
+  maquinas:
+    description: Abre o menu de máquinas (em breve).
+    usage: /maquinas
+  airdrop:
+    description: Mostra o Airdrop atual; administradores iniciam, editam a tabela e pegam Contratos de Recompensa.
+    usage: /airdrop [iniciar | admin editar | admin contrato <nível> <quantidade>]
   clan:
     description: Cria e gerencia clans (convites, membros, liderança e chat do clan).
-    usage: /clan [criar|convidar|aceitar|negar|sair|expulsar|lider|desfazer|chat|info]
+    usage: /clan [criar|convidar|aceitar|negar|sair|expulsar|lider|desfazer|chat|info|nucleo [recolher]|top|pagar|manutencao|raids|admin <juros|manutencao|item <nucleo|cofre>>]
   classe:
     description: Abre o menu de classes (escolher) ou troca a sua classe atual.
     usage: /classe [trocar] | admin staff <tipo> | admin mana <definir|dar> <jogador> <valor> | admin manamaxima <definir|resetar> <jogador> [valor] | admin flecha <explosiva|perfurante|gelo|fumaca|corrente|corda> <quantidade> | admin flecha <quantidade> [gancho] | admin sentinela <quantidade> | admin golem <quantidade> | admin totem <quantidade> | admin livro <quantidade> | admin planta
@@ -104,4 +116,13 @@ permissions:
     default: op
   mineplug.auth.admin:
     description: Permite usar /auth admin resetar.
+    default: op
+  mineplug.vender.admin:
+    description: Permite mudar a tabela de venda ao servidor (/vender admin preco e remover).
+    default: op
+  mineplug.clan.admin:
+    description: Permite usar /clan admin (juros, manutenção e itens do Núcleo/Cofre).
+    default: op
+  mineplug.airdrop.admin:
+    description: Permite iniciar o Airdrop, editar a tabela de itens e pegar Contratos de Recompensa (/airdrop).
     default: op

@@ -1,5 +1,6 @@
 package br.com.murilo.muriloplug.economy;
 
+import br.com.murilo.muriloplug.economy.notas.Notas;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
@@ -28,6 +29,7 @@ public final class MoneyCommand implements CommandExecutor, TabCompleter {
         if (args.length == 0) {
             if (sender instanceof Player player) {
                 sender.sendMessage("§eSaldo: §a" + EconomyManager.format(economy.getBalance(player.getUniqueId())));
+                sender.sendMessage("§eEm notas no inventário: §a" + EconomyManager.format(notas().count(player)));
             } else {
                 sender.sendMessage("Use /" + label + " <jogador>.");
             }
@@ -41,6 +43,16 @@ public final class MoneyCommand implements CommandExecutor, TabCompleter {
 
         if (args[0].equalsIgnoreCase("pay")) {
             pay(sender, label, args);
+            return true;
+        }
+
+        if (args[0].equalsIgnoreCase("sacar")) {
+            withdrawNotes(sender, label, args);
+            return true;
+        }
+
+        if (args[0].equalsIgnoreCase("depositar")) {
+            depositNotes(sender, label, args);
             return true;
         }
 
@@ -101,6 +113,70 @@ public final class MoneyCommand implements CommandExecutor, TabCompleter {
         if (online != null) {
             online.sendMessage("§a" + payer.getName() + " te enviou " + EconomyManager.format(amount));
         }
+    }
+
+    private Notas notas() {
+        return economy.notas();
+    }
+
+    /** /money sacar <valor>: tira do saldo e entrega em notas (as maiores possíveis). */
+    private void withdrawNotes(CommandSender sender, String label, String[] args) {
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage("Apenas jogadores podem sacar.");
+            return;
+        }
+        if (args.length != 2) {
+            player.sendMessage("§cUso: /" + label + " sacar <valor>");
+            return;
+        }
+        Long amount = parseAmount(args[1], false);
+        if (amount == null) {
+            player.sendMessage("§cO valor deve ser um número inteiro positivo.");
+            return;
+        }
+        Notas notas = notas();
+        if (amount > notas.maxWithdraw()) {
+            player.sendMessage("§cO saque máximo de uma vez é " + EconomyManager.format(notas.maxWithdraw()) + ".");
+            return;
+        }
+        long smallest = notas.values().getLast();
+        if (amount % smallest != 0) {
+            player.sendMessage("§cO valor precisa ser múltiplo de " + EconomyManager.format(smallest)
+                    + " (a menor nota).");
+            return;
+        }
+        // Primeiro tira do saldo; só se isso der certo as notas são criadas.
+        if (!economy.withdraw(player.getUniqueId(), amount)) {
+            player.sendMessage("§cSaldo insuficiente. Seu saldo: "
+                    + EconomyManager.format(economy.getBalance(player.getUniqueId())) + ".");
+            return;
+        }
+        notas.give(player, amount);
+        player.sendMessage("§aVocê sacou " + EconomyManager.format(amount) + " em notas.");
+    }
+
+    /** /money depositar [mao]: tira as notas do inventário (ou da mão) e soma ao saldo, menos a taxa. */
+    private void depositNotes(CommandSender sender, String label, String[] args) {
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage("Apenas jogadores podem depositar.");
+            return;
+        }
+        boolean hand = args.length == 2 && (args[1].equalsIgnoreCase("mao") || args[1].equalsIgnoreCase("mão"));
+        if (args.length > 2 || (args.length == 2 && !hand)) {
+            player.sendMessage("§cUso: /" + label + " depositar [mao]");
+            return;
+        }
+        Notas notas = notas();
+        // As notas saem do inventário ANTES de o saldo mudar, no mesmo passo.
+        long total = hand ? notas.takeMainHand(player) : notas.takeAll(player);
+        if (total <= 0) {
+            player.sendMessage(hand ? "§cVocê não está segurando notas de dinheiro."
+                    : "§cVocê não tem notas de dinheiro no inventário.");
+            return;
+        }
+        long fee = Math.min(total, Math.round(total * notas.depositFee()));
+        economy.deposit(player.getUniqueId(), total - fee);
+        player.sendMessage("§aDepositado " + EconomyManager.format(total - fee) + " (taxa " + EconomyManager.format(fee) + ")");
     }
 
     private void admin(CommandSender sender, String label, String[] args) {
@@ -193,10 +269,15 @@ public final class MoneyCommand implements CommandExecutor, TabCompleter {
         if (args.length == 1) {
             List<String> options = new ArrayList<>(onlineNames());
             options.add("pay");
+            options.add("sacar");
+            options.add("depositar");
             if (admin) {
                 options.add("admin");
             }
             return options;
+        }
+        if (args[0].equalsIgnoreCase("depositar") && args.length == 2) {
+            return List.of("mao");
         }
         if (args[0].equalsIgnoreCase("pay") && args.length == 2) {
             return Bukkit.getOnlinePlayers().stream()

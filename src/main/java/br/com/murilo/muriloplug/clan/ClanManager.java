@@ -4,6 +4,7 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -32,6 +33,9 @@ public final class ClanManager {
     /** Clan de cada jogador. */
     private final Map<UUID, Clan> byPlayer = new ConcurrentHashMap<>();
     private Consumer<UUID> membershipListener = id -> { };
+    private Consumer<Clan> disbandListener = clan -> { };
+    /** Grava dados de outros sistemas (bases dos clans) no mesmo clans.yml, a cada save. */
+    private Consumer<FileConfiguration> extraWriter = yaml -> { };
 
     public ClanManager(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -41,6 +45,21 @@ public final class ClanManager {
     /** Chamado para cada jogador cujo clan mudou (entrou, saiu, foi expulso, clan criado ou desfeito). */
     public void setMembershipListener(Consumer<UUID> membershipListener) {
         this.membershipListener = membershipListener;
+    }
+
+    /** Chamado depois que um clan é desfeito (os membros já saíram dele). */
+    public void setDisbandListener(Consumer<Clan> disbandListener) {
+        this.disbandListener = disbandListener;
+    }
+
+    /** Quem mais grava no clans.yml: chamado em cada {@link #save()}, antes de gravar o arquivo. */
+    public void setExtraWriter(Consumer<FileConfiguration> extraWriter) {
+        this.extraWriter = extraWriter;
+    }
+
+    /** O arquivo clans.yml (para outros sistemas lerem os dados deles ao ligar). */
+    public File file() {
+        return file;
     }
 
     // ------------------------------------------------------------ consulta (API para outros sistemas)
@@ -135,6 +154,7 @@ public final class ClanManager {
         List<UUID> members = List.copyOf(clan.members());
         clans.remove(clan.tag());
         members.forEach(byPlayer::remove);
+        disbandListener.accept(clan);
         save();
         members.forEach(membershipListener);
     }
@@ -212,6 +232,7 @@ public final class ClanManager {
             list.add(map);
         }
         yaml.set("clans", list);
+        extraWriter.accept(yaml);
         try {
             plugin.getDataFolder().mkdirs();
             yaml.save(file);

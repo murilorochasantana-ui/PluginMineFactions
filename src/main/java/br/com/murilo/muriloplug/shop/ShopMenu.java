@@ -94,8 +94,11 @@ public final class ShopMenu implements ShopHolder {
         if (mode == Mode.ADMIN) {
             inventory.setItem(ADD_SLOT, ShopUi.button(Material.LIME_DYE, "§a§lAdicionar item"));
         }
-        inventory.setItem(BALANCE_SLOT, ShopUi.button(Material.GOLD_INGOT,
-                "§6Saldo: §a" + EconomyManager.format(economy.getBalance(viewer))));
+        Player player = Bukkit.getPlayer(viewer);
+        inventory.setItem(BALANCE_SLOT, player == null
+                ? ShopUi.button(Material.GOLD_INGOT, "§6Saldo: §a" + EconomyManager.format(economy.getBalance(viewer)))
+                : ShopUi.button(Material.GOLD_INGOT, "§6Disponível: §a" + EconomyManager.format(economy.available(player)),
+                ShopUi.moneyLore(player, economy)));
     }
 
     @Override

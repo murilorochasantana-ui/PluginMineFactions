@@ -11,7 +11,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.UUID;
 
-/** Paga recompensa em dinheiro por kills e assistências (valores no config.yml). */
+/** Paga recompensa por kills e assistências (valores no config.yml), em notas ou no saldo (economia.notas.*). */
 public final class RewardListener implements Listener {
 
     public static final String KILL_PATH = "economia.recompensa-kill";
@@ -39,10 +39,11 @@ public final class RewardListener implements Listener {
         if (amount <= 0) {
             return;
         }
-        economy.deposit(playerId, amount);
+        boolean asNotes = economy.pagarGanho(playerId, amount);
         Player player = Bukkit.getPlayer(playerId);
         if (player != null) {
-            player.sendActionBar(Component.text("+" + amount + " (" + reason + ")", NamedTextColor.GREEN));
+            player.sendActionBar(Component.text("+" + EconomyManager.format(amount) + " (" + reason + ")"
+                    + (asNotes ? " em notas" : ""), NamedTextColor.GREEN));
         }
     }
 }

@@ -21,7 +21,7 @@ public final class PurchaseConfirmMenu implements ShopHolder {
     /** Vira true na primeira compra concluída, para um clique duplo não comprar duas vezes. */
     private boolean used;
 
-    private PurchaseConfirmMenu(ShopItem shopItem, int page) {
+    private PurchaseConfirmMenu(ShopItem shopItem, int page, String[] moneyLore) {
         this.itemId = shopItem.id();
         this.price = shopItem.price();
         this.page = page;
@@ -29,11 +29,11 @@ public final class PurchaseConfirmMenu implements ShopHolder {
         inventory.setItem(CANCEL_SLOT, ShopUi.button(Material.RED_CONCRETE, "§cCancelar"));
         inventory.setItem(ITEM_SLOT, shopItem.item());
         inventory.setItem(CONFIRM_SLOT, ShopUi.button(Material.LIME_CONCRETE,
-                "§aComprar por " + EconomyManager.format(shopItem.price())));
+                "§aComprar por " + EconomyManager.format(shopItem.price()), moneyLore));
     }
 
-    public static void open(Player player, ShopItem shopItem, int page) {
-        player.openInventory(new PurchaseConfirmMenu(shopItem, page).getInventory());
+    public static void open(Player player, ShopItem shopItem, int page, EconomyManager economy) {
+        player.openInventory(new PurchaseConfirmMenu(shopItem, page, ShopUi.moneyLore(player, economy)).getInventory());
     }
 
     int itemId() {

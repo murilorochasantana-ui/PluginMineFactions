@@ -66,7 +66,6 @@ import br.com.murilo.muriloplug.classes.engenheiro.EngenheiroArmas;
 import br.com.murilo.muriloplug.classes.engenheiro.EngenheiroEnergia;
 import br.com.murilo.muriloplug.classes.engenheiro.EngenheiroMenusListener;
 import br.com.murilo.muriloplug.classes.engenheiro.EngenheiroPassivas;
-import br.com.murilo.muriloplug.classes.engenheiro.EngenheiroReparo;
 import br.com.murilo.muriloplug.classes.engenheiro.EngenheiroSidebar;
 import br.com.murilo.muriloplug.classes.engenheiro.GanchoManager;
 import br.com.murilo.muriloplug.classes.engenheiro.GolemItems;
@@ -123,6 +122,23 @@ import br.com.murilo.muriloplug.combat.CombatManager;
 import br.com.murilo.muriloplug.economy.EconomyManager;
 import br.com.murilo.muriloplug.economy.MoneyCommand;
 import br.com.murilo.muriloplug.economy.RewardListener;
+import br.com.murilo.muriloplug.economy.notas.Notas;
+import br.com.murilo.muriloplug.economy.reparo.ReparoCommand;
+import br.com.murilo.muriloplug.economy.vender.SellPrices;
+import br.com.murilo.muriloplug.economy.vender.VenderCommand;
+import br.com.murilo.muriloplug.clan.base.BaseBlocks;
+import br.com.murilo.muriloplug.clan.base.BaseItems;
+import br.com.murilo.muriloplug.clan.base.BaseSettings;
+import br.com.murilo.muriloplug.clan.base.ClanBaseCommands;
+import br.com.murilo.muriloplug.clan.base.ClanBaseManager;
+import br.com.murilo.muriloplug.clan.base.ExplosionOwners;
+import br.com.murilo.muriloplug.eventos.AirdropManager;
+import br.com.murilo.muriloplug.eventos.AirdropTable;
+import br.com.murilo.muriloplug.eventos.BountyManager;
+import br.com.murilo.muriloplug.eventos.ContractItems;
+import br.com.murilo.muriloplug.maquinas.MaquinasCommand;
+import br.com.murilo.muriloplug.raid.RaidManager;
+import br.com.murilo.muriloplug.shop.ShopUi;
 import br.com.murilo.muriloplug.home.DelHomeCommand;
 import br.com.murilo.muriloplug.home.DeleteMenusListener;
 import br.com.murilo.muriloplug.home.HomeCommand;
@@ -197,6 +213,11 @@ public final class MinePlug extends JavaPlugin {
     private EscudoSagrado escudoSagrado;
     private TotemCura totemCura;
     private GolemManager golemManager;
+    private VenderCommand venderCommand;
+    private BaseBlocks baseBlocks;
+    private RaidManager raidManager;
+    private AirdropManager airdropManager;
+    private BountyManager bountyManager;
 
     @Override
     public void onEnable() {
@@ -281,6 +302,8 @@ public final class MinePlug extends JavaPlugin {
 
         economyManager = new EconomyManager(this);
         economyManager.load();
+        Notas notas = new Notas(this);
+        economyManager.setNotas(notas);
         getServer().getPluginManager().registerEvents(new RewardListener(this, economyManager), this);
         MoneyCommand moneyCommand = new MoneyCommand(economyManager);
         getCommand("money").setExecutor(moneyCommand);
@@ -300,6 +323,21 @@ public final class MinePlug extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new MarketMenusListener(this, marketManager, economyManager), this);
         getCommand("mercado").setExecutor(new MercadoCommand(marketManager, economyManager));
 
+        SellPrices sellPrices = new SellPrices(this);
+        sellPrices.load();
+        venderCommand = new VenderCommand(this, sellPrices, economyManager);
+        getServer().getPluginManager().registerEvents(venderCommand, this);
+        getCommand("vender").setExecutor(venderCommand);
+        getCommand("vender").setTabCompleter(venderCommand);
+        venderCommand.start();
+        ReparoCommand reparoCommand = new ReparoCommand(this, economyManager);
+        getServer().getPluginManager().registerEvents(reparoCommand, this);
+        getCommand("reparar").setExecutor(reparoCommand);
+        getCommand("reparar").setTabCompleter(reparoCommand);
+        MaquinasCommand maquinasCommand = new MaquinasCommand();
+        getServer().getPluginManager().registerEvents(maquinasCommand, this);
+        getCommand("maquinas").setExecutor(maquinasCommand);
+
         classManager = new ClassManager(this);
         classManager.load();
         getServer().getPluginManager().registerEvents(new ClassMenusListener(this, classManager, combatManager), this);
@@ -315,6 +353,28 @@ public final class MinePlug extends JavaPlugin {
         getCommand("c").setExecutor(clanCommand);
         claimManager.setClanManager(clanManager);
         getServer().getPluginManager().registerEvents(new ClanChatListener(clanManager), this);
+        // Base do clan (Núcleo, Cofre, Poder, manutenção): os dados vão no mesmo clans.yml, gravados pelo ClanManager.
+        ClanBaseManager clanBaseManager = new ClanBaseManager(this, clanManager, claimManager, economyManager,
+                new BaseSettings(this));
+        clanBaseManager.load();
+        clanManager.setExtraWriter(clanBaseManager::write);
+        getServer().getPluginManager().registerEvents(clanBaseManager, this);
+        clanBaseManager.start();
+        claimManager.setWeakness(clanBaseManager::weakness);
+        ExplosionOwners explosionOwners = new ExplosionOwners(this);
+        getServer().getPluginManager().registerEvents(explosionOwners, this);
+        BaseItems baseItems = new BaseItems(this);
+        baseBlocks = new BaseBlocks(this, clanBaseManager, claimManager, combatManager, baseItems, explosionOwners);
+        getServer().getPluginManager().registerEvents(baseBlocks, this);
+        baseBlocks.start();
+        clanManager.setDisbandListener(baseBlocks::onDisband);
+        new ClanBaseCommands(clanBaseManager, baseBlocks, baseItems).registerOn(clanCommand);
+        clanCommand.setExtraInfo(baseBlocks::infoLines);
+        raidManager = new RaidManager(this, claimManager, clanManager, clanBaseManager, explosionOwners);
+        raidManager.load();
+        getServer().getPluginManager().registerEvents(raidManager, this);
+        raidManager.start();
+        raidManager.registerOn(clanCommand);
         TargetRelations targetRelations = new TargetRelations(this, clanManager);
         StatusRegistry statusRegistry = new StatusRegistry();
         getServer().getPluginManager().registerEvents(new ClanFriendlyFireListener(clanManager, targetRelations), this);
@@ -422,8 +482,6 @@ public final class MinePlug extends JavaPlugin {
         engenheiroPassivas = new EngenheiroPassivas(this, classManager, engenheiroSettings);
         getServer().getPluginManager().registerEvents(engenheiroPassivas, this);
         engenheiroPassivas.start();
-        getServer().getPluginManager().registerEvents(new EngenheiroReparo(this, classManager, engenheiroSettings,
-                engenheiroEnergia, engenheiroAcoes, authManager), this);
         GrapplePull grapplePull = new GrapplePull(this);
         getServer().getPluginManager().registerEvents(grapplePull, this);
         GanchoManager ganchoManager = new GanchoManager(this, classManager, engenheiroSettings, arrowItems, engenheiroAcoes, grapplePull);
@@ -558,11 +616,51 @@ public final class MinePlug extends JavaPlugin {
         // Por último entre os listeners de dano em HIGHEST: o Escudo de Mana mede o dano final já ajustado pelos outros.
         getServer().getPluginManager().registerEvents(new ManaShieldListener(manaManager, magoSettings), this);
 
+        // Eventos: Contratos de Recompensa e Airdrop.
+        bountyManager = new BountyManager(this, economyManager, clanManager, authManager, statusRegistry);
+        bountyManager.setTestMode(testMode);
+        bountyManager.load();
+        ContractItems contractItems = new ContractItems(this, bountyManager);
+        bountyManager.setContracts(contractItems);
+        getServer().getPluginManager().registerEvents(bountyManager, this);
+        bountyManager.start();
+        AirdropTable airdropTable = new AirdropTable(this);
+        airdropTable.load();
+        airdropManager = new AirdropManager(this, claimManager, airdropTable, contractItems, notas);
+        getServer().getPluginManager().registerEvents(airdropManager, this);
+        getCommand("airdrop").setExecutor(airdropManager);
+        getCommand("airdrop").setTabCompleter(airdropManager);
+        airdropManager.start();
+
         PlayerScoreboards scoreboards = new PlayerScoreboards();
         NametagManager nametagManager = new NametagManager(scoreboards, combatManager, clanManager);
+        nametagManager.setExtraSuffix(bountyManager::nameSuffix);
         SidebarManager sidebarManager = new SidebarManager(scoreboards, combatManager, statsManager, economyManager, clanManager, classManager, manaManager, arqueiroSidebar, furyManager, magoSettings,
                 new EngenheiroSidebar(classManager, engenheiroEnergia, engenheiroSettings, ganchoManager, sentinelaManager, golemManager),
                 suporteSidebar, testMode);
+        // Logo abaixo do dinheiro: manutenção dos claims, dívida e recompensa na cabeça.
+        sidebarManager.addMoneyLine(player -> {
+            long cost = clanBaseManager.upkeepFor(player.getUniqueId());
+            return cost > 0 ? ShopUi.text("§7Manutenção: §f" + EconomyManager.format(cost)) : null;
+        });
+        sidebarManager.addMoneyLine(player -> {
+            long debt = clanBaseManager.debtFor(player.getUniqueId());
+            return debt > 0 ? ShopUi.text("§c§lEM DÍVIDA §c" + EconomyManager.format(debt)) : null;
+        });
+        sidebarManager.addMoneyLine(bountyManager::sidebarLine);
+        clanBaseManager.setChangeListener(id -> {
+            Player player = getServer().getPlayer(id);
+            if (player != null) {
+                sidebarManager.update(player);
+            }
+        });
+        bountyManager.setChangeListener(id -> {
+            Player player = getServer().getPlayer(id);
+            if (player != null) {
+                nametagManager.update(player);
+                sidebarManager.update(player);
+            }
+        });
         golemManager.setChangeListener(id -> {
             Player player = getServer().getPlayer(id);
             if (player != null) {
@@ -732,6 +830,22 @@ public final class MinePlug extends JavaPlugin {
         if (testMode != null) {
             testMode.clear();
         }
+        // Itens do baú de venda voltam aos donos antes de qualquer coisa ser salva.
+        if (venderCommand != null) {
+            venderCommand.shutdown();
+        }
+        if (airdropManager != null) {
+            airdropManager.shutdown();
+        }
+        if (raidManager != null) {
+            raidManager.shutdown();
+        }
+        if (baseBlocks != null) {
+            baseBlocks.shutdown();
+        }
+        if (bountyManager != null) {
+            bountyManager.save();
+        }
         if (dummyManager != null) {
             dummyManager.shutdown();
         }
@@ -881,6 +995,20 @@ public final class MinePlug extends JavaPlugin {
         changed |= CombatenteSettings.addMissing(config);
         changed |= EngenheiroSettings.addMissing(config);
         changed |= SuporteSettings.addMissing(config);
+        changed |= Notas.addMissing(config);
+        changed |= SellPrices.addMissing(config);
+        changed |= ReparoCommand.addMissing(config);
+        changed |= BaseSettings.addMissing(config);
+        changed |= RaidManager.addMissing(config);
+        changed |= AirdropManager.addMissing(config);
+        changed |= BountyManager.addMissing(config);
+        // /reparar é bloqueado em combate: entra na lista sem apagar o que já está lá.
+        java.util.List<String> blocked = new java.util.ArrayList<>(config.getStringList(CombatCommandListener.PATH));
+        if (blocked.stream().noneMatch(command -> command.trim().replaceFirst("^/", "").equalsIgnoreCase("reparar"))) {
+            blocked.add("reparar");
+            config.set(CombatCommandListener.PATH, blocked);
+            changed = true;
+        }
         if (changed) {
             saveConfig();
         }

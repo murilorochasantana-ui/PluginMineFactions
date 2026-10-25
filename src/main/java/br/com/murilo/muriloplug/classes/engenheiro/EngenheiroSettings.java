@@ -24,7 +24,6 @@ public final class EngenheiroSettings {
     public static final String ENERGY_PER_SECOND = "engenheiro.energia.por-segundo";
     public static final String ENERGY_MAX = "engenheiro.energia.maximo";
     public static final String EXPLOSION_REDUCTION = "engenheiro.reducao-explosao";
-    public static final String REPAIR_COST = "engenheiro.reparo.custo";
     public static final String DAMAGE_SWORD = "engenheiro.dano.espada";
     public static final String DAMAGE_CROSSBOW = "engenheiro.dano.besta";
     public static final String DAMAGE_BOW = "engenheiro.dano.arco";
@@ -66,7 +65,6 @@ public final class EngenheiroSettings {
         DEFAULTS.put(ENERGY_PER_SECOND, 2.0);
         DEFAULTS.put(ENERGY_MAX, 100);
         DEFAULTS.put(EXPLOSION_REDUCTION, 0.5);
-        DEFAULTS.put(REPAIR_COST, 80);
         DEFAULTS.put(DAMAGE_SWORD, -0.3);
         DEFAULTS.put(DAMAGE_CROSSBOW, 0.3);
         DEFAULTS.put(DAMAGE_BOW, -0.2);
@@ -152,10 +150,6 @@ public final class EngenheiroSettings {
 
     public double explosionReduction() {
         return Math.max(0, Math.min(1, plugin.getConfig().getDouble(EXPLOSION_REDUCTION, 0.5)));
-    }
-
-    public double repairCost() {
-        return Math.max(0, plugin.getConfig().getDouble(REPAIR_COST, 80));
     }
 
     /** Ajuste de dano da espada (-0.3 = 30% menos). */

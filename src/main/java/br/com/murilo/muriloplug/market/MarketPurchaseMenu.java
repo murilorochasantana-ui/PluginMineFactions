@@ -24,7 +24,7 @@ public final class MarketPurchaseMenu implements MarketHolder {
     /** Vira true quando a compra é concluída (ou fica inválida), para um clique duplo não repetir nada. */
     private boolean used;
 
-    private MarketPurchaseMenu(Listing listing, int page) {
+    private MarketPurchaseMenu(Listing listing, int page, String[] moneyLore) {
         this.listingId = listing.id();
         this.price = listing.price();
         this.page = page;
@@ -34,11 +34,11 @@ public final class MarketPurchaseMenu implements MarketHolder {
         inventory.setItem(PRICE_SLOT, ShopUi.button(Material.NAME_TAG, "Preço: §a" + EconomyManager.format(listing.price())));
         inventory.setItem(CANCEL_SLOT, ShopUi.button(Material.RED_CONCRETE, "§cCancelar"));
         inventory.setItem(CONFIRM_SLOT, ShopUi.button(Material.LIME_CONCRETE,
-                "§aComprar por " + EconomyManager.format(listing.price())));
+                "§aComprar por " + EconomyManager.format(listing.price()), moneyLore));
     }
 
-    static void open(Player player, Listing listing, int page) {
-        player.openInventory(new MarketPurchaseMenu(listing, page).getInventory());
+    static void open(Player player, Listing listing, int page, EconomyManager economy) {
+        player.openInventory(new MarketPurchaseMenu(listing, page, ShopUi.moneyLore(player, economy)).getInventory());
     }
 
     long listingId() {

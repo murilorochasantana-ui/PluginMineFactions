@@ -14,6 +14,7 @@ import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
+import br.com.murilo.muriloplug.clan.base.ExplosionOwners;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.block.structure.StructureRotation;
 import org.bukkit.entity.Player;
@@ -550,6 +551,10 @@ public final class PlacementManager implements Listener {
                 copy.update(true, false);
             } catch (RuntimeException e) {
                 block.setBlockData(placed.data(), false); // sem o conteúdo, mas o bloco vai
+            }
+            if (block.getType() == Material.DISPENSER || block.getType() == Material.DROPPER) {
+                // Canhões: a TNT lançada por este dispenser conta como do Engenheiro que colocou a estrutura.
+                ExplosionOwners.markOwner(block, owner);
             }
         }
 

@@ -103,7 +103,7 @@ public final class ShopMenusListener implements Listener {
             } else if (admin) {
                 later(() -> ItemEditorMenu.openEdit(player, shopItem, menu.page()));
             } else {
-                later(() -> PurchaseConfirmMenu.open(player, shopItem, menu.page()));
+                later(() -> PurchaseConfirmMenu.open(player, shopItem, menu.page(), economy));
             }
         } else if (slot == ShopMenu.PREVIOUS_SLOT && menu.page() > 0) {
             menu.changePage(-1);
@@ -135,7 +135,7 @@ public final class ShopMenusListener implements Listener {
         }
 
         long price = current.price();
-        if (!economy.has(player.getUniqueId(), price)) {
+        if (economy.available(player) < price) {
             notEnoughMoney(player, price);
             return;
         }
@@ -144,7 +144,8 @@ public final class ShopMenusListener implements Listener {
             player.sendMessage("§cSeu inventário não tem espaço para este item. Nada foi cobrado.");
             return;
         }
-        if (!economy.withdraw(player.getUniqueId(), price)) {
+        // Saldo primeiro; o que faltar sai das notas (com troco em notas).
+        if (!economy.cobrar(player, price)) {
             notEnoughMoney(player, price);
             return;
         }
@@ -162,7 +163,7 @@ public final class ShopMenusListener implements Listener {
 
     private void notEnoughMoney(Player player, long price) {
         player.sendMessage("§cVocê não tem dinheiro suficiente. Preço: " + EconomyManager.format(price)
-                + ", seu saldo: " + EconomyManager.format(economy.getBalance(player.getUniqueId())) + ".");
+                + ", disponível (saldo + notas): " + EconomyManager.format(economy.available(player)) + ".");
     }
 
     // ---------------------------------------------------------------- editor

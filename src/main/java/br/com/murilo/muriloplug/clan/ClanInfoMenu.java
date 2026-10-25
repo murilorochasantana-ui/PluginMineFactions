@@ -16,6 +16,8 @@ import org.bukkit.inventory.meta.SkullMeta;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 /** "Clan [TAG]": menu só de visualização com o banner do clan e a cabeça de cada membro. */
@@ -28,14 +30,14 @@ public final class ClanInfoMenu implements ClanHolder {
 
     private final Inventory inventory;
 
-    private ClanInfoMenu(Clan clan, ClanManager clans, StatsManager stats, ClassManager classes) {
+    private ClanInfoMenu(Clan clan, ClanManager clans, StatsManager stats, ClassManager classes, List<String> extra) {
         this.inventory = Bukkit.createInventory(this, SLOTS, Component.text("Clan [" + clan.tag() + "]"));
 
         int kills = 0;
         for (UUID member : clan.members()) {
             kills += stats.getKills(member);
         }
-        inventory.setItem(BANNER_SLOT, banner(clan, clans, kills));
+        inventory.setItem(BANNER_SLOT, banner(clan, clans, kills, extra));
 
         // Os membros ocupam os slots 11 a 26 (até 16 cabeças).
         int slot = FIRST_MEMBER_SLOT;
@@ -47,15 +49,19 @@ public final class ClanInfoMenu implements ClanHolder {
         }
     }
 
-    public static void open(Player viewer, Clan clan, ClanManager clans, StatsManager stats, ClassManager classes) {
-        viewer.openInventory(new ClanInfoMenu(clan, clans, stats, classes).getInventory());
+    /** {@code extra}: linhas a mais no banner (Poder, Núcleo, Cofre...). */
+    public static void open(Player viewer, Clan clan, ClanManager clans, StatsManager stats, ClassManager classes,
+                            List<String> extra) {
+        viewer.openInventory(new ClanInfoMenu(clan, clans, stats, classes, extra).getInventory());
     }
 
-    private static ItemStack banner(Clan clan, ClanManager clans, int kills) {
-        return ShopUi.button(Material.WHITE_BANNER, "§6[" + clan.tag() + "] " + clan.name(),
+    private static ItemStack banner(Clan clan, ClanManager clans, int kills, List<String> extra) {
+        List<String> lore = new ArrayList<>(List.of(
                 "§7Criado em: §f" + DATE.format(Instant.ofEpochMilli(clan.createdAt()).atZone(ZoneId.systemDefault())),
                 "§7Membros: §f" + clan.size() + "/" + clans.maxMembers(),
-                "§7Kills dos membros: §f" + kills);
+                "§7Kills dos membros: §f" + kills));
+        lore.addAll(extra);
+        return ShopUi.button(Material.WHITE_BANNER, "§6[" + clan.tag() + "] " + clan.name(), lore.toArray(String[]::new));
     }
 
     private static ItemStack head(Clan clan, UUID member, StatsManager stats, ClassManager classes) {
@@ -64,7 +70,7 @@ public final class ClanInfoMenu implements ClanHolder {
         SkullMeta meta = (SkullMeta) head.getItemMeta();
         meta.setOwningPlayer(Bukkit.getOfflinePlayer(member));
         meta.displayName(ShopUi.text("§e" + ClanManager.nameOf(member)));
-        meta.lore(java.util.List.of(
+        meta.lore(List.of(
                 ShopUi.text("Cargo: " + (clan.leader().equals(member) ? "§6Líder" : "§7Membro")),
                 ShopUi.text("K/D/A: " + stats.getKills(member) + "/" + stats.getDeaths(member) + "/" + stats.getAssists(member)),
                 ShopUi.text("Classe: " + (memberClass == null ? "§7nenhuma" : memberClass.coloredName())),
