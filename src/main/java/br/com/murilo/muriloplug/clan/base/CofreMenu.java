@@ -11,7 +11,7 @@ import org.bukkit.inventory.Inventory;
 import java.util.Locale;
 
 /**
- * Menu do Cofre do Clan (27 slots). Todos os membros depositam notas (sem taxa); só o líder saca, escolhendo o valor
+ * Menu do Cofre do Clan (27 slots). Todos os membros depositam maços (sem taxa); só o líder saca, escolhendo o valor
  * com os botões +100/+1k/+10k (esquerdo soma, direito tira). Como é um {@link ClanHolder}, todo clique é cancelado
  * pelo listener dos menus do clan; as ações ficam em {@link BaseBlocks}.
  */
@@ -70,15 +70,15 @@ public final class CofreMenu implements ClanHolder {
                         + "§8(até " + EconomyManager.format(settings.interestCap()) + ")",
                 "§7Rendendo agora: §f" + EconomyManager.format(rendendo),
                 "§7Vida: §c" + base.vaultHp() + "/" + settings.vaultHp()));
-        inventory.setItem(DEPOSIT_SLOT, ShopUi.button(Material.CHEST, "§aDepositar notas",
-                "§7Coloca TODAS as notas do seu", "§7inventário no Cofre (sem taxa)."));
+        inventory.setItem(DEPOSIT_SLOT, ShopUi.button(Material.CHEST, "§aDepositar maços",
+                "§7Coloca TODOS os maços de dinheiro", "§7do seu inventário no Cofre (sem taxa)."));
         if (!leader) {
             inventory.setItem(WITHDRAW_SLOT, ShopUi.button(Material.BARRIER, "§cSacar", "§7Só o líder pode sacar."));
             return;
         }
         inventory.setItem(AMOUNT_SLOT, ShopUi.button(Material.NAME_TAG, "§eValor do saque: §a" + EconomyManager.format(amount)));
         inventory.setItem(WITHDRAW_SLOT, ShopUi.button(Material.LIME_CONCRETE, "§aSacar " + EconomyManager.format(amount),
-                "§7Entregue em notas de dinheiro."));
+                "§7Entregue em maço de dinheiro."));
         for (int i = 0; i < STEPS.length; i++) {
             String value = ShopUi.number(STEPS[i]);
             inventory.setItem(FIRST_STEP_SLOT + i, ShopUi.button(MATERIALS[i], "§6" + LABELS[i],

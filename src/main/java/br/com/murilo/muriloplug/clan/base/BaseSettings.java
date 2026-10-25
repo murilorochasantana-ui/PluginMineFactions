@@ -18,6 +18,8 @@ public final class BaseSettings {
     public static final String CORE_REPLACE_WAIT = "clan.nucleo.espera-recolocar-horas";
     public static final String CORE_REGEN = "clan.nucleo.regenera-minutos";
     public static final String CORE_PICKUP_WAIT = "clan.nucleo.recolher-sem-ataque-minutos";
+    public static final String CORE_SHIELD = "clan.nucleo.escudo-segundos";
+    public static final String SIZE_MENU = "clan.manutencao.tamanhos-menu";
     public static final String VAULT_HP = "clan.cofre.vida";
     public static final String VAULT_DISTANCE = "clan.cofre.distancia-maxima";
     public static final String VAULT_INTEREST = "clan.cofre.juros-dia";
@@ -42,6 +44,8 @@ public final class BaseSettings {
         DEFAULTS.put(CORE_REPLACE_WAIT, 2);
         DEFAULTS.put(CORE_REGEN, 10);
         DEFAULTS.put(CORE_PICKUP_WAIT, 10);
+        DEFAULTS.put(CORE_SHIELD, 5);
+        DEFAULTS.put(SIZE_MENU, java.util.List.of(10, 20, 30, 40, 50));
         DEFAULTS.put(VAULT_HP, 6);
         DEFAULTS.put(VAULT_DISTANCE, 10);
         DEFAULTS.put(VAULT_INTEREST, 0.02);
@@ -108,6 +112,17 @@ public final class BaseSettings {
 
     public long pickupWaitMillis() {
         return Math.max(0, integer(CORE_PICKUP_WAIT)) * 60_000L;
+    }
+
+    /** Imunidade do Núcleo a explosões depois de cada explosão que tira pontos. */
+    public long shieldMillis() {
+        return Math.max(0, (long) (number(CORE_SHIELD) * 1000));
+    }
+
+    /** Tamanhos do menu do /claim (lado do quadrado). */
+    public java.util.List<Integer> sizeMenu() {
+        java.util.List<Integer> sizes = plugin.getConfig().getIntegerList(SIZE_MENU);
+        return sizes.isEmpty() ? java.util.List.of(10, 20, 30, 40, 50) : sizes;
     }
 
     public int vaultHp() {

@@ -129,7 +129,7 @@ public final class ReparoCommand implements CommandExecutor, TabCompleter, Liste
         }
         if (!economy.cobrar(player, total)) {
             player.sendMessage("§cVocê não tem dinheiro suficiente. Preço: " + EconomyManager.format(total)
-                    + ", disponível (saldo + notas): " + EconomyManager.format(economy.available(player)) + ".");
+                    + ", disponível (saldo + maços): " + EconomyManager.format(economy.available(player)) + ".");
             return;
         }
         PlayerInventory inventory = player.getInventory();

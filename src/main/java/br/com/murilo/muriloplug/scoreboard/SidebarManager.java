@@ -61,7 +61,7 @@ public final class SidebarManager {
     private final SuporteSidebar support;
     /** Linhas na ordem de exibição, de cima para baixo. Uma linha que devolve null não aparece. */
     private final List<Line> lines;
-    /** Onde entram as linhas de {@link #addMoneyLine} (logo abaixo de "Em notas", na ordem em que são adicionadas). */
+    /** Onde entram as linhas de {@link #addMoneyLine} (logo abaixo de "Em maços", na ordem em que são adicionadas). */
     private int moneyInsertIndex;
     /** Último texto enviado para cada linha de cada jogador, para só reenviar o que mudou. */
     private final Map<UUID, Component[]> lastRendered = new HashMap<>();
@@ -309,10 +309,10 @@ public final class SidebarManager {
                         NamedTextColor.GREEN));
     }
 
-    /** "Em notas: $X": soma das notas de dinheiro no inventário (atualiza a cada segundo). */
+    /** "Em maços: $X": soma dos maços de dinheiro no inventário (atualiza a cada segundo). */
     private Component notesLine(Player player) {
-        long notes = economy.notas() == null ? 0 : economy.notas().count(player);
-        return ShopUi.text("§7Em notas: §a" + EconomyManager.format(notes));
+        long cash = economy.macos() == null ? 0 : economy.macos().count(player);
+        return ShopUi.text("§7Em maços: §a" + EconomyManager.format(cash));
     }
 
     private Component combatLine(Player player) {

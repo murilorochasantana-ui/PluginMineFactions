@@ -1,6 +1,6 @@
 package br.com.murilo.muriloplug.economy;
 
-import br.com.murilo.muriloplug.economy.notas.Notas;
+import br.com.murilo.muriloplug.economy.maco.Macos;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
@@ -29,7 +29,7 @@ public final class MoneyCommand implements CommandExecutor, TabCompleter {
         if (args.length == 0) {
             if (sender instanceof Player player) {
                 sender.sendMessage("§eSaldo: §a" + EconomyManager.format(economy.getBalance(player.getUniqueId())));
-                sender.sendMessage("§eEm notas no inventário: §a" + EconomyManager.format(notas().count(player)));
+                sender.sendMessage("§eEm maços no inventário: §a" + EconomyManager.format(macos().count(player)));
             } else {
                 sender.sendMessage("Use /" + label + " <jogador>.");
             }
@@ -47,12 +47,17 @@ public final class MoneyCommand implements CommandExecutor, TabCompleter {
         }
 
         if (args[0].equalsIgnoreCase("sacar")) {
-            withdrawNotes(sender, label, args);
+            withdrawCash(sender, label, args);
             return true;
         }
 
         if (args[0].equalsIgnoreCase("depositar")) {
-            depositNotes(sender, label, args);
+            depositCash(sender, label, args);
+            return true;
+        }
+
+        if (args[0].equalsIgnoreCase("juntar")) {
+            mergeCash(sender);
             return true;
         }
 
@@ -115,18 +120,19 @@ public final class MoneyCommand implements CommandExecutor, TabCompleter {
         }
     }
 
-    private Notas notas() {
-        return economy.notas();
+    private Macos macos() {
+        return economy.macos();
     }
 
-    /** /money sacar <valor>: tira do saldo e entrega em notas (as maiores possíveis). */
-    private void withdrawNotes(CommandSender sender, String label, String[] args) {
+    /** /money sacar <valor> [separado]: tira do saldo e soma no maço do inventário (ou entrega um maço novo). */
+    private void withdrawCash(CommandSender sender, String label, String[] args) {
         if (!(sender instanceof Player player)) {
             sender.sendMessage("Apenas jogadores podem sacar.");
             return;
         }
-        if (args.length != 2) {
-            player.sendMessage("§cUso: /" + label + " sacar <valor>");
+        boolean separate = args.length == 3 && args[2].equalsIgnoreCase("separado");
+        if (args.length != 2 && !separate) {
+            player.sendMessage("§cUso: /" + label + " sacar <valor> [separado]");
             return;
         }
         Long amount = parseAmount(args[1], false);
@@ -134,29 +140,23 @@ public final class MoneyCommand implements CommandExecutor, TabCompleter {
             player.sendMessage("§cO valor deve ser um número inteiro positivo.");
             return;
         }
-        Notas notas = notas();
-        if (amount > notas.maxWithdraw()) {
-            player.sendMessage("§cO saque máximo de uma vez é " + EconomyManager.format(notas.maxWithdraw()) + ".");
-            return;
-        }
-        long smallest = notas.values().getLast();
-        if (amount % smallest != 0) {
-            player.sendMessage("§cO valor precisa ser múltiplo de " + EconomyManager.format(smallest)
-                    + " (a menor nota).");
-            return;
-        }
-        // Primeiro tira do saldo; só se isso der certo as notas são criadas.
+        // Primeiro tira do saldo; só se isso der certo o dinheiro vira maço.
         if (!economy.withdraw(player.getUniqueId(), amount)) {
             player.sendMessage("§cSaldo insuficiente. Seu saldo: "
                     + EconomyManager.format(economy.getBalance(player.getUniqueId())) + ".");
             return;
         }
-        notas.give(player, amount);
-        player.sendMessage("§aVocê sacou " + EconomyManager.format(amount) + " em notas.");
+        if (separate) {
+            macos().giveSeparate(player, amount);
+        } else {
+            macos().give(player, amount);
+        }
+        player.sendMessage("§aVocê sacou " + EconomyManager.format(amount)
+                + (separate ? " em um maço novo." : " em maço."));
     }
 
-    /** /money depositar [mao]: tira as notas do inventário (ou da mão) e soma ao saldo, menos a taxa. */
-    private void depositNotes(CommandSender sender, String label, String[] args) {
+    /** /money depositar [mao]: tira os maços do inventário (ou da mão) e soma ao saldo, menos a taxa. */
+    private void depositCash(CommandSender sender, String label, String[] args) {
         if (!(sender instanceof Player player)) {
             sender.sendMessage("Apenas jogadores podem depositar.");
             return;
@@ -166,17 +166,29 @@ public final class MoneyCommand implements CommandExecutor, TabCompleter {
             player.sendMessage("§cUso: /" + label + " depositar [mao]");
             return;
         }
-        Notas notas = notas();
-        // As notas saem do inventário ANTES de o saldo mudar, no mesmo passo.
-        long total = hand ? notas.takeMainHand(player) : notas.takeAll(player);
+        Macos macos = macos();
+        // Os maços saem do inventário ANTES de o saldo mudar, no mesmo passo.
+        long total = hand ? macos.takeMainHand(player) : macos.takeAll(player);
         if (total <= 0) {
-            player.sendMessage(hand ? "§cVocê não está segurando notas de dinheiro."
-                    : "§cVocê não tem notas de dinheiro no inventário.");
+            player.sendMessage(hand ? "§cVocê não está segurando um maço de dinheiro."
+                    : "§cVocê não tem maços de dinheiro no inventário.");
             return;
         }
-        long fee = Math.min(total, Math.round(total * notas.depositFee()));
+        long fee = Math.min(total, Math.round(total * macos.depositFee()));
         economy.deposit(player.getUniqueId(), total - fee);
         player.sendMessage("§aDepositado " + EconomyManager.format(total - fee) + " (taxa " + EconomyManager.format(fee) + ")");
+    }
+
+    /** /money juntar: junta todos os maços do inventário em um só. */
+    private void mergeCash(CommandSender sender) {
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage("Apenas jogadores podem juntar maços.");
+            return;
+        }
+        int merged = macos().mergeAll(player);
+        player.sendMessage(merged > 0
+                ? "§aJuntei " + (merged + 1) + " maços em um só: " + EconomyManager.format(macos().count(player)) + "."
+                : "§eVocê não tem mais de um maço para juntar.");
     }
 
     private void admin(CommandSender sender, String label, String[] args) {
@@ -271,6 +283,7 @@ public final class MoneyCommand implements CommandExecutor, TabCompleter {
             options.add("pay");
             options.add("sacar");
             options.add("depositar");
+            options.add("juntar");
             if (admin) {
                 options.add("admin");
             }
@@ -278,6 +291,9 @@ public final class MoneyCommand implements CommandExecutor, TabCompleter {
         }
         if (args[0].equalsIgnoreCase("depositar") && args.length == 2) {
             return List.of("mao");
+        }
+        if (args[0].equalsIgnoreCase("sacar") && args.length == 3) {
+            return List.of("separado");
         }
         if (args[0].equalsIgnoreCase("pay") && args.length == 2) {
             return Bukkit.getOnlinePlayers().stream()

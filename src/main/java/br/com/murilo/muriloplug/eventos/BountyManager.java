@@ -38,7 +38,7 @@ import java.util.function.Consumer;
  * Recompensas na cabeça de jogadores, criadas pelos Contratos de Recompensa. O servidor cria o dinheiro (quem usa o
  * contrato não paga). O alvo fica "Procurado" (status, "$" vermelho no nome e linha no sidebar); outro contrato no
  * mesmo alvo soma. Quem matar o alvo (killer do evento de kill, inclusive o creditado sem golpe final) ganha em
- * notas, menos membros do clan do alvo. A recompensa expira depois de {@code duracao-horas} de tempo ONLINE do alvo.
+ * maço, menos membros do clan do alvo. A recompensa expira depois de {@code duracao-horas} de tempo ONLINE do alvo.
  */
 public final class BountyManager implements Listener {
 
@@ -211,7 +211,7 @@ public final class BountyManager implements Listener {
         save();
         boolean notes = economy.pagarGanho(killer, bounty.value);
         Bukkit.broadcast(ShopUi.text("§c§lRECOMPENSA! §e" + ClanManager.nameOf(killer) + " matou " + victimName
-                + " e ganhou " + EconomyManager.format(bounty.value) + (notes ? " em notas" : "") + "!"));
+                + " e ganhou " + EconomyManager.format(bounty.value) + (notes ? " em maço" : "") + "!"));
         changeListener.accept(event.getVictim());
     }
 

@@ -144,7 +144,7 @@ public final class ShopMenusListener implements Listener {
             player.sendMessage("§cSeu inventário não tem espaço para este item. Nada foi cobrado.");
             return;
         }
-        // Saldo primeiro; o que faltar sai das notas (com troco em notas).
+        // Saldo primeiro; o que faltar sai de dentro dos maços.
         if (!economy.cobrar(player, price)) {
             notEnoughMoney(player, price);
             return;
@@ -163,7 +163,7 @@ public final class ShopMenusListener implements Listener {
 
     private void notEnoughMoney(Player player, long price) {
         player.sendMessage("§cVocê não tem dinheiro suficiente. Preço: " + EconomyManager.format(price)
-                + ", disponível (saldo + notas): " + EconomyManager.format(economy.available(player)) + ".");
+                + ", disponível (saldo + maços): " + EconomyManager.format(economy.available(player)) + ".");
     }
 
     // ---------------------------------------------------------------- editor

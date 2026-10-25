@@ -119,7 +119,7 @@ public final class VenderCommand implements CommandExecutor, TabCompleter, Liste
     private void pay(Player player, int units, long payout) {
         boolean notes = economy.pagarGanho(player.getUniqueId(), payout);
         player.sendMessage("§aVocê vendeu " + units + " itens por " + EconomyManager.format(payout)
-                + (notes ? " §7(em notas)" : ""));
+                + (notes ? " §7(em maço)" : ""));
     }
 
     // ------------------------------------------------------------------ admin

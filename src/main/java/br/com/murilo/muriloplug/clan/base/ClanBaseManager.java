@@ -31,7 +31,7 @@ import java.util.function.Consumer;
 
 /**
  * Dados das bases dos clans (Núcleo, Cofre, Poder, vulnerabilidade, dívida) e as regras que não dependem dos blocos:
- * Poder, juros do Cofre e manutenção diária dos claims. Tudo é gravado no clans.yml (seção "bases"), junto com os
+ * Poder, juros do Cofre e manutenção diária dos claims (só de clans: quem não tem clan não paga nada). Tudo é gravado no clans.yml (seção "bases"), junto com os
  * clans, pelo {@link ClanManager#save()}. Os blocos (colocar, explosões, menus) ficam em {@link BaseBlocks}.
  */
 public final class ClanBaseManager implements Listener {
@@ -44,8 +44,6 @@ public final class ClanBaseManager implements Listener {
     private final EconomyManager economy;
     private final BaseSettings settings;
     private final Map<String, ClanBase> bases = new LinkedHashMap<>();
-    /** Dívida de manutenção de quem não tem clan (paga os próprios claims). */
-    private final Map<UUID, Long> playerDebts = new HashMap<>();
     private String lastUpkeepDate;
     private long lastInterest;
     private Consumer<UUID> changeListener = id -> { };
@@ -87,6 +85,7 @@ public final class ClanBaseManager implements Listener {
         return bases.computeIfAbsent(clan.tag(), tag -> {
             ClanBase base = new ClanBase(tag);
             base.coreHp = settings.coreHp();
+            base.lowestHp = settings.coreHp();
             base.vaultHp = settings.vaultHp();
             return base;
         });
@@ -115,7 +114,7 @@ public final class ClanBaseManager implements Listener {
             }
             return base.debt > 0 ? ClaimManager.Weakness.IN_DEBT : ClaimManager.Weakness.NONE;
         }
-        return playerDebts.getOrDefault(owner, 0L) > 0 ? ClaimManager.Weakness.IN_DEBT : ClaimManager.Weakness.NONE;
+        return ClaimManager.Weakness.NONE; // sem clan não há manutenção, nem dívida
     }
 
     public boolean inDebt(Clan clan) {
@@ -123,8 +122,27 @@ public final class ClanBaseManager implements Listener {
         return base != null && base.debt > 0;
     }
 
-    public long playerDebt(UUID player) {
-        return playerDebts.getOrDefault(player, 0L);
+    // ------------------------------------------------------------ escudo e recompensa do Núcleo
+
+    /** Segundos de escudo que faltam no Núcleo do clan (0 = sem escudo). */
+    public int getEscudoRestante(Clan clan) {
+        long left = of(clan).shieldUntil - System.currentTimeMillis();
+        return left <= 0 ? 0 : (int) Math.ceil(left / 1000.0);
+    }
+
+    /** Quanto vale cada ponto tirado do Núcleo (recompensa total / vida). */
+    public long rewardPerPoint() {
+        return settings.coreReward() / settings.coreHp();
+    }
+
+    /** Recompensa total de um Núcleo. */
+    public long rewardTotal() {
+        return rewardPerPoint() * settings.coreHp();
+    }
+
+    /** Quanto ainda pode ser pago pelo Núcleo atual do clan (pontos abaixo do menor já atingido). */
+    public long rewardRemaining(Clan clan) {
+        return Math.max(0, of(clan).lowestHp) * rewardPerPoint();
     }
 
     /** Clans por Poder (maior primeiro). */
@@ -155,30 +173,50 @@ public final class ClanBaseManager implements Listener {
 
     // ------------------------------------------------------------ manutenção
 
-    /** Custo da manutenção diária do clan: áreas dos claims dos membros × por-bloco × (1 + Poder × peso). */
-    public long upkeepCost(Clan clan) {
+    /** Área total (blocos²) dos claims dos membros do clan. */
+    public long totalArea(Clan clan) {
         long area = 0;
         for (UUID member : clan.members()) {
             area += claims.totalArea(member);
         }
+        return area;
+    }
+
+    /** Custo de uma área com o Poder atual do clan: área × por-bloco × (1 + Poder × peso). */
+    public long upkeepForArea(Clan clan, long area) {
         double cost = area * settings.upkeepPerBlock() * (1 + of(clan).power * settings.upkeepPowerWeight());
         return (long) Math.ceil(cost - 1.0E-9);
     }
 
-    /** Custo da manutenção de quem não tem clan (mesma conta, sem Poder). */
-    public long upkeepCost(UUID player) {
-        return (long) Math.ceil(claims.totalArea(player) * settings.upkeepPerBlock() - 1.0E-9);
+    /** Custo da manutenção diária do clan (todos os claims dos membros). */
+    public long upkeepCost(Clan clan) {
+        return upkeepForArea(clan, totalArea(clan));
     }
 
-    /** Custo e dívida que valem para o jogador (do clan dele, ou dele mesmo sem clan). */
-    public long upkeepFor(UUID player) {
-        Clan clan = clans.getClan(player);
-        return clan != null ? upkeepCost(clan) : upkeepCost(player);
+    /**
+     * Para o menu do /claim: {custo de hoje, custo com mais {@code extraArea}}, ou null se o jogador não tiver clan
+     * (sem clan não há manutenção).
+     */
+    public long[] upkeepPreview(Player player, long extraArea) {
+        Clan clan = clans.getClan(player.getUniqueId());
+        if (clan == null) {
+            return null;
+        }
+        long area = totalArea(clan);
+        return new long[]{upkeepForArea(clan, area), upkeepForArea(clan, area + extraArea)};
     }
 
-    public long debtFor(UUID player) {
-        Clan clan = clans.getClan(player);
-        return clan != null ? of(clan).debt : playerDebt(player);
+    /** Linhas "claim (dono) LxP = área → $custo" de cada claim que entra na manutenção do clan. */
+    public List<String> upkeepBreakdown(Clan clan) {
+        List<String> lines = new ArrayList<>();
+        for (UUID member : clan.members()) {
+            for (br.com.murilo.muriloplug.claim.Claim claim : claims.getByOwner(member)) {
+                long area = (long) claim.width() * claim.depth();
+                lines.add("§f" + claim.name() + " §7(" + ClanManager.nameOf(member) + ") " + claim.width() + "x"
+                        + claim.depth() + " = " + area + " blocos §8→ §e" + EconomyManager.format(upkeepForArea(clan, area)));
+            }
+        }
+        return lines;
     }
 
     /** Cobra a manutenção de todos agora (às 20h, ou pelo /clan admin manutencao). */
@@ -205,50 +243,17 @@ public final class ClanBaseManager implements Listener {
             }
             clan.members().forEach(changeListener);
         }
-        for (UUID owner : claims.owners()) {
-            if (clans.getClan(owner) != null) {
-                continue;
-            }
-            long cost = upkeepCost(owner);
-            Player online = Bukkit.getPlayer(owner);
-            if (cost > 0) {
-                if (economy.withdraw(owner, cost)) {
-                    if (online != null) {
-                        online.sendMessage("§7Manutenção dos seus claims paga com o saldo: §a" + EconomyManager.format(cost));
-                    }
-                } else {
-                    playerDebts.merge(owner, cost, Long::sum);
-                }
-            }
-            long debt = playerDebt(owner);
-            if (debt > 0 && online != null) {
-                online.sendMessage("§c§lEM DÍVIDA: §c" + EconomyManager.format(debt)
-                        + ". Seus claims estão enfraquecidos (inimigos abrem baús). Use /clan pagar.");
-            }
-            changeListener.accept(owner);
-        }
         save();
     }
 
     /**
-     * Paga a dívida de quem chamou: a do clan (com o saldo do Cofre, se bastar, senão com o dinheiro do jogador) ou
-     * a dele mesmo sem clan. Retorna a mensagem do resultado.
+     * Paga a dívida do clan de quem chamou (com o saldo do Cofre, se bastar, senão com o dinheiro do jogador).
+     * Retorna a mensagem do resultado.
      */
     public String payDebt(Player player) {
         Clan clan = clans.getClan(player.getUniqueId());
         if (clan == null) {
-            long debt = playerDebt(player.getUniqueId());
-            if (debt <= 0) {
-                return "§eVocê não está em dívida.";
-            }
-            if (!economy.cobrar(player, debt)) {
-                return "§cVocê não tem dinheiro suficiente (dívida: " + EconomyManager.format(debt)
-                        + ", disponível: " + EconomyManager.format(economy.available(player)) + ").";
-            }
-            playerDebts.remove(player.getUniqueId());
-            save();
-            changeListener.accept(player.getUniqueId());
-            return "§aDívida de " + EconomyManager.format(debt) + " paga. Seus claims voltaram ao normal.";
+            return "§eSó clans pagam manutenção: você não tem clan, então não deve nada.";
         }
         ClanBase base = of(clan);
         long debt = base.debt;
@@ -351,7 +356,8 @@ public final class ClanBaseManager implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onJoin(PlayerJoinEvent event) {
-        long debt = debtFor(event.getPlayer().getUniqueId());
+        Clan clan = clans.getClan(event.getPlayer().getUniqueId());
+        long debt = clan == null ? 0 : of(clan).debt;
         if (debt > 0) {
             event.getPlayer().sendMessage("§c§lEM DÍVIDA: §c" + EconomyManager.format(debt)
                     + " de manutenção dos claims. Use /clan pagar.");
@@ -362,7 +368,6 @@ public final class ClanBaseManager implements Listener {
 
     public void load() {
         bases.clear();
-        playerDebts.clear();
         YamlConfiguration yaml = clans.file().exists() ? YamlConfiguration.loadConfiguration(clans.file())
                 : new YamlConfiguration();
         ConfigurationSection section = yaml.getConfigurationSection("bases");
@@ -376,6 +381,7 @@ public final class ClanBaseManager implements Listener {
                 ClanBase base = of(clan);
                 base.core = BaseLoc.parse(data.getString("nucleo"));
                 base.coreHp = data.getInt("nucleo-vida", settings.coreHp());
+                base.lowestHp = data.getInt("nucleo-menor-vida", base.coreHp);
                 base.lastCoreAttack = data.getLong("nucleo-ultimo-ataque");
                 base.lastCoreRegen = data.getLong("nucleo-ultima-regeneracao");
                 base.vault = BaseLoc.parse(data.getString("cofre"));
@@ -387,16 +393,6 @@ public final class ClanBaseManager implements Listener {
                 base.replaceAllowedAt = data.getLong("recolocar-depois-de");
                 base.freeCoreTaken = data.getBoolean("nucleo-gratis-usado");
                 base.debt = Math.max(0, data.getLong("divida"));
-            }
-        }
-        ConfigurationSection debts = yaml.getConfigurationSection("dividas-jogadores");
-        if (debts != null) {
-            for (String key : debts.getKeys(false)) {
-                try {
-                    playerDebts.put(UUID.fromString(key), Math.max(0, debts.getLong(key)));
-                } catch (IllegalArgumentException e) {
-                    plugin.getLogger().warning("UUID inválido em clans.yml (dívidas), ignorado: " + key);
-                }
             }
         }
         lastInterest = yaml.getLong("juros-ultimo", System.currentTimeMillis());
@@ -414,6 +410,7 @@ public final class ClanBaseManager implements Listener {
             String path = "bases." + base.tag + ".";
             yaml.set(path + "nucleo", base.core == null ? null : base.core.serialize());
             yaml.set(path + "nucleo-vida", base.coreHp);
+            yaml.set(path + "nucleo-menor-vida", base.lowestHp);
             yaml.set(path + "nucleo-ultimo-ataque", base.lastCoreAttack);
             yaml.set(path + "nucleo-ultima-regeneracao", base.lastCoreRegen);
             yaml.set(path + "cofre", base.vault == null ? null : base.vault.serialize());
@@ -426,11 +423,6 @@ public final class ClanBaseManager implements Listener {
             yaml.set(path + "nucleo-gratis-usado", base.freeCoreTaken);
             yaml.set(path + "divida", base.debt);
         }
-        playerDebts.forEach((id, debt) -> {
-            if (debt > 0) {
-                yaml.set("dividas-jogadores." + id, debt);
-            }
-        });
         yaml.set("juros-ultimo", lastInterest);
         yaml.set("manutencao-ultima-data", lastUpkeepDate);
     }

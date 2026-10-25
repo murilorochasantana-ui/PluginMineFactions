@@ -3,7 +3,7 @@ package br.com.murilo.muriloplug.eventos;
 import br.com.murilo.muriloplug.claim.Claim;
 import br.com.murilo.muriloplug.claim.ClaimManager;
 import br.com.murilo.muriloplug.clan.base.BaseLoc;
-import br.com.murilo.muriloplug.economy.notas.Notas;
+import br.com.murilo.muriloplug.economy.maco.Macos;
 import br.com.murilo.muriloplug.shop.ShopUi;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
@@ -89,7 +89,7 @@ public final class AirdropManager implements Listener, CommandExecutor, TabCompl
     private final ClaimManager claims;
     private final AirdropTable table;
     private final ContractItems contracts;
-    private final Notas notas;
+    private final Macos macos;
     private final NamespacedKey chestKey;
     private final Set<UUID> fireworks = new HashSet<>();
     private Phase phase = Phase.IDLE;
@@ -104,12 +104,12 @@ public final class AirdropManager implements Listener, CommandExecutor, TabCompl
     private BukkitTask fallTask;
 
     public AirdropManager(JavaPlugin plugin, ClaimManager claims, AirdropTable table, ContractItems contracts,
-                          Notas notas) {
+                          Macos macos) {
         this.plugin = plugin;
         this.claims = claims;
         this.table = table;
         this.contracts = contracts;
-        this.notas = notas;
+        this.macos = macos;
         this.chestKey = new NamespacedKey(plugin, "airdrop");
     }
 
@@ -131,6 +131,10 @@ public final class AirdropManager implements Listener, CommandExecutor, TabCompl
     }
 
     public void start() {
+        int converted = table.migrate(macos::convert);
+        if (converted > 0) {
+            plugin.getLogger().info("Notas antigas convertidas em maços na tabela do Airdrop: " + converted);
+        }
         removeLeftover();
         scheduleNext();
         plugin.getServer().getScheduler().runTaskTimer(plugin, this::tickSecond, 20L, 20L);
@@ -532,7 +536,7 @@ public final class AirdropManager implements Listener, CommandExecutor, TabCompl
                     menu.select(index);
                 }
             }
-            menu.render(notas.values());
+            menu.render();
             return;
         }
         int slot = event.getSlot();
@@ -557,19 +561,16 @@ public final class AirdropManager implements Listener, CommandExecutor, TabCompl
             table.remove(menu.selected());
             menu.select(-1);
         } else if (slot == AirdropEditorMenu.NOTE_SLOT) {
-            List<Long> values = notas.values();
             if (click.isRightClick()) {
-                menu.nextNote(values.size());
+                menu.nextNote();
             } else {
-                // values vem do maior para o menor; o índice do menu conta do menor para o maior.
-                long value = values.get(values.size() - 1 - Math.min(menu.noteIndex(), values.size() - 1));
-                int index = table.add(notas.create(value, click.isShiftClick() ? 10 : 1), 50);
+                int index = table.add(macos.create(menu.cashValue()), 50);
                 if (index >= 0) {
                     menu.select(index);
                 }
             }
         }
-        menu.render(notas.values());
+        menu.render();
     }
 
     // ------------------------------------------------------------ comando
@@ -598,7 +599,7 @@ public final class AirdropManager implements Listener, CommandExecutor, TabCompl
         if (action.equals("admin") && args.length == 2 && args[1].equalsIgnoreCase("editar")
                 && sender instanceof Player player) {
             AirdropEditorMenu menu = new AirdropEditorMenu(table);
-            menu.render(notas.values());
+            menu.render();
             player.openInventory(menu.getInventory());
             return true;
         }

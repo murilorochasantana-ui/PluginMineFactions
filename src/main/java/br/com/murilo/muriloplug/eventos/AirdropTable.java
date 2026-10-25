@@ -104,6 +104,24 @@ public final class AirdropTable {
         return result;
     }
 
+    /** Troca os itens que {@code upgrade} mudar (notas antigas viram maço). Retorna quantos mudaram. */
+    public int migrate(java.util.function.UnaryOperator<ItemStack> upgrade) {
+        int changed = 0;
+        for (int i = 0; i < entries.size(); i++) {
+            Entry entry = entries.get(i);
+            ItemStack original = entry.item;
+            ItemStack updated = upgrade.apply(original);
+            if (updated != original) {
+                entries.set(i, new Entry(updated, entry.chance));
+                changed++;
+            }
+        }
+        if (changed > 0) {
+            save();
+        }
+        return changed;
+    }
+
     public String activeChest() {
         return activeChest;
     }

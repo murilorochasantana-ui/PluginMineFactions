@@ -1,6 +1,6 @@
 package br.com.murilo.muriloplug.economy;
 
-import br.com.murilo.muriloplug.economy.notas.Notas;
+import br.com.murilo.muriloplug.economy.maco.Macos;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.configuration.ConfigurationSection;
@@ -26,9 +26,10 @@ import java.util.function.Consumer;
 /**
  * Saldo de cada jogador (números inteiros, nunca negativo). Todos os métodos de saldo são thread-safe.
  *
- * <p>O dinheiro também existe como item ({@link Notas}). Para COBRAR algo (loja, mercado, reparo...) use sempre
- * {@link #cobrar}: gasta primeiro o saldo e completa com as notas do inventário. Para PAGAR um ganho (kill, venda ao
- * servidor, eventos) use {@link #pagarGanho}: entrega em notas (ou no saldo, conforme o config).
+ * <p>O dinheiro também existe como item ({@link Macos}, o Maço de Dinheiro). Para COBRAR algo (loja, mercado,
+ * reparo...) use sempre {@link #cobrar}: gasta primeiro o saldo e completa tirando de dentro dos maços do inventário.
+ * Para PAGAR um ganho (kill, venda ao servidor, eventos) use {@link #pagarGanho}: soma no maço do inventário (ou vai
+ * para o saldo, conforme o config).
  *
  * <p>O arquivo é gravado em uma thread própria (uma gravação por vez, em ordem), então salvar não trava o servidor.
  */
@@ -48,7 +49,7 @@ public final class EconomyManager {
     private final AtomicBoolean savePending = new AtomicBoolean();
     private volatile boolean closed;
     private volatile Consumer<UUID> changeListener = id -> { };
-    private Notas notas;
+    private Macos macos;
 
     public EconomyManager(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -60,25 +61,25 @@ public final class EconomyManager {
         this.changeListener = changeListener;
     }
 
-    /** Liga as notas de dinheiro (criadas depois do EconomyManager). */
-    public void setNotas(Notas notas) {
-        this.notas = notas;
+    /** Liga os maços de dinheiro (criados depois do EconomyManager). */
+    public void setMacos(Macos macos) {
+        this.macos = macos;
     }
 
-    public Notas notas() {
-        return notas;
+    public Macos macos() {
+        return macos;
     }
 
     // ------------------------------------------------------------ dinheiro + notas (thread principal)
 
-    /** Saldo + notas no inventário: o total que o jogador pode gastar agora. */
+    /** Saldo + maços no inventário: o total que o jogador pode gastar agora. */
     public long available(Player player) {
-        return saturatedAdd(getBalance(player.getUniqueId()), notas == null ? 0 : notas.count(player));
+        return saturatedAdd(getBalance(player.getUniqueId()), macos == null ? 0 : macos.count(player));
     }
 
     /**
-     * Cobra {@code amount}: primeiro do saldo; se não bastar, completa com as notas do inventário (tirando as notas
-     * necessárias e devolvendo o troco em notas). Retorna false, sem tirar nada, se saldo + notas não bastarem.
+     * Cobra {@code amount}: primeiro do saldo; se não bastar, completa tirando de dentro dos maços do inventário
+     * (o maço que zera some). Retorna false, sem tirar nada, se saldo + maços não bastarem.
      * Chamar só na thread principal.
      */
     public boolean cobrar(Player player, long amount) {
@@ -89,22 +90,23 @@ public final class EconomyManager {
         UUID id = player.getUniqueId();
         long fromBalance = Math.min(getBalance(id), amount);
         long fromNotes = amount - fromBalance;
-        if (fromNotes > 0 && (notas == null || notas.count(player) < fromNotes)) {
+        if (fromNotes > 0 && (macos == null || macos.count(player) < fromNotes)) {
             return false;
         }
         if (!withdraw(id, fromBalance)) {
             return false;
         }
-        if (fromNotes > 0 && !notas.take(player, fromNotes)) {
-            deposit(id, fromBalance); // não deve acontecer (as notas foram conferidas no mesmo tick)
+        if (fromNotes > 0 && !macos.take(player, fromNotes)) {
+            deposit(id, fromBalance); // não deve acontecer (os maços foram conferidos no mesmo tick)
             return false;
         }
         return true;
     }
 
     /**
-     * Paga um ganho: em notas no inventário (o que não couber cai no chão) se economia.notas.recompensas-em-notas
-     * estiver ligado e o jogador estiver online; senão, no saldo. Retorna true se foi em notas.
+     * Paga um ganho: soma no maço do inventário (sem maço, entrega um novo; o que não couber cai no chão) se
+     * economia.notas.recompensas-em-notas estiver ligado e o jogador estiver online; senão, no saldo. Retorna true se
+     * foi em maço.
      */
     public boolean pagarGanho(UUID player, long amount) {
         requireNotNegative(amount);
@@ -112,8 +114,8 @@ public final class EconomyManager {
             return false;
         }
         Player online = Bukkit.isPrimaryThread() ? Bukkit.getPlayer(player) : null;
-        if (online != null && notas != null && notas.rewardsAsNotes()) {
-            notas.give(online, amount);
+        if (online != null && macos != null && macos.rewardsAsCash()) {
+            macos.give(online, amount);
             changeListener.accept(player);
             return true;
         }

@@ -4,23 +4,14 @@ economia:
   recompensa-kill: 100
   # Recompensa para cada jogador que ganha assistência.
   recompensa-assistencia: 30
-  # Notas de dinheiro: o dinheiro como item (cai na morte, vai para baús, pode ser roubado).
+  # Maço de Dinheiro: o dinheiro como UM item que guarda qualquer valor (cai na morte, vai para baús, pode ser roubado).
   notas:
-    # Valores das notas (o /money sacar usa as maiores possíveis).
-    valores: [1, 10, 100, 1000, 10000]
-    # Modelo (item_model) de cada nota.
-    modelos:
-      '1': minecraft:paper
-      '10': minecraft:paper
-      '100': minecraft:paper
-      '1000': minecraft:paper
-      '10000': minecraft:paper
+    # Modelo (item_model) do maço.
+    modelo-maco: minecraft:paper
     # Taxa do /money depositar (0.05 = 5%; o dinheiro da taxa some do jogo).
     taxa-deposito: 0.05
-    # true: kill, assistência, vendas ao servidor e eventos pagam em notas. false: direto no saldo.
+    # true: kill, assistência, vendas ao servidor e eventos somam no maço do inventário. false: direto no saldo.
     recompensas-em-notas: true
-    # Maior valor de um /money sacar.
-    saque-maximo: 10000000
   # Venda de itens ao servidor (/vender). Preço atual = preço base x multiplicador.
   vender:
     # Cada unidade vendida (por qualquer jogador) baixa o multiplicador do item nisto, até o mínimo.
@@ -102,13 +93,16 @@ clan:
     raio-explosao: 4
     # Núcleo destruído: o clan fica vulnerável (inimigos quebram, colocam e abrem baús nos claims dos membros).
     vulneravel-minutos: 30
-    # Para o jogador que acendeu a TNT que deu o último golpe (em notas).
+    # Recompensa total do Núcleo, paga por ponto (5000 / 10 = $500 por ponto) a quem acendeu a TNT.
+    # Só pontos abaixo do menor que o Núcleo já atingiu pagam (regenerar e tirar de novo não paga).
     recompensa: 5000
     espera-recolocar-horas: 2
     # Regenera 1 ponto a cada tanto de minutos sem ataques.
     regenera-minutos: 10
     # /clan nucleo recolher só depois de tanto tempo sem o Núcleo ser atacado.
     recolher-sem-ataque-minutos: 10
+    # Depois de cada explosão que tira pontos, o Núcleo fica imune a explosões por este tempo.
+    escudo-segundos: 5
   cofre:
     vida: 6
     # Distância máxima do Núcleo para colocar o Cofre.
@@ -125,10 +119,13 @@ clan:
     raid-defendido: 2
     nucleo-perdido: 5
   # Manutenção diária de todos os claims dos membros: área x por-bloco x (1 + Poder x peso-poder).
+  # Só clans pagam: jogador sem clan não paga nada pelos próprios claims.
   manutencao:
     horario: "20:00"
     por-bloco: 0.5
     peso-poder: 0.01
+    # Tamanhos do menu do /claim (sem argumentos).
+    tamanhos-menu: [10, 20, 30, 40, 50]
 
 # Registro de raids.
 raid:

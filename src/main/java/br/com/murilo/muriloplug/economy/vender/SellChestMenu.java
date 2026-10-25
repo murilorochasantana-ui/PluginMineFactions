@@ -104,7 +104,7 @@ public final class SellChestMenu implements InventoryHolder {
                 "§7Fechar o baú devolve todos os itens."));
         inventory.setItem(SELL_SLOT, ShopUi.button(Material.LIME_CONCRETE,
                 "§aVender §7(" + summary.totalUnits() + " itens: §a" + EconomyManager.format(summary.payout()) + "§7)",
-                refused, "§7Pago em notas de dinheiro."));
+                refused, "§7Pago em maço de dinheiro."));
     }
 
     /**

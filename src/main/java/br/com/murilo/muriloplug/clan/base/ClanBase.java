@@ -9,6 +9,10 @@ public final class ClanBase {
     /** Último dano no Núcleo (para a regeneração e para o /clan nucleo recolher). */
     long lastCoreAttack;
     long lastCoreRegen;
+    /** Menor vida que o Núcleo atual já teve: só pontos abaixo dela pagam recompensa (anti-farm). */
+    int lowestHp;
+    /** Até quando o Núcleo está imune a explosões (escudo depois de cada ponto tirado). */
+    long shieldUntil;
     BaseLoc vault;
     int vaultHp;
     /** Dinheiro guardado no Cofre (continua guardado mesmo sem o bloco do Cofre). */
@@ -37,6 +41,14 @@ public final class ClanBase {
 
     public int coreHp() {
         return coreHp;
+    }
+
+    public int lowestHp() {
+        return lowestHp;
+    }
+
+    public long shieldUntil() {
+        return shieldUntil;
     }
 
     public BaseLoc vault() {

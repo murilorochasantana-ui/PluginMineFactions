@@ -29,16 +29,28 @@ public final class ClaimCommand implements CommandExecutor, TabCompleter {
     private final ClaimManager claims;
     private final ClaimPreviewManager previews;
     private final Map<UUID, PendingRemoval> pendingRemovals = new HashMap<>();
+    private java.util.function.Supplier<List<Integer>> menuSizes;
+    private ClaimSizeMenu.UpkeepPreview upkeepPreview;
 
     public ClaimCommand(ClaimManager claims, ClaimPreviewManager previews) {
         this.claims = claims;
         this.previews = previews;
     }
 
+    /** Liga o menu de tamanhos do /claim (com o custo da manutenção do clan). */
+    public void setSizeMenu(java.util.function.Supplier<List<Integer>> sizes, ClaimSizeMenu.UpkeepPreview preview) {
+        this.menuSizes = sizes;
+        this.upkeepPreview = preview;
+    }
+
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof Player player)) {
             sender.sendMessage("Apenas jogadores podem usar este comando.");
+            return true;
+        }
+        if (args.length == 0 && menuSizes != null) {
+            ClaimSizeMenu.open(player, menuSizes.get(), upkeepPreview);
             return true;
         }
 

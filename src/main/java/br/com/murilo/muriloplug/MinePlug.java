@@ -122,7 +122,7 @@ import br.com.murilo.muriloplug.combat.CombatManager;
 import br.com.murilo.muriloplug.economy.EconomyManager;
 import br.com.murilo.muriloplug.economy.MoneyCommand;
 import br.com.murilo.muriloplug.economy.RewardListener;
-import br.com.murilo.muriloplug.economy.notas.Notas;
+import br.com.murilo.muriloplug.economy.maco.Macos;
 import br.com.murilo.muriloplug.economy.reparo.ReparoCommand;
 import br.com.murilo.muriloplug.economy.vender.SellPrices;
 import br.com.murilo.muriloplug.economy.vender.VenderCommand;
@@ -302,8 +302,9 @@ public final class MinePlug extends JavaPlugin {
 
         economyManager = new EconomyManager(this);
         economyManager.load();
-        Notas notas = new Notas(this);
-        economyManager.setNotas(notas);
+        Macos macos = new Macos(this);
+        economyManager.setMacos(macos);
+        getServer().getPluginManager().registerEvents(macos, this);
         getServer().getPluginManager().registerEvents(new RewardListener(this, economyManager), this);
         MoneyCommand moneyCommand = new MoneyCommand(economyManager);
         getCommand("money").setExecutor(moneyCommand);
@@ -368,6 +369,9 @@ public final class MinePlug extends JavaPlugin {
         getServer().getPluginManager().registerEvents(baseBlocks, this);
         baseBlocks.start();
         clanManager.setDisbandListener(baseBlocks::onDisband);
+        clanManager.setCreateListener(baseBlocks::onClanCreated);
+        claimCommand.setSizeMenu(clanBaseManager.settings()::sizeMenu, clanBaseManager::upkeepPreview);
+        getServer().getPluginManager().registerEvents(new br.com.murilo.muriloplug.claim.ClaimSizeMenu.Clicks(this), this);
         new ClanBaseCommands(clanBaseManager, baseBlocks, baseItems).registerOn(clanCommand);
         clanCommand.setExtraInfo(baseBlocks::infoLines);
         raidManager = new RaidManager(this, claimManager, clanManager, clanBaseManager, explosionOwners);
@@ -506,6 +510,10 @@ public final class MinePlug extends JavaPlugin {
         if (oldSupportItems > 0) {
             getLogger().info("Itens antigos do Suporte atualizados na loja e no mercado: " + oldSupportItems);
         }
+        int oldNotes = shopManager.migrate(macos::convert) + marketManager.migrate(macos::convert);
+        if (oldNotes > 0) {
+            getLogger().info("Notas de dinheiro antigas convertidas em maços na loja e no mercado: " + oldNotes);
+        }
         int oldGolems = shopManager.migrate(golemItems::upgradeLegacy) + marketManager.migrate(golemItems::upgradeLegacy);
         if (oldGolems > 0) {
             getLogger().info("Golems de Cobre antigos trocados na loja e no mercado: " + oldGolems);
@@ -626,7 +634,7 @@ public final class MinePlug extends JavaPlugin {
         bountyManager.start();
         AirdropTable airdropTable = new AirdropTable(this);
         airdropTable.load();
-        airdropManager = new AirdropManager(this, claimManager, airdropTable, contractItems, notas);
+        airdropManager = new AirdropManager(this, claimManager, airdropTable, contractItems, macos);
         getServer().getPluginManager().registerEvents(airdropManager, this);
         getCommand("airdrop").setExecutor(airdropManager);
         getCommand("airdrop").setTabCompleter(airdropManager);
@@ -638,15 +646,7 @@ public final class MinePlug extends JavaPlugin {
         SidebarManager sidebarManager = new SidebarManager(scoreboards, combatManager, statsManager, economyManager, clanManager, classManager, manaManager, arqueiroSidebar, furyManager, magoSettings,
                 new EngenheiroSidebar(classManager, engenheiroEnergia, engenheiroSettings, ganchoManager, sentinelaManager, golemManager),
                 suporteSidebar, testMode);
-        // Logo abaixo do dinheiro: manutenção dos claims, dívida e recompensa na cabeça.
-        sidebarManager.addMoneyLine(player -> {
-            long cost = clanBaseManager.upkeepFor(player.getUniqueId());
-            return cost > 0 ? ShopUi.text("§7Manutenção: §f" + EconomyManager.format(cost)) : null;
-        });
-        sidebarManager.addMoneyLine(player -> {
-            long debt = clanBaseManager.debtFor(player.getUniqueId());
-            return debt > 0 ? ShopUi.text("§c§lEM DÍVIDA §c" + EconomyManager.format(debt)) : null;
-        });
+        // Logo abaixo do dinheiro: recompensa na cabeça (a manutenção fica só no Núcleo e no /clan manutencao).
         sidebarManager.addMoneyLine(bountyManager::sidebarLine);
         clanBaseManager.setChangeListener(id -> {
             Player player = getServer().getPlayer(id);
@@ -995,7 +995,7 @@ public final class MinePlug extends JavaPlugin {
         changed |= CombatenteSettings.addMissing(config);
         changed |= EngenheiroSettings.addMissing(config);
         changed |= SuporteSettings.addMissing(config);
-        changed |= Notas.addMissing(config);
+        changed |= Macos.addMissing(config);
         changed |= SellPrices.addMissing(config);
         changed |= ReparoCommand.addMissing(config);
         changed |= BaseSettings.addMissing(config);

@@ -182,7 +182,7 @@ public final class SellPrices {
 
     /**
      * Motivo de o item NÃO poder ser vendido, ou null se pode: sem preço, com nome personalizado, encantado ou
-     * marcado pelo plugin (itens de classe, notas...).
+     * marcado pelo plugin (itens de classe, maços...).
      */
     public String refusal(ItemStack item) {
         if (item == null || item.getType().isAir()) {

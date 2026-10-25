@@ -6,7 +6,7 @@ api-version: '26.3'
 commands:
   claim:
     description: Pré-visualiza, confirma (com nome), remove, lista e compartilha (trust) os seus claims (até 9, de até 50x50 blocos).
-    usage: /claim <tamanho> | <nome> | cancelar | remover <nome> | trust <jogador> <claim> | untrust <jogador> <claim> | info
+    usage: /claim [tamanho] | <nome> | cancelar | remover <nome> | trust <jogador> <claim> | untrust <jogador> <claim> | info
   meuclaim:
     description: Abre o menu com os seus claims.
     usage: /meuclaim
@@ -30,8 +30,8 @@ commands:
     description: Pede para um jogador vir até você.
     usage: /tpaqui <jogador>
   money:
-    description: Mostra o seu saldo (e as notas no inventário), envia dinheiro, saca em notas ou deposita notas (administradores também podem dar, tirar e definir saldo).
-    usage: /money [jogador] | pay <jogador> <valor> | sacar <valor> | depositar [mao] | admin <dar|tirar|definir> <jogador> <valor>
+    description: Mostra o seu saldo (e os maços no inventário), envia dinheiro, saca em maço, deposita e junta maços (administradores também podem dar, tirar e definir saldo).
+    usage: /money [jogador] | pay <jogador> <valor> | sacar <valor> [separado] | depositar [mao] | juntar | admin <dar|tirar|definir> <jogador> <valor>
   loja:
     description: Abre a loja do servidor (administradores também podem gerenciar os itens).
     usage: /loja [admin]

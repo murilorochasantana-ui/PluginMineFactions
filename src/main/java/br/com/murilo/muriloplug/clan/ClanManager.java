@@ -34,6 +34,7 @@ public final class ClanManager {
     private final Map<UUID, Clan> byPlayer = new ConcurrentHashMap<>();
     private Consumer<UUID> membershipListener = id -> { };
     private Consumer<Clan> disbandListener = clan -> { };
+    private Consumer<Clan> createListener = clan -> { };
     /** Grava dados de outros sistemas (bases dos clans) no mesmo clans.yml, a cada save. */
     private Consumer<FileConfiguration> extraWriter = yaml -> { };
 
@@ -45,6 +46,11 @@ public final class ClanManager {
     /** Chamado para cada jogador cujo clan mudou (entrou, saiu, foi expulso, clan criado ou desfeito). */
     public void setMembershipListener(Consumer<UUID> membershipListener) {
         this.membershipListener = membershipListener;
+    }
+
+    /** Chamado depois que um clan é criado (o líder já está nele). */
+    public void setCreateListener(Consumer<Clan> createListener) {
+        this.createListener = createListener;
     }
 
     /** Chamado depois que um clan é desfeito (os membros já saíram dele). */
@@ -112,6 +118,7 @@ public final class ClanManager {
         byPlayer.put(leader, clan);
         save();
         membershipListener.accept(leader);
+        createListener.accept(clan);
         return clan;
     }
 

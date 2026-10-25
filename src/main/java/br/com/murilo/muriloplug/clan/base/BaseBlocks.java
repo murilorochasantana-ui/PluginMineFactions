@@ -6,7 +6,7 @@ import br.com.murilo.muriloplug.clan.Clan;
 import br.com.murilo.muriloplug.clan.ClanManager;
 import br.com.murilo.muriloplug.combat.CombatManager;
 import br.com.murilo.muriloplug.economy.EconomyManager;
-import br.com.murilo.muriloplug.economy.notas.Notas;
+import br.com.murilo.muriloplug.economy.maco.Macos;
 import br.com.murilo.muriloplug.shop.ShopUi;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -15,6 +15,7 @@ import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.block.Block;
 import org.bukkit.entity.AbstractWindCharge;
+import org.bukkit.entity.BlockDisplay;
 import org.bukkit.entity.Display;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.TextDisplay;
@@ -36,6 +37,10 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.Color;
+import org.bukkit.util.Transformation;
+import org.joml.AxisAngle4f;
+import org.joml.Vector3f;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -48,10 +53,15 @@ import java.util.UUID;
  * Os blocos da base: Núcleo do Clan (BEACON) e Cofre do Clan (VAULT). Colocar (com as regras de cada um), proteção
  * (golpes, picareta, pistões e mobs não quebram; explosões nunca quebram o bloco direto), dano por explosão, texto em
  * cima de cada bloco, regeneração do Núcleo e o menu do Cofre.
+ *
+ * <p>Núcleo: cada explosão que tira pontos liga um escudo de {@code escudo-segundos} (explosões nele não tiram pontos
+ * nem pagam). Cada ponto tirado paga {@code recompensa / vida} a quem acendeu a TNT (se não for do clan dono), mas só
+ * os pontos ABAIXO do menor que o Núcleo já atingiu: regenerar e tirar o mesmo ponto de novo não paga.
  */
 public final class BaseBlocks implements Listener {
 
-    private static final long TICK = 40L;
+    private static final long TICK = 20L;
+    private static final long SHIELD_TICK = 4L;
     private static final long WARN_COOLDOWN_MILLIS = 10_000L;
 
     private final JavaPlugin plugin;
@@ -63,6 +73,8 @@ public final class BaseBlocks implements Listener {
     private final ExplosionOwners owners;
     private final BaseSettings settings;
     private final Map<BaseLoc, TextDisplay> displays = new HashMap<>();
+    /** Vidro azul em volta do Núcleo enquanto o escudo está ligado. */
+    private final Map<BaseLoc, BlockDisplay> shields = new HashMap<>();
     private final Map<String, Long> lastWarn = new HashMap<>();
     private final Map<UUID, Long> lastBreakMessage = new HashMap<>();
     /** Clans que estavam vulneráveis no último tick (para avisar quando acaba). */
@@ -83,12 +95,29 @@ public final class BaseBlocks implements Listener {
     public void start() {
         verifyAll();
         plugin.getServer().getScheduler().runTaskTimer(plugin, this::tick, TICK, TICK);
+        plugin.getServer().getScheduler().runTaskTimer(plugin, this::shieldTick, SHIELD_TICK, SHIELD_TICK);
     }
 
-    /** onDisable: tira os textos (não são salvos no mundo, mas some na hora). */
+    /** onDisable: tira os textos e escudos (não são salvos no mundo, mas some na hora). */
     public void shutdown() {
         displays.values().forEach(TextDisplay::remove);
         displays.clear();
+        shields.values().forEach(BlockDisplay::remove);
+        shields.clear();
+    }
+
+    /** Clan criado: o líder recebe o Núcleo grátis (só uma vez por clan). */
+    public void onClanCreated(Clan clan) {
+        ClanBase base = manager.of(clan);
+        Player leader = Bukkit.getPlayer(clan.leader());
+        if (base.freeCoreTaken || leader == null) {
+            return;
+        }
+        base.freeCoreTaken = true;
+        manager.save();
+        leader.getInventory().addItem(items.create(BaseItems.Kind.CORE)).values()
+                .forEach(rest -> leader.getWorld().dropItem(leader.getLocation(), rest));
+        leader.sendMessage("§6Você recebeu o Núcleo do Clan! Coloque ele em um claim seu.");
     }
 
     // ------------------------------------------------------------ consulta
@@ -153,13 +182,12 @@ public final class BaseBlocks implements Listener {
             return "§cO Núcleo só pode ser colocado dentro do claim de um membro do clan.";
         }
         base.core = BaseLoc.of(block);
-        base.coreHp = settings.coreHp();
-        base.lastCoreAttack = 0;
         base.lastCoreRegen = 0;
+        base.shieldUntil = 0;
         manager.save();
         clans.broadcast(clan, "§6" + player.getName() + " colocou o Núcleo do clan em " + base.core.coords()
                 + ". §7Ele só é destruído por explosões.");
-        plugin.getServer().getScheduler().runTask(plugin, () -> updateDisplay(base.core, coreText(base)));
+        plugin.getServer().getScheduler().runTask(plugin, () -> updateDisplay(base.core, coreText(base, clan)));
         return null;
     }
 
@@ -273,13 +301,33 @@ public final class BaseBlocks implements Listener {
         if (clan == null) {
             return;
         }
+        long now = System.currentTimeMillis();
+        if (now < base.shieldUntil) {
+            return; // escudo: a explosão não tira ponto nem paga
+        }
         int damage = manager.inDebt(clan) ? 2 : 1; // em dívida: o dobro de dano
         BaseLoc loc = base.core;
         base.coreHp -= damage;
-        base.lastCoreAttack = System.currentTimeMillis();
+        base.lastCoreAttack = now;
+        base.shieldUntil = now + settings.shieldMillis();
+        int hp = Math.max(0, base.coreHp);
+        // Anti-farm: só os pontos abaixo do menor já atingido pagam.
+        int newPoints = Math.max(0, base.lowestHp - hp);
+        base.lowestHp = Math.min(base.lowestHp, hp);
+        if (newPoints > 0 && attacker != null && !clan.isMember(attacker)) {
+            long reward = newPoints * manager.rewardPerPoint();
+            if (reward > 0) {
+                manager.economy().pagarGanho(attacker, reward);
+                Player online = Bukkit.getPlayer(attacker);
+                if (online != null) {
+                    online.sendMessage("§a+" + EconomyManager.format(reward) + " (Núcleo de [" + clan.tag() + "] "
+                            + hp + "/" + settings.coreHp() + ")");
+                }
+            }
+        }
         if (base.coreHp > 0) {
             manager.save();
-            updateDisplay(loc, coreText(base));
+            updateDisplay(loc, coreText(base, clan));
             warn(clan, "§c⚠ O Núcleo do clan levou dano de explosão! §7(" + base.coreHp + "/" + settings.coreHp() + ")");
             Bukkit.getPluginManager().callEvent(new BaseDamageEvent(base.tag, BaseDamageEvent.Kind.CORE, loc.center(),
                     attacker, damage, false, 0));
@@ -293,15 +341,18 @@ public final class BaseBlocks implements Listener {
     private void destroyCore(ClanBase base, Clan clan, UUID attacker) {
         BaseLoc loc = base.core;
         removeBlock(loc, Sound.BLOCK_BEACON_DEACTIVATE);
+        removeShield(loc);
         long now = System.currentTimeMillis();
         base.core = null;
+        // O próximo Núcleo é novo: vida cheia e o mínimo da recompensa zera.
         base.coreHp = settings.coreHp();
+        base.lowestHp = settings.coreHp();
+        base.shieldUntil = 0;
         base.vulnerableUntil = now + settings.vulnerableMillis();
         base.replaceAllowedAt = now + settings.replaceWaitMillis();
         base.power = Math.max(0, base.power - settings.powerCoreLost());
 
         Clan attackerClan = attacker == null ? null : clans.getClan(attacker);
-        boolean enemy = attacker != null && !clan.isMember(attacker);
         String by;
         if (attackerClan != null) {
             by = "[" + attackerClan.tag() + "]";
@@ -310,25 +361,16 @@ public final class BaseBlocks implements Listener {
         } else {
             by = "desconhecidos";
         }
-        if (enemy) {
-            long reward = settings.coreReward();
-            if (reward > 0) {
-                boolean notes = manager.economy().pagarGanho(attacker, reward);
-                Player online = Bukkit.getPlayer(attacker);
-                if (online != null) {
-                    online.sendMessage("§aVocê destruiu o Núcleo de [" + clan.tag() + "] e ganhou "
-                            + EconomyManager.format(reward) + (notes ? " em notas!" : "!"));
-                }
-            }
-            if (attackerClan != null && settings.powerCoreDestroyed() != 0) {
-                manager.addPower(attackerClan, settings.powerCoreDestroyed());
-            }
+        // O dinheiro já foi pago ponto a ponto; aqui só o Poder.
+        if (attackerClan != null && attackerClan != clan && settings.powerCoreDestroyed() != 0) {
+            manager.addPower(attackerClan, settings.powerCoreDestroyed());
         }
         manager.save();
         Bukkit.broadcast(ShopUi.text("§c§lO Núcleo de [" + clan.tag() + "] foi destruído por " + by + "!"));
         clans.broadcast(clan, "§c§lSeu clan está VULNERÁVEL por "
                 + ClanBaseManager.formatDuration(settings.vulnerableMillis())
-                + "! §cInimigos podem quebrar, colocar e abrir baús nos claims dos membros.");
+                + "! §cInimigos podem quebrar, colocar e abrir baús nos claims dos membros. O próximo Núcleo"
+                + " precisa ser comprado na /loja.");
         vulnerable.add(base.tag);
     }
 
@@ -354,12 +396,12 @@ public final class BaseBlocks implements Listener {
         base.vault = null;
         base.vaultHp = settings.vaultHp();
         manager.save();
-        Notas notas = manager.economy().notas();
-        if (notas != null) {
-            notas.drop(center, loss);
+        Macos macos = manager.economy().macos();
+        if (macos != null) {
+            macos.drop(center, loss);
         }
         clans.broadcast(clan, "§c§lO Cofre do clan foi destruído! §c" + EconomyManager.format(loss)
-                + " caíram no chão em notas; " + EconomyManager.format(base.vaultBalance)
+                + " caíram no chão em um maço; " + EconomyManager.format(base.vaultBalance)
                 + " continuam guardados (voltam com um Cofre novo).");
         Bukkit.getPluginManager().callEvent(new BaseDamageEvent(base.tag, BaseDamageEvent.Kind.VAULT, center,
                 attacker, 1, true, loss));
@@ -408,8 +450,8 @@ public final class BaseBlocks implements Listener {
             return "§cO Núcleo foi atacado há pouco. Espere " + ClanBaseManager.formatDuration(wait) + ".";
         }
         removeBlock(base.core, Sound.BLOCK_BEACON_DEACTIVATE);
-        base.core = null;
-        base.coreHp = settings.coreHp();
+        removeShield(base.core);
+        base.core = null; // a vida e o mínimo da recompensa continuam: recolher não "reinicia" o Núcleo
         manager.save();
         ItemStack item = items.create(BaseItems.Kind.CORE);
         player.getInventory().addItem(item).values()
@@ -509,10 +551,10 @@ public final class BaseBlocks implements Listener {
     }
 
     private void deposit(Player player, Clan clan) {
-        Notas notas = manager.economy().notas();
-        long total = notas == null ? 0 : notas.takeAll(player); // tira as notas antes de somar no Cofre
+        Macos macos = manager.economy().macos();
+        long total = macos == null ? 0 : macos.takeAll(player); // tira os maços antes de somar no Cofre
         if (total <= 0) {
-            player.sendMessage("§cVocê não tem notas de dinheiro no inventário.");
+            player.sendMessage("§cVocê não tem maços de dinheiro no inventário.");
             return;
         }
         manager.depositToVault(clan, total);
@@ -520,21 +562,16 @@ public final class BaseBlocks implements Listener {
     }
 
     private void withdraw(Player player, Clan clan, long amount) {
-        Notas notas = manager.economy().notas();
-        if (amount <= 0 || notas == null) {
+        Macos macos = manager.economy().macos();
+        if (amount <= 0 || macos == null) {
             player.sendMessage("§cEscolha o valor do saque nos botões +100/+1k/+10k.");
             return;
         }
-        long smallest = notas.values().getLast();
-        if (amount % smallest != 0) {
-            player.sendMessage("§cO valor precisa ser múltiplo de " + EconomyManager.format(smallest) + ".");
-            return;
-        }
-        if (!manager.withdrawFromVault(clan, amount)) { // tira do Cofre antes de criar as notas
+        if (!manager.withdrawFromVault(clan, amount)) { // tira do Cofre antes de criar o maço
             player.sendMessage("§cO Cofre não tem esse saldo.");
             return;
         }
-        notas.give(player, amount);
+        macos.give(player, amount);
         clans.broadcast(clan, "§e" + player.getName() + " sacou §a" + EconomyManager.format(amount) + " §edo Cofre.");
     }
 
@@ -557,7 +594,7 @@ public final class BaseBlocks implements Listener {
                         base.lastCoreRegen = now;
                         manager.save();
                     }
-                    updateDisplay(base.core, coreText(base));
+                    updateDisplay(base.core, coreText(base, clan));
                 }
             }
             if (base.vault != null && base.vault.isLoaded()) {
@@ -627,8 +664,63 @@ public final class BaseBlocks implements Listener {
         }
     }
 
-    private String coreText(ClanBase base) {
-        return "§6Núcleo de [" + base.tag + "] §c" + base.coreHp + "/" + settings.coreHp();
+    /** "Núcleo de [TAG] 7/10", manutenção (ou dívida) e o escudo, em linhas. */
+    private String coreText(ClanBase base, Clan clan) {
+        String text = "§6Núcleo de [" + base.tag + "] §c" + base.coreHp + "/" + settings.coreHp() + "\n"
+                + (base.debt > 0 ? "§c§lEM DÍVIDA: " + EconomyManager.format(base.debt)
+                : "§7Manutenção: §e" + EconomyManager.format(manager.upkeepCost(clan)) + "/dia");
+        int shield = manager.getEscudoRestante(clan);
+        return shield > 0 ? text + "\n§b🛡 Escudo " + shield + "s" : text;
+    }
+
+    // ------------------------------------------------------------ escudo (efeito azul)
+
+    private void shieldTick() {
+        long now = System.currentTimeMillis();
+        for (ClanBase base : manager.all()) {
+            if (base.core == null) {
+                continue;
+            }
+            if (base.shieldUntil <= now || !base.core.isLoaded()) {
+                removeShield(base.core);
+                continue;
+            }
+            Location center = base.core.center();
+            BlockDisplay glass = shields.get(base.core);
+            if (glass == null || !glass.isValid()) {
+                Location corner = center.clone().subtract(0.5, 0.5, 0.5);
+                glass = corner.getWorld().spawn(corner, BlockDisplay.class, display -> {
+                    display.setPersistent(false);
+                    display.setBlock(Material.LIGHT_BLUE_STAINED_GLASS.createBlockData());
+                    // Um pouco maior que o bloco, centrado nele.
+                    display.setTransformation(new Transformation(new Vector3f(-0.2f, -0.2f, -0.2f),
+                            new AxisAngle4f(), new Vector3f(1.4f, 1.4f, 1.4f), new AxisAngle4f()));
+                    display.setBrightness(new Display.Brightness(15, 15));
+                });
+                shields.put(base.core, glass);
+            }
+            Particle.DustOptions blue = new Particle.DustOptions(Color.fromRGB(80, 170, 255), 1.2f);
+            double turn = (now % 2000) / 2000.0 * Math.PI * 2;
+            for (int i = 0; i < 12; i++) {
+                double angle = turn + i * Math.PI / 6;
+                center.getWorld().spawnParticle(Particle.DUST, center.getX() + Math.cos(angle) * 1.1,
+                        center.getY(), center.getZ() + Math.sin(angle) * 1.1, 1, 0, 0, 0, 0, blue);
+            }
+        }
+        shields.entrySet().removeIf(entry -> {
+            boolean stale = !entry.getValue().isValid() || find(entry.getKey()) == null;
+            if (stale) {
+                entry.getValue().remove();
+            }
+            return stale;
+        });
+    }
+
+    private void removeShield(BaseLoc loc) {
+        BlockDisplay glass = loc == null ? null : shields.remove(loc);
+        if (glass != null) {
+            glass.remove();
+        }
     }
 
     private String vaultText(ClanBase base) {

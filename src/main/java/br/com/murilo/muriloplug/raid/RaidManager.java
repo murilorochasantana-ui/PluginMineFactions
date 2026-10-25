@@ -10,7 +10,11 @@ import br.com.murilo.muriloplug.clan.base.BaseDamageEvent;
 import br.com.murilo.muriloplug.clan.base.ClanBaseManager;
 import br.com.murilo.muriloplug.clan.base.ExplosionOwners;
 import br.com.murilo.muriloplug.shop.ShopUi;
+import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.title.Title;
+import br.com.murilo.muriloplug.clan.base.ClanBase;
+import br.com.murilo.muriloplug.economy.EconomyManager;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -50,6 +54,10 @@ import java.util.UUID;
  * vulnerável/enfraquecido. Há um raid por defensor (o clan do dono, ou o dono sem clan); ele acaba depois de
  * {@code raid.fim-apos-minutos} sem nenhum desses eventos.
  *
+ * <p>Raid contra um clan tem uma barra de chefe (vermelha, 10 segmentos) para o clan atacado, os atacantes e os clans
+ * deles: recompensa que ainda falta pagar pelo Núcleo, pontos do Núcleo e o escudo. Some no fim do raid ou 5 segundos
+ * depois de o Núcleo ser destruído.
+ *
  * <p>As contagens ficam só em memória durante o raid; o raids.yml é gravado no fim de cada raid (últimos 10 sofridos
  * e feitos de cada clan, e os resumos guardados para quem estava offline).
  */
@@ -77,6 +85,11 @@ public final class RaidManager implements Listener {
         boolean coreDestroyed;
         long moneyLost;
         final Set<UUID> attackers = new LinkedHashSet<>();
+        /** Barra de chefe (só raids contra clans). */
+        BossBar bar;
+        final Set<UUID> barViewers = new java.util.HashSet<>();
+        long coreDestroyedAt;
+        boolean barClosed;
 
         Raid(String defender, String claimName, Location location) {
             this.defender = defender;
@@ -123,6 +136,7 @@ public final class RaidManager implements Listener {
 
     public void start() {
         plugin.getServer().getScheduler().runTaskTimer(plugin, this::tick, 20L * 20, 20L * 20);
+        plugin.getServer().getScheduler().runTaskTimer(plugin, this::barTick, 20L, 20L);
     }
 
     public void registerOn(ClanCommand command) {
@@ -271,6 +285,101 @@ public final class RaidManager implements Listener {
                 raid.moneyLost += event.getMoneyLost();
             }
         });
+        Raid raid = active.get(clan.tag());
+        if (raid != null && raid.bar != null && event.getKind() == BaseDamageEvent.Kind.CORE && event.isDestroyed()) {
+            raid.coreDestroyedAt = System.currentTimeMillis();
+            raid.bar.name(ShopUi.text("§c§lNÚCLEO DESTRUÍDO!"));
+            raid.bar.progress(0f);
+        }
+        if (raid != null) {
+            updateBar(raid); // atualiza na hora (ponto tirado, escudo)
+        }
+    }
+
+    // ------------------------------------------------------------ barra de chefe
+
+    private void barTick() {
+        for (Raid raid : List.copyOf(active.values())) {
+            updateBar(raid);
+        }
+    }
+
+    private void updateBar(Raid raid) {
+        if (raid.bar == null || raid.barClosed) {
+            return;
+        }
+        if (raid.coreDestroyedAt > 0) {
+            if (System.currentTimeMillis() - raid.coreDestroyedAt >= 5_000L) {
+                closeBar(raid);
+            } else {
+                showBar(raid);
+            }
+            return;
+        }
+        Clan clan = clans.getByTag(raid.defender);
+        if (clan == null) {
+            closeBar(raid);
+            return;
+        }
+        ClanBase base = bases.of(clan);
+        if (base.core() == null) {
+            raid.bar.name(ShopUi.text("§c⚔ Raid em [" + clan.tag() + "] §8| §7Sem Núcleo"));
+            raid.bar.progress(1f);
+        } else {
+            long remaining = bases.rewardRemaining(clan);
+            long total = Math.max(1, bases.rewardTotal());
+            String title = "§c⚔ Raid em [" + clan.tag() + "] §8| §eRecompensa restante: " + EconomyManager.format(remaining)
+                    + " §8| §6Núcleo " + base.coreHp() + "/" + bases.settings().coreHp();
+            int shield = bases.getEscudoRestante(clan);
+            if (shield > 0) {
+                title += " §8| §b🛡 Escudo " + shield + "s";
+            }
+            raid.bar.name(ShopUi.text(title));
+            raid.bar.progress(Math.max(0f, Math.min(1f, remaining / (float) total)));
+        }
+        showBar(raid);
+    }
+
+    /** Mostra a barra para o clan atacado, os atacantes e os clans deles (quem voltou ao servidor também). */
+    private void showBar(Raid raid) {
+        Set<UUID> targets = new LinkedHashSet<>(recipients(raid.defender));
+        for (UUID attacker : raid.attackers) {
+            targets.add(attacker);
+            Clan clan = clans.getClan(attacker);
+            if (clan != null) {
+                targets.addAll(clan.members());
+            }
+        }
+        for (UUID id : targets) {
+            Player player = Bukkit.getPlayer(id);
+            if (player != null && raid.barViewers.add(id)) {
+                player.showBossBar(raid.bar);
+            }
+        }
+    }
+
+    private void closeBar(Raid raid) {
+        if (raid.bar == null || raid.barClosed) {
+            return;
+        }
+        raid.barClosed = true;
+        for (UUID id : raid.barViewers) {
+            Player player = Bukkit.getPlayer(id);
+            if (player != null) {
+                player.hideBossBar(raid.bar);
+            }
+        }
+        raid.barViewers.clear();
+    }
+
+    /** Quem sai deixa de contar como "já vendo": ao voltar, a barra aparece de novo. */
+    @EventHandler
+    public void onQuit(PlayerQuitEvent event) {
+        for (Raid raid : active.values()) {
+            if (raid.barViewers.remove(event.getPlayer().getUniqueId()) && raid.bar != null) {
+                event.getPlayer().hideBossBar(raid.bar);
+            }
+        }
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
@@ -298,6 +407,10 @@ public final class RaidManager implements Listener {
         if (raid == null) {
             raid = new Raid(key, claim.name(), location);
             active.put(key, raid);
+            if (!key.startsWith("p:")) {
+                raid.bar = BossBar.bossBar(ShopUi.text("§c⚔ Raid em [" + key + "]"), 1f, BossBar.Color.RED,
+                        BossBar.Overlay.NOTCHED_10);
+            }
         }
         raid.claimName = claim.name();
         raid.x = location.getBlockX();
@@ -351,6 +464,7 @@ public final class RaidManager implements Listener {
 
     private void finish(Raid raid, boolean announce) {
         active.remove(raid.defender);
+        closeBar(raid);
         List<String> attackerNames = new ArrayList<>();
         Set<String> attackerKeys = new LinkedHashSet<>();
         for (UUID attacker : raid.attackers) {

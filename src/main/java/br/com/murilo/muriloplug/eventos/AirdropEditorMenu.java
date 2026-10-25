@@ -16,7 +16,7 @@ import java.util.List;
 /**
  * Editor da tabela do Airdrop (54 slots), no estilo do editor da loja: clique num item do SEU inventário para
  * adicionar uma cópia; clique num item da tabela para escolhê-lo e use os botões de chance (+1%/+10%/-1%/-10%) ou
- * remover. O botão de nota adiciona notas de dinheiro como item. Todo clique é cancelado: nada sai do menu.
+ * remover. O botão de dinheiro adiciona um Maço de Dinheiro como item. Todo clique é cancelado: nada sai do menu.
  */
 public final class AirdropEditorMenu implements InventoryHolder {
 
@@ -35,7 +35,9 @@ public final class AirdropEditorMenu implements InventoryHolder {
     private final AirdropTable table;
     private int page;
     private int selected = -1;
-    private int noteIndex = 3; // começa na nota de $1.000
+    /** Valores do botão de dinheiro (o direito troca). */
+    static final long[] CASH_VALUES = {100, 500, 1_000, 5_000, 10_000, 50_000};
+    private int noteIndex = 2; // começa em $1.000
 
     AirdropEditorMenu(AirdropTable table) {
         this.table = table;
@@ -58,8 +60,12 @@ public final class AirdropEditorMenu implements InventoryHolder {
         return noteIndex;
     }
 
-    void nextNote(int count) {
-        noteIndex = (noteIndex + 1) % Math.max(1, count);
+    void nextNote() {
+        noteIndex = (noteIndex + 1) % CASH_VALUES.length;
+    }
+
+    long cashValue() {
+        return CASH_VALUES[noteIndex];
     }
 
     int pageCount() {
@@ -76,7 +82,7 @@ public final class AirdropEditorMenu implements InventoryHolder {
         return slot >= 0 && slot < PER_PAGE && index < table.size() ? index : -1;
     }
 
-    void render(List<Long> noteValues) {
+    void render() {
         inventory.clear();
         page = Math.max(0, Math.min(pageCount() - 1, page));
         if (selected >= table.size()) {
@@ -103,11 +109,8 @@ public final class AirdropEditorMenu implements InventoryHolder {
         inventory.setItem(PLUS_ONE_SLOT, ShopUi.button(Material.LIME_TERRACOTTA, "§a+1%", target));
         inventory.setItem(PLUS_TEN_SLOT, ShopUi.button(Material.LIME_CONCRETE, "§a+10%", target));
         inventory.setItem(REMOVE_SLOT, ShopUi.button(Material.LAVA_BUCKET, "§4Remover da tabela", target));
-        // noteValues vem do maior para o menor; noteIndex conta do menor para o maior.
-        long note = noteValues.isEmpty() ? 0
-                : noteValues.get(noteValues.size() - 1 - Math.min(noteIndex, noteValues.size() - 1));
-        inventory.setItem(NOTE_SLOT, ShopUi.button(Material.PAPER, "§aAdicionar nota de " + EconomyManager.format(note),
-                "§7Esquerdo: adiciona 1 nota", "§7Shift+Esquerdo: adiciona 10 notas", "§7Direito: troca o valor"));
+        inventory.setItem(NOTE_SLOT, ShopUi.button(Material.PAPER, "§aAdicionar maço de " + EconomyManager.format(cashValue()),
+                "§7Esquerdo: adiciona o maço na tabela", "§7Direito: troca o valor"));
         inventory.setItem(INFO_SLOT, ShopUi.button(Material.BOOK, "§eComo editar",
                 "§7Clique num item do seu inventário: entra",
                 "§7na tabela com 10% de chance.",
