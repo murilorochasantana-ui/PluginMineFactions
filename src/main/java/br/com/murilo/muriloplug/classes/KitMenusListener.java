@@ -25,6 +25,10 @@ public final class KitMenusListener implements Listener {
     @EventHandler(priority = EventPriority.HIGH)
     public void onClick(InventoryClickEvent event) {
         InventoryHolder holder = event.getView().getTopInventory().getHolder();
+        if (holder instanceof ServerItemsMenu serverMenu) {
+            onServerItemsClick(event, serverMenu);
+            return;
+        }
         if (!(holder instanceof KitMenu menu)) {
             return;
         }
@@ -39,8 +43,7 @@ public final class KitMenusListener implements Listener {
                 player.sendMessage("§cVocê não tem permissão.");
                 return;
             }
-            giveAll(player, serverItems.all());
-            player.sendMessage("§aVocê pegou os Itens do Servidor.");
+            ServerItemsMenu.open(player, serverItems, null);
             return;
         }
         PlayerClass clicked = menu.classAt(event.getSlot());
@@ -52,6 +55,54 @@ public final class KitMenusListener implements Listener {
             return;
         }
         give(player, clicked);
+    }
+
+    /** "Itens do Servidor": clique = 1, Shift + clique = um pack; o item vem sempre novo da fábrica (o menu não muda). */
+    private void onServerItemsClick(InventoryClickEvent event, ServerItemsMenu menu) {
+        event.setCancelled(true);
+        if (!(event.getWhoClicked() instanceof Player player)
+                || event.getClickedInventory() != event.getView().getTopInventory()
+                || (!event.getClick().isLeftClick() && !event.getClick().isRightClick())) {
+            return;
+        }
+        if (!player.hasPermission(KitCommand.PERMISSION)) {
+            player.sendMessage("§cVocê não tem permissão.");
+            player.closeInventory();
+            return;
+        }
+        int slot = event.getSlot();
+        if (slot == ServerItemsMenu.BACK_SLOT) {
+            if (menu.category() != null) {
+                ServerItemsMenu.open(player, serverItems, null);
+            } else {
+                KitMenu.open(player, items, serverItems);
+            }
+            return;
+        }
+        if (menu.category() != null && (slot == ServerItemsMenu.PREVIOUS_SLOT || slot == ServerItemsMenu.NEXT_SLOT)) {
+            ServerItemsMenu.open(player, serverItems, menu.category(),
+                    menu.page() + (slot == ServerItemsMenu.NEXT_SLOT ? 1 : -1));
+            return;
+        }
+        if (menu.category() == null && slot == ServerItemsMenu.ALL_SLOT) {
+            giveAll(player, serverItems.all());
+            player.sendMessage("§aVocê pegou 1 de cada Item do Servidor.");
+            return;
+        }
+        ServerItems.Category category = menu.categoryAt(slot);
+        if (category != null) {
+            ServerItemsMenu.open(player, serverItems, category);
+            return;
+        }
+        java.util.function.Supplier<ItemStack> factory = menu.factoryAt(slot);
+        if (factory == null) {
+            return;
+        }
+        ItemStack item = factory.get();
+        if (event.isShiftClick()) {
+            item.setAmount(Math.max(1, item.getMaxStackSize()));
+        }
+        giveAll(player, List.of(item));
     }
 
     private static void giveAll(Player player, List<ItemStack> kit) {
@@ -69,7 +120,8 @@ public final class KitMenusListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onDrag(InventoryDragEvent event) {
-        if (event.getView().getTopInventory().getHolder() instanceof KitMenu) {
+        if (event.getView().getTopInventory().getHolder() instanceof KitMenu
+                || event.getView().getTopInventory().getHolder() instanceof ServerItemsMenu) {
             event.setCancelled(true);
         }
     }

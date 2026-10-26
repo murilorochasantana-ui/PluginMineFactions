@@ -33,7 +33,7 @@ public final class KitMenu implements InventoryHolder {
         }
         inventory.setItem(SERVER_ITEMS_SLOT, ShopUi.button(org.bukkit.Material.CHEST, "§eItens do Servidor",
                 "§7Itens que não são de classe: Núcleo,", "§7Cofre e Baú do Clan, Contratos,",
-                "§7dinheiro... §7(" + serverItems.size() + " itens)", "§eClique para pegar 1 de cada"));
+                "§7dinheiro, upgrades e máquinas.", "§eClique para abrir"));
     }
 
     public static void open(Player player, ClassItems items, ServerItems serverItems) {

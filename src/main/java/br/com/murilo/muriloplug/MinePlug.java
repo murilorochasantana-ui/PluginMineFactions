@@ -143,6 +143,9 @@ import br.com.murilo.muriloplug.maquinas.MaquinaHologramas;
 import br.com.murilo.muriloplug.maquinas.MaquinaItens;
 import br.com.murilo.muriloplug.maquinas.MaquinaListener;
 import br.com.murilo.muriloplug.maquinas.MaquinaManager;
+import br.com.murilo.muriloplug.maquinas.MaquinaTipo;
+import br.com.murilo.muriloplug.maquinas.Upgrade;
+import br.com.murilo.muriloplug.maquinas.UpgradeTipo;
 import br.com.murilo.muriloplug.maquinas.MaquinasCommand;
 import br.com.murilo.muriloplug.maquinas.MaquinasConfig;
 import br.com.murilo.muriloplug.maquinas.MaquinasMenus;
@@ -679,6 +682,29 @@ public final class MinePlug extends JavaPlugin {
         serverItems.register("clan.nucleo", () -> baseItems.create(BaseItems.Kind.CORE));
         serverItems.register("clan.cofre", () -> baseItems.create(BaseItems.Kind.VAULT));
         serverItems.register("clan.bau", () -> baseItems.create(BaseItems.Kind.CHEST));
+        // Máquinas: os mesmos métodos do /maquinas admin (item idêntico ao da /loja, mesmo PDC). As linhas são
+        // montadas ao abrir o menu, então seguem o nível máximo atual do maquinas.yml.
+        MaquinaItens maquinaItens = maquinaManager.itens();
+        serverItems.registerCategory("maquinas.upgrades", "§bUpgrades de Máquinas", org.bukkit.Material.ANVIL, () -> {
+            java.util.List<java.util.List<java.util.function.Supplier<org.bukkit.inventory.ItemStack>>> rows =
+                    new java.util.ArrayList<>();
+            for (UpgradeTipo tipo : UpgradeTipo.values()) {
+                java.util.List<java.util.function.Supplier<org.bukkit.inventory.ItemStack>> row = new java.util.ArrayList<>();
+                for (int nivel = 1; nivel <= maquinaManager.config().nivelMaximo(tipo); nivel++) {
+                    Upgrade upgrade = new Upgrade(tipo, nivel);
+                    row.add(() -> maquinaItens.criarUpgrade(upgrade, 1));
+                }
+                rows.add(row);
+            }
+            return rows;
+        });
+        serverItems.registerCategory("maquinas.itens", "§7Máquinas", org.bukkit.Material.BLAST_FURNACE, () -> {
+            java.util.List<java.util.function.Supplier<org.bukkit.inventory.ItemStack>> row = new java.util.ArrayList<>();
+            for (MaquinaTipo tipo : MaquinaTipo.values()) {
+                row.add(() -> maquinaItens.criarMaquina(tipo));
+            }
+            return java.util.List.of(row);
+        });
         KitCommand kitCommand = new KitCommand(classItems, serverItems);
         getCommand("kit").setExecutor(kitCommand);
         getCommand("kit").setTabCompleter(kitCommand);
