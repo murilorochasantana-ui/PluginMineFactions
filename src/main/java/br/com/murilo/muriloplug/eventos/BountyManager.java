@@ -304,4 +304,16 @@ public final class BountyManager implements Listener {
             plugin.getLogger().severe("Não foi possível salvar recompensas.yml: " + e.getMessage());
         }
     }
+
+    /** Cancela a recompensa na cabeça do jogador. Devolve o valor cancelado (reset de conta). */
+    public long cancel(UUID player) {
+        Bounty bounty = bounties.remove(player);
+        if (bounty == null) {
+            return 0;
+        }
+        statuses.remove(player, STATUS);
+        save();
+        changeListener.accept(player);
+        return bounty.value;
+    }
 }

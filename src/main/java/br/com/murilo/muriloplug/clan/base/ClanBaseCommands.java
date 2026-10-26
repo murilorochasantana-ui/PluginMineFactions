@@ -29,6 +29,16 @@ public final class ClanBaseCommands {
     }
 
     public void registerOn(ClanCommand command) {
+        command.register("itens", new ClanCommand.Extra("pega o Núcleo e o Cofre do clan (líder)",
+                (player, args) -> blocks.openClanItems(player), (player, args) -> List.of()));
+        command.register("cofre", new ClanCommand.Extra("recolhe o Cofre do clan (líder)",
+                (player, args) -> {
+                    if (args.length == 2 && args[1].equalsIgnoreCase("recolher")) {
+                        player.sendMessage(blocks.pickUpVault(player));
+                    } else {
+                        player.sendMessage("§cUso: /clan cofre recolher");
+                    }
+                }, (player, args) -> args.length == 2 ? List.of("recolher") : List.of()));
         command.register("nucleo", new ClanCommand.Extra("recolhe o Núcleo do clan (líder)",
                 this::core, (player, args) -> args.length == 2 ? List.of("recolher") : List.of()));
         command.register("top", new ClanCommand.Extra("ranking dos clans por Poder",
@@ -44,7 +54,7 @@ public final class ClanBaseCommands {
             if (args.length == 2) {
                 return List.of("juros", "manutencao", "item");
             }
-            return args.length == 3 && args[1].equalsIgnoreCase("item") ? List.of("nucleo", "cofre") : List.of();
+            return args.length == 3 && args[1].equalsIgnoreCase("item") ? List.of("bau") : List.of();
         }));
     }
 
@@ -53,8 +63,7 @@ public final class ClanBaseCommands {
             player.sendMessage(blocks.pickUpCore(player));
             return;
         }
-        player.sendMessage("§cUso: /clan nucleo recolher §7(o líder recebe o Núcleo grátis ao criar o clan; "
-                + "outros são comprados na /loja)");
+        player.sendMessage("§cUso: /clan nucleo recolher §7(o líder pega o Núcleo e o Cofre pelo /clan itens)");
     }
 
     private void top(Player player) {
@@ -89,7 +98,13 @@ public final class ClanBaseCommands {
         player.sendMessage("§7Custo de amanhã: §e" + EconomyManager.format(manager.upkeepCost(clan))
                 + " §8(área total " + manager.totalArea(clan) + " × " + manager.settings().upkeepPerBlock()
                 + " × (1 + Poder " + base.power() + " × " + manager.settings().upkeepPowerWeight() + "))");
-        player.sendMessage("§7Cofre: " + (base.vault() == null ? "§cnão colocado" : "§a" + EconomyManager.format(base.vaultBalance())));
+        player.sendMessage("§7Cofre: " + (base.vault() == null ? "§cnão colocado" : "§a" + EconomyManager.format(base.vaultBalance()))
+                + " §7| mínimo: §f" + EconomyManager.format(manager.minimum(clan)) + " §8("
+                + "cresce com o Poder)");
+        if (base.vaultBalance() < manager.minimum(clan)) {
+            player.sendMessage("§c§lENFRAQUECIDO: §co Cofre está abaixo do mínimo (inimigos abrem baús e o Núcleo leva o"
+                    + " dobro de dano).");
+        }
         player.sendMessage(base.debt() > 0 ? "§c§lEM DÍVIDA: §c" + EconomyManager.format(base.debt()) + " §7(use /clan pagar)"
                 : "§aEm dia.");
     }
@@ -110,14 +125,14 @@ public final class ClanBaseCommands {
                 player.sendMessage("§aManutenção cobrada agora de todos os clans e jogadores.");
             }
             case "item" -> {
-                if (args.length != 3 || !(args[2].equalsIgnoreCase("nucleo") || args[2].equalsIgnoreCase("cofre"))) {
-                    player.sendMessage("§cUso: /clan admin item <nucleo|cofre>");
+                if (args.length != 3 || !args[2].equalsIgnoreCase("bau")) {
+                    player.sendMessage("§cUso: /clan admin item bau §7(o Núcleo e o Cofre só saem pelo /clan itens)");
                     return;
                 }
-                give(player, items.create(args[2].equalsIgnoreCase("nucleo") ? BaseItems.Kind.CORE : BaseItems.Kind.VAULT));
-                player.sendMessage("§aItem entregue (para vender na /loja admin, clique nele no editor).");
+                give(player, items.create(BaseItems.Kind.CHEST));
+                player.sendMessage("§aBaú do Clan entregue (para vender na /loja admin, clique nele no editor).");
             }
-            default -> player.sendMessage("§cUso: /clan admin <juros|manutencao|item <nucleo|cofre>>");
+            default -> player.sendMessage("§cUso: /clan admin <juros|manutencao|item bau>");
         }
     }
 

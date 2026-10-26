@@ -19,7 +19,7 @@ import org.bukkit.event.player.PlayerInteractEvent;
 
 /**
  * Proteção dos claims: só o dono, os jogadores de confiança e o clan do dono constroem e abrem baús/containers.
- * Exceções contra inimigos: com o clan dono VULNERÁVEL (Núcleo destruído) qualquer inimigo pode quebrar, colocar e
+ * Exceções contra inimigos: com o clan dono VULNERÁVEL (Núcleo desativado ou não recolocado no prazo) qualquer inimigo pode quebrar, colocar e
  * abrir; com o clan EM DÍVIDA (claims enfraquecidos) inimigos podem abrir baús e containers.
  */
 public final class ClaimListener implements Listener {

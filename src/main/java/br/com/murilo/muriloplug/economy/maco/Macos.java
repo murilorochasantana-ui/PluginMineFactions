@@ -45,7 +45,7 @@ import java.util.UUID;
  */
 public final class Macos implements Listener {
 
-    public static final String FEE_PATH = "economia.notas.taxa-deposito";
+    public static final String FEE_PATH = "economia.notas.taxa-deposito-remoto";
     public static final String REWARDS_PATH = "economia.notas.recompensas-em-notas";
     public static final String MODEL_PATH = "economia.notas.modelo-maco";
 
@@ -66,7 +66,7 @@ public final class Macos implements Listener {
 
     public static boolean addMissing(FileConfiguration config) {
         boolean changed = false;
-        Object[][] defaults = {{FEE_PATH, 0.05}, {REWARDS_PATH, true}, {MODEL_PATH, "minecraft:paper"}};
+        Object[][] defaults = {{FEE_PATH, 0.25}, {REWARDS_PATH, true}, {MODEL_PATH, "minecraft:paper"}};
         for (Object[] entry : defaults) {
             if (!config.contains((String) entry[0])) {
                 config.set((String) entry[0], entry[1]);
@@ -76,9 +76,9 @@ public final class Macos implements Listener {
         return changed;
     }
 
-    /** Taxa do depósito (0.05 = 5%), entre 0 e 1. */
+    /** Taxa do /money depositar (0.25 = 25%), entre 0 e 1. No próprio Cofre do clan não há taxa. */
     public double depositFee() {
-        return Math.max(0, Math.min(1, plugin.getConfig().getDouble(FEE_PATH, 0.05)));
+        return Math.max(0, Math.min(1, plugin.getConfig().getDouble(FEE_PATH, 0.25)));
     }
 
     /** Se os ganhos (kill, venda, eventos) chegam em maço; false = direto no saldo. */

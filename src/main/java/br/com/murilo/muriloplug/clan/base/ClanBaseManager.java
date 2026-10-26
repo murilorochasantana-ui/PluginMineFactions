@@ -112,14 +112,28 @@ public final class ClanBaseManager implements Listener {
             if (base.isVulnerable()) {
                 return ClaimManager.Weakness.VULNERABLE;
             }
-            return base.debt > 0 ? ClaimManager.Weakness.IN_DEBT : ClaimManager.Weakness.NONE;
+            return weakened(clan) ? ClaimManager.Weakness.IN_DEBT : ClaimManager.Weakness.NONE;
         }
         return ClaimManager.Weakness.NONE; // sem clan não há manutenção, nem dívida
     }
 
-    public boolean inDebt(Clan clan) {
-        ClanBase base = bases.get(clan.tag());
-        return base != null && base.debt > 0;
+    /** Saldo mínimo do Cofre do clan (cresce com o Poder). */
+    public long minimum(Clan clan) {
+        return settings.vaultMinimum(of(clan).power);
+    }
+
+    /**
+     * Enfraquecido: em dívida OU com o Cofre abaixo do mínimo. Inimigos abrem baús nos claims e o Núcleo leva o dobro
+     * de dano por explosão.
+     */
+    public boolean weakened(Clan clan) {
+        ClanBase base = of(clan);
+        return base.debt > 0 || base.vaultBalance < minimum(clan);
+    }
+
+    /** Vulnerável (Núcleo desativado ou não recolocado) ou enfraquecido: inimigos podem abrir os Baús do Clan. */
+    public boolean openToEnemies(Clan clan) {
+        return of(clan).isVulnerable() || weakened(clan);
     }
 
     // ------------------------------------------------------------ escudo e recompensa do Núcleo
@@ -130,19 +144,35 @@ public final class ClanBaseManager implements Listener {
         return left <= 0 ? 0 : (int) Math.ceil(left / 1000.0);
     }
 
-    /** Quanto vale cada ponto tirado do Núcleo (recompensa total / vida). */
-    public long rewardPerPoint() {
-        return settings.coreReward() / settings.coreHp();
+    /** Tira {@code fraction} do saldo ATUAL do Cofre (roubo do raid) e devolve quanto saiu. */
+    public long steal(Clan clan, double fraction) {
+        ClanBase base = of(clan);
+        long amount = (long) Math.floor(base.vaultBalance * Math.max(0, Math.min(1, fraction)));
+        if (amount <= 0) {
+            return 0;
+        }
+        base.vaultBalance -= amount;
+        save();
+        return amount;
     }
 
-    /** Recompensa total de um Núcleo. */
-    public long rewardTotal() {
-        return rewardPerPoint() * settings.coreHp();
+    /** O que sobraria no Cofre depois de roubar {@code points} pontos e a destruição. */
+    private double keepFraction(int points) {
+        return Math.pow(1 - settings.stealPerPoint(), Math.max(0, points)) * (1 - settings.stealOnDestroy());
     }
 
-    /** Quanto ainda pode ser pago pelo Núcleo atual do clan (pontos abaixo do menor já atingido). */
-    public long rewardRemaining(Clan clan) {
-        return Math.max(0, of(clan).lowestHp) * rewardPerPoint();
+    /** Estimativa (com o saldo de agora) de quanto ainda dá para roubar pelo Núcleo atual do clan. */
+    public long stealRemaining(Clan clan) {
+        ClanBase base = of(clan);
+        if (base.isCoreDisabled()) {
+            return 0; // desativado não rouba mais nada
+        }
+        return (long) Math.floor(base.vaultBalance * (1 - keepFraction(base.lowestHp)));
+    }
+
+    /** Estimativa do roubo de um Núcleo inteiro (com o saldo de agora), para o progresso da barra do raid. */
+    public long stealTotal(Clan clan) {
+        return (long) Math.floor(of(clan).vaultBalance * (1 - keepFraction(settings.coreHp())));
     }
 
     /** Clans por Poder (maior primeiro). */
@@ -288,10 +318,10 @@ public final class ClanBaseManager implements Listener {
         save();
     }
 
-    /** Tira do Cofre. Retorna false, sem mudar nada, se não houver saldo. */
+    /** Tira do Cofre. Retorna false, sem mudar nada, se o saldo ficaria abaixo do mínimo. */
     public boolean withdrawFromVault(Clan clan, long amount) {
         ClanBase base = of(clan);
-        if (amount <= 0 || base.vaultBalance < amount) {
+        if (amount <= 0 || base.vaultBalance - amount < minimum(clan)) {
             return false;
         }
         base.vaultBalance -= amount;
@@ -390,9 +420,27 @@ public final class ClanBaseManager implements Listener {
                 base.interestFraction = data.getDouble("juros-fracao");
                 base.power = Math.max(0, data.getInt("poder"));
                 base.vulnerableUntil = data.getLong("vulneravel-ate");
-                base.replaceAllowedAt = data.getLong("recolocar-depois-de");
+                base.coreDisabledUntil = data.getLong("nucleo-desativado-ate");
+                base.coreReplaceDeadline = data.getLong("nucleo-prazo-recolocar");
+                String pickedBy = data.getString("nucleo-recolhido-por");
+                try {
+                    base.corePickedBy = pickedBy == null ? null : UUID.fromString(pickedBy);
+                } catch (IllegalArgumentException e) {
+                    base.corePickedBy = null;
+                }
+                base.coreMissingPenalty = data.getBoolean("nucleo-punicao");
                 base.freeCoreTaken = data.getBoolean("nucleo-gratis-usado");
+                base.coreItemId = data.getString("nucleo-item-id");
+                base.vaultItemId = data.getString("cofre-item-id");
                 base.debt = Math.max(0, data.getLong("divida"));
+                for (Map<?, ?> map : data.getMapList("baus")) {
+                    BaseLoc loc = BaseLoc.parse(String.valueOf(map.get("local")));
+                    String id = String.valueOf(map.get("id"));
+                    if (loc != null && map.get("id") != null) {
+                        int hp = map.get("vida") instanceof Number n ? n.intValue() : settings.chestHp();
+                        base.chests.put(id, new ClanChest(id, loc, hp));
+                    }
+                }
             }
         }
         lastInterest = yaml.getLong("juros-ultimo", System.currentTimeMillis());
@@ -419,9 +467,23 @@ public final class ClanBaseManager implements Listener {
             yaml.set(path + "juros-fracao", base.interestFraction);
             yaml.set(path + "poder", base.power);
             yaml.set(path + "vulneravel-ate", base.vulnerableUntil);
-            yaml.set(path + "recolocar-depois-de", base.replaceAllowedAt);
+            yaml.set(path + "nucleo-desativado-ate", base.coreDisabledUntil);
+            yaml.set(path + "nucleo-prazo-recolocar", base.coreReplaceDeadline);
+            yaml.set(path + "nucleo-recolhido-por", base.corePickedBy == null ? null : base.corePickedBy.toString());
+            yaml.set(path + "nucleo-punicao", base.coreMissingPenalty);
             yaml.set(path + "nucleo-gratis-usado", base.freeCoreTaken);
+            yaml.set(path + "nucleo-item-id", base.coreItemId);
+            yaml.set(path + "cofre-item-id", base.vaultItemId);
             yaml.set(path + "divida", base.debt);
+            List<Map<String, Object>> chests = new ArrayList<>();
+            for (ClanChest chest : base.chests.values()) {
+                Map<String, Object> map = new LinkedHashMap<>();
+                map.put("id", chest.id);
+                map.put("local", chest.loc.serialize());
+                map.put("vida", chest.hp);
+                chests.add(map);
+            }
+            yaml.set(path + "baus", chests);
         }
         yaml.set("juros-ultimo", lastInterest);
         yaml.set("manutencao-ultima-data", lastUpkeepDate);

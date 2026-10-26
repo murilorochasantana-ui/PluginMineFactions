@@ -20,6 +20,16 @@ public final class MoneyCommand implements CommandExecutor, TabCompleter {
 
     private final EconomyManager economy;
 
+    /** Cofre do clan do jogador, para o /money depositar de quem tem clan. */
+    public interface ClanVault {
+        /** TAG do clan do jogador, ou null se ele não tiver clan. */
+        String tagOf(Player player);
+
+        void deposit(Player player, long amount);
+    }
+
+    private ClanVault clanVault;
+
     public MoneyCommand(EconomyManager economy) {
         this.economy = economy;
     }
@@ -120,6 +130,10 @@ public final class MoneyCommand implements CommandExecutor, TabCompleter {
         }
     }
 
+    public void setClanVault(ClanVault clanVault) {
+        this.clanVault = clanVault;
+    }
+
     private Macos macos() {
         return economy.macos();
     }
@@ -155,7 +169,10 @@ public final class MoneyCommand implements CommandExecutor, TabCompleter {
                 + (separate ? " em um maço novo." : " em maço."));
     }
 
-    /** /money depositar [mao]: tira os maços do inventário (ou da mão) e soma ao saldo, menos a taxa. */
+    /**
+     * /money depositar [mao]: tira os maços do inventário (ou da mão) e, menos a taxa, manda para o Cofre do clan (quem
+     * tem clan não aumenta mais o saldo pessoal) ou para o saldo pessoal (quem não tem clan).
+     */
     private void depositCash(CommandSender sender, String label, String[] args) {
         if (!(sender instanceof Player player)) {
             sender.sendMessage("Apenas jogadores podem depositar.");
@@ -175,6 +192,13 @@ public final class MoneyCommand implements CommandExecutor, TabCompleter {
             return;
         }
         long fee = Math.min(total, Math.round(total * macos.depositFee()));
+        String tag = clanVault == null ? null : clanVault.tagOf(player);
+        if (tag != null) {
+            clanVault.deposit(player, total - fee);
+            player.sendMessage("§aDepositado " + EconomyManager.format(total - fee) + " no Cofre de [" + tag + "] (taxa "
+                    + EconomyManager.format(fee) + "). Deposite no próprio Cofre para não pagar taxa.");
+            return;
+        }
         economy.deposit(player.getUniqueId(), total - fee);
         player.sendMessage("§aDepositado " + EconomyManager.format(total - fee) + " (taxa " + EconomyManager.format(fee) + ")");
     }

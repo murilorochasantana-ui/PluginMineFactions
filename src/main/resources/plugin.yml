@@ -45,14 +45,17 @@ commands:
     description: Conserta o item da mão (ou tudo o que está vestido) pagando com dinheiro.
     usage: /reparar [tudo]
   maquinas:
-    description: Abre o menu de máquinas (em breve).
-    usage: /maquinas
+    description: Máquinas do clan (comprar com o Cofre, minhas máquinas, juntar upgrades); administradores abrem o painel de controle.
+    usage: /maquinas [admin [dar <tipo> [jogador] | upgrade <tipo> <nível> [quantidade] [jogador]]]
+  upgrade:
+    description: Abre o menu de upgrades da base do clan (em breve).
+    usage: /upgrade
   airdrop:
     description: Mostra o Airdrop atual; administradores iniciam, editam a tabela e pegam Contratos de Recompensa.
     usage: /airdrop [iniciar | admin editar | admin contrato <nível> <quantidade>]
   clan:
     description: Cria e gerencia clans (convites, membros, liderança e chat do clan).
-    usage: /clan [criar|convidar|aceitar|negar|sair|expulsar|lider|desfazer|chat|info|nucleo [recolher]|top|pagar|manutencao|raids|admin <juros|manutencao|item <nucleo|cofre>>]
+    usage: /clan [criar|convidar|aceitar|negar|sair|expulsar|lider|desfazer|chat|info|itens|nucleo recolher|cofre recolher|top|pagar|manutencao|raids|admin <juros|manutencao|item bau>]
   classe:
     description: Abre o menu de classes (escolher) ou troca a sua classe atual.
     usage: /classe [trocar] | admin staff <tipo> | admin mana <definir|dar> <jogador> <valor> | admin manamaxima <definir|resetar> <jogador> [valor] | admin flecha <explosiva|perfurante|gelo|fumaca|corrente|corda> <quantidade> | admin flecha <quantidade> [gancho] | admin sentinela <quantidade> | admin golem <quantidade> | admin totem <quantidade> | admin livro <quantidade> | admin planta
@@ -91,6 +94,9 @@ commands:
   troca:
     description: Liga ou desliga a Troca Equivalente do Suporte.
     usage: /troca
+  resetarconta:
+    description: Reseta a conta de um jogador (claims, homes, clan, saldo, KDA, classe, mercado...), com backup antes.
+    usage: /resetarconta <jogador> [confirmar [--inventario] [--senha]]
 
 permissions:
   mineplug.claim.bypass:
@@ -122,6 +128,12 @@ permissions:
     default: op
   mineplug.clan.admin:
     description: Permite usar /clan admin (juros, manutenção e itens do Núcleo/Cofre).
+    default: op
+  mineplug.admin.resetar:
+    description: Permite usar /resetarconta (apagar os dados de um jogador).
+    default: op
+  mineplug.maquinas.admin:
+    description: Permite usar /maquinas admin (painel de controle das máquinas, dar máquinas e upgrades).
     default: op
   mineplug.airdrop.admin:
     description: Permite iniciar o Airdrop, editar a tabela de itens e pegar Contratos de Recompensa (/airdrop).

@@ -73,6 +73,11 @@ public final class AuthManager {
 
     // ------------------------------------------------------------ consulta
 
+    /** Registro do jogador (null se ele não tiver), para o backup do reset de conta. */
+    public Account account(UUID player) {
+        return accounts.get(player);
+    }
+
     public boolean isLoggedIn(UUID player) {
         return loggedIn.contains(player);
     }

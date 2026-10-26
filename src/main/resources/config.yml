@@ -8,8 +8,9 @@ economia:
   notas:
     # Modelo (item_model) do maço.
     modelo-maco: minecraft:paper
-    # Taxa do /money depositar (0.05 = 5%; o dinheiro da taxa some do jogo).
-    taxa-deposito: 0.05
+    # Taxa do /money depositar (0.25 = 25%; a taxa some do jogo). Quem tem clan deposita direto no Cofre do clan;
+    # quem não tem, no saldo pessoal. Depositar no próprio Cofre (menu do Cofre) não tem taxa.
+    taxa-deposito-remoto: 0.25
     # true: kill, assistência, vendas ao servidor e eventos somam no maço do inventário. false: direto no saldo.
     recompensas-em-notas: true
   # Venda de itens ao servidor (/vender). Preço atual = preço base x multiplicador.
@@ -91,20 +92,35 @@ clan:
     vida: 10
     # Uma explosão a até esta distância (blocos) tira 1 ponto (2 se o clan estiver em dívida).
     raio-explosao: 4
-    # Núcleo destruído: o clan fica vulnerável (inimigos quebram, colocam e abrem baús nos claims dos membros).
-    vulneravel-minutos: 30
-    # Recompensa total do Núcleo, paga por ponto (5000 / 10 = $500 por ponto) a quem acendeu a TNT.
-    # Só pontos abaixo do menor que o Núcleo já atingiu pagam (regenerar e tirar de novo não paga).
-    recompensa: 5000
-    espera-recolocar-horas: 2
-    # Regenera 1 ponto a cada tanto de minutos sem ataques.
+    # Núcleo em 0 de vida: ele NÃO some. Fica no lugar, DESATIVADO, por este tempo, e o clan fica vulnerável
+    # (inimigos quebram, colocam e abrem baús nos claims dos membros). Desativado ele não toma dano, não rouba,
+    # não regenera e não pode ser recolhido. Também é a punição mínima por não recolocar o Núcleo no prazo.
+    vulneravel-minutos: 10
+    # Vida com que o Núcleo volta sozinho quando acaba o tempo de desativado (até a "vida" acima).
+    vida-ao-reativar: 10
+    # Cada ponto tirado rouba esta fração do saldo ATUAL do Cofre do clan e entrega a quem acendeu a TNT.
+    # Só pontos abaixo do menor que o Núcleo já atingiu roubam (regenerar e tirar de novo não rouba).
+    # Explosão sem quem acendeu (creeper) tira ponto, mas não rouba.
+    roubo-por-ponto: 0.05
+    # Núcleo chega a 0: rouba mais esta fração do que sobrou no Cofre (uma vez só), para quem deu a última explosão.
+    roubo-destruido: 0.2
+    # Regenera 1 ponto a cada tanto de minutos sem ataques (não regenera enquanto estiver desativado).
     regenera-minutos: 10
     # /clan nucleo recolher só depois de tanto tempo sem o Núcleo ser atacado.
     recolher-sem-ataque-minutos: 10
+    # Depois de recolher, o Núcleo precisa ser colocado de novo neste prazo. Se não for, a base fica vulnerável até
+    # ele voltar e por pelo menos vulneravel-minutos depois do fim do prazo.
+    prazo-recolocar-segundos: 60
     # Depois de cada explosão que tira pontos, o Núcleo fica imune a explosões por este tempo.
     escudo-segundos: 5
+  # Cofre do Clan: guarda só o dinheiro do clan.
   cofre:
-    vida: 6
+    vida: 5
+    # Depois de cada ponto tirado, imune a explosões por este tempo.
+    escudo-segundos: 3
+    # Saldo mínimo: minimo-base + minimo-por-poder x Poder. Abaixo dele não dá para sacar e o clan fica enfraquecido.
+    minimo-base: 2000
+    minimo-por-poder: 100
     # Distância máxima do Núcleo para colocar o Cofre.
     distancia-maxima: 10
     # Juros por dia (aplicados aos poucos a cada hora) e o saldo máximo que rende.
@@ -113,6 +129,10 @@ clan:
     # Parte do saldo que cai no chão em notas quando o Cofre é destruído (e durante a vulnerabilidade).
     perda: 0.3
     perda-vulneravel: 0.5
+  # Baú do Clan: 54 itens, quantos quiser (só membros colocam, em claims de membros).
+  bau:
+    vida: 3
+    escudo-segundos: 3
   poder:
     kill: 1
     nucleo-destruido: 10

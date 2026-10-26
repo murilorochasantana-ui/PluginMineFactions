@@ -15,9 +15,11 @@ public final class KitCommand implements CommandExecutor, TabCompleter {
     public static final String PERMISSION = "mineplug.kit.admin";
 
     private final ClassItems items;
+    private final ServerItems serverItems;
 
-    public KitCommand(ClassItems items) {
+    public KitCommand(ClassItems items, ServerItems serverItems) {
         this.items = items;
+        this.serverItems = serverItems;
     }
 
     @Override
@@ -31,7 +33,7 @@ public final class KitCommand implements CommandExecutor, TabCompleter {
             return true;
         }
         if (args.length == 2 && args[0].equalsIgnoreCase("admin") && args[1].equalsIgnoreCase("classe")) {
-            KitMenu.open(player, items);
+            KitMenu.open(player, items, serverItems);
         } else {
             player.sendMessage("§cUso: /" + label + " admin classe");
         }

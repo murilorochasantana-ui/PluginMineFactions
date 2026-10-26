@@ -140,4 +140,12 @@ public final class StatsManager {
     private Stats entry(UUID player) {
         return stats.computeIfAbsent(player, k -> new Stats());
     }
+
+    /** Zera kills, mortes e assistências do jogador (reset de conta). */
+    public void reset(UUID player) {
+        if (stats.remove(player) != null) {
+            save();
+            changeListener.accept(player);
+        }
+    }
 }

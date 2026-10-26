@@ -323,4 +323,28 @@ public final class SentinelaManager implements Listener {
         center.getWorld().spawnParticle(Particle.DUST, center, 40, 0.6, 0.6, 0.6, 0,
                 new Particle.DustOptions(Color.RED, 1.6f));
     }
+
+    /** Remove do mundo e do arquivo todas as sentinelas do jogador. Devolve as posições (reset de conta). */
+    public List<String> removeAll(UUID owner) {
+        List<String> removed = new ArrayList<>();
+        for (Sentinel sentinel : List.copyOf(sentinels.values())) {
+            if (!sentinel.owner().equals(owner)) {
+                continue;
+            }
+            World world = Bukkit.getWorld(sentinel.world());
+            if (world != null) {
+                Block block = world.getBlockAt(sentinel.x(), sentinel.y(), sentinel.z());
+                if (block.getType() == Material.OBSERVER) {
+                    block.setType(Material.AIR, false);
+                }
+            }
+            sentinels.remove(sentinel.key());
+            lastAlert.remove(sentinel.key());
+            removed.add(sentinel.world() + ";" + sentinel.x() + ";" + sentinel.y() + ";" + sentinel.z());
+        }
+        if (!removed.isEmpty()) {
+            save();
+        }
+        return removed;
+    }
 }

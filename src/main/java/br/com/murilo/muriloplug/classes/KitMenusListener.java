@@ -15,9 +15,11 @@ import java.util.List;
 public final class KitMenusListener implements Listener {
 
     private final ClassItems items;
+    private final ServerItems serverItems;
 
-    public KitMenusListener(ClassItems items) {
+    public KitMenusListener(ClassItems items, ServerItems serverItems) {
         this.items = items;
+        this.serverItems = serverItems;
     }
 
     @EventHandler(priority = EventPriority.HIGH)
@@ -32,6 +34,15 @@ public final class KitMenusListener implements Listener {
                 || event.getClickedInventory() != event.getView().getTopInventory()) {
             return;
         }
+        if (event.getSlot() == KitMenu.SERVER_ITEMS_SLOT) {
+            if (!player.hasPermission(KitCommand.PERMISSION)) {
+                player.sendMessage("§cVocê não tem permissão.");
+                return;
+            }
+            giveAll(player, serverItems.all());
+            player.sendMessage("§aVocê pegou os Itens do Servidor.");
+            return;
+        }
         PlayerClass clicked = menu.classAt(event.getSlot());
         if (clicked == null) {
             return;
@@ -41,6 +52,19 @@ public final class KitMenusListener implements Listener {
             return;
         }
         give(player, clicked);
+    }
+
+    private static void giveAll(Player player, List<ItemStack> kit) {
+        boolean dropped = false;
+        for (ItemStack item : kit) {
+            for (ItemStack leftover : player.getInventory().addItem(item).values()) {
+                player.getWorld().dropItem(player.getLocation(), leftover);
+                dropped = true;
+            }
+        }
+        if (dropped) {
+            player.sendMessage("§eInventário cheio: alguns itens caíram no chão.");
+        }
     }
 
     @EventHandler(priority = EventPriority.HIGH)

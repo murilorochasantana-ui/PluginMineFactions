@@ -31,11 +31,17 @@ public final class MarketMenusListener implements Listener {
     private final JavaPlugin plugin;
     private final MarketManager market;
     private final EconomyManager economy;
+    /** Itens que nunca podem ser anunciados (Núcleo e Cofre do clan). */
+    private java.util.function.Predicate<ItemStack> forbidden = item -> false;
 
     public MarketMenusListener(JavaPlugin plugin, MarketManager market, EconomyManager economy) {
         this.plugin = plugin;
         this.market = market;
         this.economy = economy;
+    }
+
+    public void setForbidden(java.util.function.Predicate<ItemStack> forbidden) {
+        this.forbidden = forbidden;
     }
 
     @EventHandler
@@ -72,7 +78,11 @@ public final class MarketMenusListener implements Listener {
             if (holder instanceof SellMenu sell && !sell.editing()) {
                 ItemStack picked = event.getCurrentItem();
                 if (picked != null && !picked.getType().isAir()) {
-                    sell.choose(picked, event.getSlot());
+                    if (forbidden.test(picked)) {
+                        player.sendMessage("§cO Núcleo e o Cofre do clan não podem ser anunciados.");
+                    } else {
+                        sell.choose(picked, event.getSlot());
+                    }
                 }
             }
             return;

@@ -250,4 +250,16 @@ public final class TestMode implements Listener, CommandExecutor, TabCompleter {
         Bukkit.getOnlinePlayers().forEach(player -> options.add(player.getName()));
         return options.stream().filter(option -> option.toLowerCase(Locale.ROOT).startsWith(typed)).toList();
     }
+
+    /** Desliga o Modo Teste do jogador (reset de conta). Retorna true se estava ligado. */
+    public boolean deactivate(UUID player) {
+        if (!active.remove(player)) {
+            return false;
+        }
+        Player online = Bukkit.getPlayer(player);
+        if (online != null) {
+            changeListener.accept(online);
+        }
+        return true;
+    }
 }

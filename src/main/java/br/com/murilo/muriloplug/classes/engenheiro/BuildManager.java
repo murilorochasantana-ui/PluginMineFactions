@@ -673,4 +673,9 @@ public final class BuildManager {
             plugin.getLogger().warning("Não foi possível apagar construcoes-abertas.yml.");
         }
     }
+
+    /** Se o jogador tem uma construção aberta (reset de conta). */
+    public boolean hasOpenBuild(UUID owner) {
+        return builds.containsKey(owner);
+    }
 }

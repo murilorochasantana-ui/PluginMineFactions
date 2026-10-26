@@ -27,7 +27,7 @@ public final class ClaimManager {
         NONE,
         /** Em dívida (enfraquecido): inimigos podem abrir baús e containers. */
         IN_DEBT,
-        /** Núcleo destruído: inimigos podem quebrar, colocar e abrir. */
+        /** Núcleo desativado (ou não recolocado no prazo): inimigos podem quebrar, colocar e abrir. */
         VULNERABLE
     }
 
@@ -281,5 +281,47 @@ public final class ClaimManager {
 
     private static int number(Map<?, ?> map, String key) {
         return ((Number) map.get(key)).intValue();
+    }
+
+    // ------------------------------------------------------------ reset de conta
+
+    /** Remove todos os claims do jogador e devolve os que foram removidos. */
+    public List<Claim> removeAll(UUID owner) {
+        List<Claim> removed = claims.remove(owner);
+        if (removed == null) {
+            return List.of();
+        }
+        save();
+        return removed;
+    }
+
+    /** Claims de outros jogadores em que o jogador tem confiança (trust). */
+    public List<Claim> trustedIn(UUID player) {
+        List<Claim> list = new ArrayList<>();
+        for (List<Claim> owned : claims.values()) {
+            for (Claim claim : owned) {
+                if (claim.isTrusted(player)) {
+                    list.add(claim);
+                }
+            }
+        }
+        return list;
+    }
+
+    /** Tira o jogador da lista de confiança de todos os claims. Retorna em quantos ele estava. */
+    public int removeTrustEverywhere(UUID player) {
+        int count = 0;
+        for (List<Claim> owned : claims.values()) {
+            for (int i = 0; i < owned.size(); i++) {
+                if (owned.get(i).isTrusted(player)) {
+                    owned.set(i, owned.get(i).withoutTrusted(player));
+                    count++;
+                }
+            }
+        }
+        if (count > 0) {
+            save();
+        }
+        return count;
     }
 }

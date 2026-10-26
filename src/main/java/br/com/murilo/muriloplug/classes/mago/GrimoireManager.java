@@ -269,4 +269,24 @@ public final class GrimoireManager implements Listener {
             plugin.getLogger().severe("Não foi possível salvar mago.yml: " + e.getMessage());
         }
     }
+
+    /** Retrato do Grimório do jogador (para o backup do reset de conta). */
+    public Map<String, Object> export(UUID id) {
+        Data entry = data.get(id);
+        Map<String, Object> map = new java.util.LinkedHashMap<>();
+        if (entry != null) {
+            map.put("aprendidas", entry.learned.stream().map(Enum::name).toList());
+            map.put("equipadas", entry.equipped.stream().map(Enum::name).toList());
+            map.put("selecionada", entry.selected);
+            map.put("recebeu-grimorio", entry.received);
+        }
+        return map;
+    }
+
+    /** Apaga tudo do Grimório do jogador (reset de conta). */
+    public void forget(UUID id) {
+        if (data.remove(id) != null) {
+            save();
+        }
+    }
 }

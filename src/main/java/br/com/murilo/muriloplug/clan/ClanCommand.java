@@ -29,7 +29,7 @@ public final class ClanCommand implements CommandExecutor, TabCompleter {
     private static final Pattern NAME_PATTERN = Pattern.compile("[A-Za-z0-9 _-]{3,16}");
     private static final Set<String> RESERVED_TAGS = Set.of(
             "criar", "convidar", "aceitar", "negar", "sair", "expulsar", "lider", "desfazer", "chat", "info",
-            "nucleo", "top", "pagar", "raids", "admin");
+            "nucleo", "top", "pagar", "raids", "admin", "itens", "cofre", "manutencao");
     private static final List<String> SUBCOMMANDS = List.of(
             "criar", "convidar", "aceitar", "negar", "sair", "expulsar", "lider", "desfazer", "chat", "info");
 

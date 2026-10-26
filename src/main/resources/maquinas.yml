@@ -1,0 +1,183 @@
+# Máquinas do clan. O jeito certo de mudar é pelo painel dentro do jogo (/maquinas admin): cada mudança é salva
+# aqui na hora e vale sem reiniciar. Se editar este arquivo à mão, use "Recarregar maquinas.yml" no painel.
+# Os dados das máquinas colocadas no mundo ficam em maquinas-dados.yml.
+
+geral:
+  # Quando as máquinas funcionam: SEMPRE, CLAN_ONLINE (algum membro online) ou MEMBRO_PERTO (membro a até o raio).
+  condicao: CLAN_ONLINE
+  raio-membro-perto: 32
+  # true = só o líder do clan compra máquinas no /maquinas.
+  apenas-lider-compra: true
+  # Multiplicador de velocidade de todas as máquinas (1.0 = normal).
+  velocidade-global: 1.0
+  # Fora de raid, a máquina recupera 1 de vida a cada X minutos (0 = desligado).
+  regeneracao-minutos: 10
+
+# Modo teste do admin: as máquinas ficam "multiplicador" vezes mais rápidas e o holograma mostra [MODO TESTE].
+modo-teste:
+  ativo: false
+  multiplicador: 100
+
+# Itens aceitos como combustível (em qualquer máquina) e quantas unidades cada um vale.
+combustiveis:
+  COAL: 1
+  CHARCOAL: 1
+  COAL_BLOCK: 9
+
+engenheiro:
+  # Máquinas do clan ficam X mais rápidas com um Engenheiro do clan a até "raio" blocos (não acumula).
+  bonus-velocidade: 0.10
+  raio: 10
+  # Shift + clique direito do Engenheiro do clan na máquina: recupera esta vida gastando esta energia.
+  reparo-vida: 1
+  reparo-energia: 20
+
+upgrades:
+  # Com upgrades, o ciclo nunca fica abaixo desta fração do ciclo base (0.2 = 20%).
+  ciclo-minimo: 0.2
+  # Com upgrades, o combustível (e o custo do Cofre) por ciclo nunca fica abaixo desta fração do base.
+  combustivel-minimo: 0.2
+  # Venda automática: fração do valor que fica com o servidor (0.20 = 20% de taxa).
+  venda-automatica-taxa: 0.20
+  # Custo (do Cofre do clan) por nível do resultado ao juntar dois upgrades (0 = grátis).
+  custo-juntar: 0
+  tipos:
+    ESTOQUE:
+      nivel-maximo: 5
+      # +armazém por nível
+      valor-por-nivel: 128
+      # +combustível máximo por nível
+      combustivel-por-nivel: 16
+    VELOCIDADE:
+      nivel-maximo: 5
+      # -fração do tempo do ciclo por nível
+      valor-por-nivel: 0.10
+    EFICIENCIA:
+      nivel-maximo: 5
+      # -fração do combustível (e do custo do Cofre) por nível
+      valor-por-nivel: 0.10
+    FORTUNA:
+      nivel-maximo: 5
+      # +chance de produzir em dobro no ciclo, por nível
+      valor-por-nivel: 0.05
+    SORTE:
+      nivel-maximo: 5
+      # +fração no peso dos itens raros, por nível
+      valor-por-nivel: 0.25
+    BLINDAGEM:
+      nivel-maximo: 5
+      # +vida da máquina por nível
+      valor-por-nivel: 1
+    COLETA_AUTOMATICA:
+      nivel-maximo: 1
+      valor-por-nivel: 1
+    VENDA_AUTOMATICA:
+      nivel-maximo: 1
+      valor-por-nivel: 1
+
+# Tipos de máquina. producao: item, peso (chance = peso / soma dos pesos), quantidade min-max e se é raro.
+tipos:
+  MINERADOR:
+    nome: "§7Máquina de Minérios"
+    bloco: BLAST_FURNACE
+    ativa: true
+    preco: 15000
+    limite-por-clan: 0
+    ciclo-segundos: 60
+    sorteios-por-ciclo: 1
+    combustivel-por-ciclo: 1
+    custo-cofre-por-hora: 0
+    armazem-base: 256
+    combustivel-maximo-base: 64
+    slots-upgrade: 3
+    vida: 5
+    escudo-segundos: 3
+    raid-drop-armazem: 0.5
+    raid-chance-dropar-maquina: 0.25
+    upgrades-bloqueados: []
+    producao:
+      - {item: COAL, peso: 35, min: 1, max: 3, raro: false}
+      - {item: RAW_COPPER, peso: 20, min: 1, max: 3, raro: false}
+      - {item: RAW_IRON, peso: 18, min: 1, max: 2, raro: false}
+      - {item: REDSTONE, peso: 8, min: 2, max: 4, raro: false}
+      - {item: LAPIS_LAZULI, peso: 6, min: 2, max: 4, raro: false}
+      - {item: QUARTZ, peso: 5, min: 1, max: 2, raro: false}
+      - {item: RAW_GOLD, peso: 5, min: 1, max: 2, raro: false}
+      - {item: EMERALD, peso: 2, min: 1, max: 1, raro: true}
+      - {item: DIAMOND, peso: 1, min: 1, max: 1, raro: true}
+  FAZENDA:
+    nome: "§aMáquina de Comida"
+    bloco: SMOKER
+    ativa: true
+    preco: 5000
+    limite-por-clan: 0
+    ciclo-segundos: 30
+    sorteios-por-ciclo: 1
+    combustivel-por-ciclo: 0.5
+    custo-cofre-por-hora: 0
+    armazem-base: 256
+    combustivel-maximo-base: 64
+    slots-upgrade: 3
+    vida: 5
+    escudo-segundos: 3
+    raid-drop-armazem: 0.5
+    raid-chance-dropar-maquina: 0.25
+    upgrades-bloqueados: []
+    producao:
+      - {item: WHEAT, peso: 25, min: 2, max: 4, raro: false}
+      - {item: CARROT, peso: 20, min: 2, max: 4, raro: false}
+      - {item: POTATO, peso: 20, min: 2, max: 4, raro: false}
+      - {item: BEETROOT, peso: 10, min: 2, max: 3, raro: false}
+      - {item: SUGAR_CANE, peso: 10, min: 1, max: 3, raro: false}
+      - {item: MELON_SLICE, peso: 8, min: 3, max: 6, raro: false}
+      - {item: BREAD, peso: 5, min: 1, max: 2, raro: false}
+      - {item: COOKED_BEEF, peso: 2, min: 1, max: 2, raro: true}
+      - {item: GOLDEN_CARROT, peso: 1, min: 1, max: 1, raro: true}
+  OBSIDIANA:
+    nome: "§5Máquina de Obsidiana"
+    bloco: CRYING_OBSIDIAN
+    ativa: true
+    preco: 10000
+    limite-por-clan: 0
+    ciclo-segundos: 120
+    sorteios-por-ciclo: 1
+    combustivel-por-ciclo: 2
+    custo-cofre-por-hora: 0
+    armazem-base: 256
+    combustivel-maximo-base: 64
+    slots-upgrade: 3
+    vida: 5
+    escudo-segundos: 3
+    raid-drop-armazem: 0.5
+    raid-chance-dropar-maquina: 0.25
+    upgrades-bloqueados: [FORTUNA, SORTE]
+    producao:
+      - {item: OBSIDIAN, peso: 1, min: 1, max: 1, raro: false}
+  DROPS:
+    nome: "§cMáquina de Drops"
+    bloco: SPAWNER
+    ativa: true
+    preco: 12000
+    limite-por-clan: 0
+    ciclo-segundos: 45
+    sorteios-por-ciclo: 1
+    combustivel-por-ciclo: 1
+    custo-cofre-por-hora: 0
+    armazem-base: 256
+    combustivel-maximo-base: 64
+    slots-upgrade: 3
+    vida: 5
+    escudo-segundos: 3
+    raid-drop-armazem: 0.5
+    raid-chance-dropar-maquina: 0.25
+    upgrades-bloqueados: []
+    producao:
+      - {item: ROTTEN_FLESH, peso: 25, min: 1, max: 3, raro: false}
+      - {item: BONE, peso: 20, min: 1, max: 3, raro: false}
+      - {item: STRING, peso: 15, min: 1, max: 3, raro: false}
+      - {item: GUNPOWDER, peso: 12, min: 1, max: 2, raro: false}
+      - {item: ARROW, peso: 10, min: 2, max: 4, raro: false}
+      - {item: SPIDER_EYE, peso: 8, min: 1, max: 1, raro: false}
+      - {item: SLIME_BALL, peso: 5, min: 1, max: 2, raro: false}
+      - {item: ENDER_PEARL, peso: 3, min: 1, max: 1, raro: true}
+      - {item: BLAZE_ROD, peso: 2, min: 1, max: 1, raro: true}

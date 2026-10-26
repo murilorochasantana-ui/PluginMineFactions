@@ -7,10 +7,10 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.UUID;
 
-/** Disparado depois que uma explosão tira pontos do Núcleo ou do Cofre de um clan (usado pelo registro de raids). */
+/** Disparado depois que uma explosão tira pontos do Núcleo, do Cofre, de um Baú ou de uma máquina do clan (raids). */
 public final class BaseDamageEvent extends Event {
 
-    public enum Kind { CORE, VAULT }
+    public enum Kind { CORE, VAULT, CHEST, MACHINE }
 
     private static final HandlerList HANDLERS = new HandlerList();
 
@@ -21,9 +21,17 @@ public final class BaseDamageEvent extends Event {
     private final int damage;
     private final boolean destroyed;
     private final long moneyLost;
+    private final String detail;
 
     public BaseDamageEvent(String clanTag, Kind kind, Location location, UUID attacker, int damage, boolean destroyed,
                            long moneyLost) {
+        this(clanTag, kind, location, attacker, damage, destroyed, moneyLost, null);
+    }
+
+    /** {@code detail}: linha para o registro de raid (ex: a máquina destruída e o que foi roubado), ou null. */
+    public BaseDamageEvent(String clanTag, Kind kind, Location location, UUID attacker, int damage, boolean destroyed,
+                           long moneyLost, String detail) {
+        this.detail = detail;
         this.clanTag = clanTag;
         this.kind = kind;
         this.location = location.clone();
@@ -58,9 +66,14 @@ public final class BaseDamageEvent extends Event {
         return destroyed;
     }
 
-    /** Dinheiro do Cofre que caiu no chão (só quando o Cofre é destruído). */
+    /** Dinheiro do Cofre perdido (caiu no chão com o Cofre destruído, ou roubado pelos pontos do Núcleo). */
     public long getMoneyLost() {
         return moneyLost;
+    }
+
+    /** Linha para o registro de raid, ou null. */
+    public String getDetail() {
+        return detail;
     }
 
     @Override

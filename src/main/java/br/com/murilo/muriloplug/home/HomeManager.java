@@ -130,4 +130,14 @@ public final class HomeManager {
     private static Number number(Map<?, ?> map, String key) {
         return (Number) map.get(key);
     }
+
+    /** Apaga todas as homes do jogador e devolve as apagadas (reset de conta). */
+    public List<Home> removeAll(UUID owner) {
+        List<Home> removed = homes.remove(owner);
+        if (removed == null) {
+            return List.of();
+        }
+        save();
+        return removed;
+    }
 }

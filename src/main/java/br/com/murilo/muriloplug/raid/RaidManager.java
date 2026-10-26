@@ -84,6 +84,8 @@ public final class RaidManager implements Listener {
         int vaultDamage;
         boolean coreDestroyed;
         long moneyLost;
+        /** Linhas "Máquina destruída: ..." (uma por máquina). */
+        final List<String> machines = new ArrayList<>();
         final Set<UUID> attackers = new LinkedHashSet<>();
         /** Barra de chefe (só raids contra clans). */
         BossBar bar;
@@ -142,6 +144,11 @@ public final class RaidManager implements Listener {
     public void registerOn(ClanCommand command) {
         command.register("raids", new ClanCommand.Extra("últimos raids sofridos e feitos",
                 (player, args) -> open(player, false), (player, args) -> List.of()));
+    }
+
+    /** Se a base do clan está sendo atacada agora (há um raid em andamento contra ele). */
+    public boolean underRaid(String clanTag) {
+        return clanTag != null && active.containsKey(clanTag);
     }
 
     private long endMillis() {
@@ -280,6 +287,15 @@ public final class RaidManager implements Listener {
             if (event.getKind() == BaseDamageEvent.Kind.CORE) {
                 raid.coreDamage += event.getDamage();
                 raid.coreDestroyed |= event.isDestroyed();
+                raid.moneyLost += event.getMoneyLost(); // roubado do Cofre pelos pontos do Núcleo
+            } else if (event.getKind() == BaseDamageEvent.Kind.CHEST) {
+                if (event.isDestroyed()) {
+                    raid.containers++;
+                }
+            } else if (event.getKind() == BaseDamageEvent.Kind.MACHINE) {
+                if (event.isDestroyed() && event.getDetail() != null) {
+                    raid.machines.add(event.getDetail());
+                }
             } else {
                 raid.vaultDamage += event.getDamage();
                 raid.moneyLost += event.getMoneyLost();
@@ -288,7 +304,7 @@ public final class RaidManager implements Listener {
         Raid raid = active.get(clan.tag());
         if (raid != null && raid.bar != null && event.getKind() == BaseDamageEvent.Kind.CORE && event.isDestroyed()) {
             raid.coreDestroyedAt = System.currentTimeMillis();
-            raid.bar.name(ShopUi.text("§c§lNÚCLEO DESTRUÍDO!"));
+            raid.bar.name(ShopUi.text("§c§lNÚCLEO DESATIVADO!"));
             raid.bar.progress(0f);
         }
         if (raid != null) {
@@ -322,20 +338,33 @@ public final class RaidManager implements Listener {
             return;
         }
         ClanBase base = bases.of(clan);
-        if (base.core() == null) {
-            raid.bar.name(ShopUi.text("§c⚔ Raid em [" + clan.tag() + "] §8| §7Sem Núcleo"));
+        if (base.core() != null && base.isCoreDisabled()) {
+            raid.bar.name(ShopUi.text("§c⚔ Raid em [" + clan.tag() + "] §8| §cNúcleo desativado ("
+                    + String.format(java.util.Locale.ROOT, "%02d:%02d", Math.max(0, base.coreDisabledUntil()
+                    - System.currentTimeMillis()) / 60_000, Math.max(0, base.coreDisabledUntil()
+                    - System.currentTimeMillis()) / 1000 % 60) + ")"
+                    + (raid.machines.isEmpty() ? "" : " §8| §c⚙ Máquinas destruídas: " + raid.machines.size())));
+            raid.bar.progress(0f);
+        } else if (base.core() == null) {
+            raid.bar.name(ShopUi.text("§c⚔ Raid em [" + clan.tag() + "] §8| §7Sem Núcleo"
+                    + (raid.machines.isEmpty() ? "" : " §8| §c⚙ Máquinas destruídas: " + raid.machines.size())));
             raid.bar.progress(1f);
         } else {
-            long remaining = bases.rewardRemaining(clan);
-            long total = Math.max(1, bases.rewardTotal());
+            // Estimativa (com o saldo de agora) do que ainda dá para roubar do Cofre pelo Núcleo.
+            long remaining = bases.stealRemaining(clan);
+            long total = bases.stealTotal(clan);
             String title = "§c⚔ Raid em [" + clan.tag() + "] §8| §eRecompensa restante: " + EconomyManager.format(remaining)
                     + " §8| §6Núcleo " + base.coreHp() + "/" + bases.settings().coreHp();
             int shield = bases.getEscudoRestante(clan);
             if (shield > 0) {
                 title += " §8| §b🛡 Escudo " + shield + "s";
             }
+            if (!raid.machines.isEmpty()) {
+                title += " §8| §c⚙ Máquinas destruídas: " + raid.machines.size();
+            }
             raid.bar.name(ShopUi.text(title));
-            raid.bar.progress(Math.max(0f, Math.min(1f, remaining / (float) total)));
+            float progress = total > 0 ? remaining / (float) total : base.lowestHp() / (float) bases.settings().coreHp();
+            raid.bar.progress(Math.max(0f, Math.min(1f, progress)));
         }
         showBar(raid);
     }
@@ -474,7 +503,7 @@ public final class RaidManager implements Listener {
         }
         RaidRecord record = new RaidRecord(raid.defender, keyName(raid.defender), raid.claimName, raid.world, raid.x,
                 raid.z, raid.start, raid.lastEvent, raid.blocks, raid.containers, raid.coreDamage, raid.vaultDamage,
-                raid.coreDestroyed, raid.moneyLost, attackerNames, List.copyOf(attackerKeys));
+                raid.coreDestroyed, raid.moneyLost, attackerNames, List.copyOf(attackerKeys), raid.machines);
         keep(suffered, raid.defender, record);
         for (String key : attackerKeys) {
             if (!key.equals(raid.defender)) {
@@ -615,5 +644,15 @@ public final class RaidManager implements Listener {
         } catch (IOException e) {
             plugin.getLogger().severe("Não foi possível salvar raids.yml: " + e.getMessage());
         }
+    }
+
+    /** Apaga os resumos de raid guardados para o jogador ver ao entrar. Devolve quantos eram (reset de conta). */
+    public int forget(UUID player) {
+        List<RaidRecord> removed = pending.remove(player);
+        if (removed == null) {
+            return 0;
+        }
+        save();
+        return removed.size();
     }
 }

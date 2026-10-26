@@ -1,6 +1,7 @@
 package br.com.murilo.muriloplug;
 
 import br.com.murilo.muriloplug.teste.TestMode;
+import br.com.murilo.muriloplug.admin.ResetarContaCommand;
 import br.com.murilo.muriloplug.auth.AuthCommand;
 import br.com.murilo.muriloplug.auth.AuthConnectionListener;
 import br.com.murilo.muriloplug.auth.AuthManager;
@@ -131,12 +132,24 @@ import br.com.murilo.muriloplug.clan.base.BaseItems;
 import br.com.murilo.muriloplug.clan.base.BaseSettings;
 import br.com.murilo.muriloplug.clan.base.ClanBaseCommands;
 import br.com.murilo.muriloplug.clan.base.ClanBaseManager;
+import br.com.murilo.muriloplug.clan.base.ClanChestStore;
+import br.com.murilo.muriloplug.classes.ServerItems;
 import br.com.murilo.muriloplug.clan.base.ExplosionOwners;
 import br.com.murilo.muriloplug.eventos.AirdropManager;
 import br.com.murilo.muriloplug.eventos.AirdropTable;
 import br.com.murilo.muriloplug.eventos.BountyManager;
 import br.com.murilo.muriloplug.eventos.ContractItems;
+import br.com.murilo.muriloplug.maquinas.MaquinaHologramas;
+import br.com.murilo.muriloplug.maquinas.MaquinaItens;
+import br.com.murilo.muriloplug.maquinas.MaquinaListener;
+import br.com.murilo.muriloplug.maquinas.MaquinaManager;
 import br.com.murilo.muriloplug.maquinas.MaquinasCommand;
+import br.com.murilo.muriloplug.maquinas.MaquinasConfig;
+import br.com.murilo.muriloplug.maquinas.MaquinasMenus;
+import br.com.murilo.muriloplug.maquinas.MaquinasMenusListener;
+import br.com.murilo.muriloplug.maquinas.PainelMaquinas;
+import br.com.murilo.muriloplug.upgrade.UpgradeCommand;
+import br.com.murilo.muriloplug.upgrade.UpgradeManager;
 import br.com.murilo.muriloplug.raid.RaidManager;
 import br.com.murilo.muriloplug.shop.ShopUi;
 import br.com.murilo.muriloplug.home.DelHomeCommand;
@@ -218,6 +231,8 @@ public final class MinePlug extends JavaPlugin {
     private RaidManager raidManager;
     private AirdropManager airdropManager;
     private BountyManager bountyManager;
+    private UpgradeManager upgradeManager;
+    private MaquinaManager maquinaManager;
 
     @Override
     public void onEnable() {
@@ -314,14 +329,16 @@ public final class MinePlug extends JavaPlugin {
 
         shopManager = new ShopManager(this);
         shopManager.load();
-        getServer().getPluginManager().registerEvents(new ShopMenusListener(this, shopManager, economyManager), this);
+        ShopMenusListener shopMenusListener = new ShopMenusListener(this, shopManager, economyManager);
+        getServer().getPluginManager().registerEvents(shopMenusListener, this);
         LojaCommand lojaCommand = new LojaCommand(shopManager, economyManager);
         getCommand("loja").setExecutor(lojaCommand);
         getCommand("loja").setTabCompleter(lojaCommand);
 
         marketManager = new MarketManager(this);
         marketManager.load();
-        getServer().getPluginManager().registerEvents(new MarketMenusListener(this, marketManager, economyManager), this);
+        MarketMenusListener marketMenusListener = new MarketMenusListener(this, marketManager, economyManager);
+        getServer().getPluginManager().registerEvents(marketMenusListener, this);
         getCommand("mercado").setExecutor(new MercadoCommand(marketManager, economyManager));
 
         SellPrices sellPrices = new SellPrices(this);
@@ -335,9 +352,6 @@ public final class MinePlug extends JavaPlugin {
         getServer().getPluginManager().registerEvents(reparoCommand, this);
         getCommand("reparar").setExecutor(reparoCommand);
         getCommand("reparar").setTabCompleter(reparoCommand);
-        MaquinasCommand maquinasCommand = new MaquinasCommand();
-        getServer().getPluginManager().registerEvents(maquinasCommand, this);
-        getCommand("maquinas").setExecutor(maquinasCommand);
 
         classManager = new ClassManager(this);
         classManager.load();
@@ -361,14 +375,56 @@ public final class MinePlug extends JavaPlugin {
         clanManager.setExtraWriter(clanBaseManager::write);
         getServer().getPluginManager().registerEvents(clanBaseManager, this);
         clanBaseManager.start();
+        // /upgrade: menu "Em breve"; o UpgradeManager já sabe cobrar do Cofre para os upgrades futuros.
+        upgradeManager = new UpgradeManager(clanBaseManager);
+        UpgradeCommand upgradeCommand = new UpgradeCommand();
+        getServer().getPluginManager().registerEvents(upgradeCommand, this);
+        getCommand("upgrade").setExecutor(upgradeCommand);
         claimManager.setWeakness(clanBaseManager::weakness);
         ExplosionOwners explosionOwners = new ExplosionOwners(this);
         getServer().getPluginManager().registerEvents(explosionOwners, this);
         BaseItems baseItems = new BaseItems(this);
-        baseBlocks = new BaseBlocks(this, clanBaseManager, claimManager, combatManager, baseItems, explosionOwners);
+        // Núcleo e Cofre só saem pelo /clan itens: nunca na loja nem no mercado (entradas antigas são removidas).
+        shopMenusListener.setForbidden(baseItems::isCoreOrVault);
+        marketMenusListener.setForbidden(baseItems::isCoreOrVault);
+        for (br.com.murilo.muriloplug.shop.ShopItem shopItem : shopManager.list()) {
+            if (baseItems.isCoreOrVault(shopItem.item()) && shopManager.remove(shopItem.id())) {
+                getLogger().warning("Núcleo/Cofre do clan removido da loja (só pode ser pego pelo /clan itens).");
+            }
+        }
+        for (br.com.murilo.muriloplug.market.Listing listing : marketManager.newestFirst()) {
+            if (baseItems.isCoreOrVault(listing.item()) && marketManager.remove(listing.id()) != null) {
+                getLogger().warning("Anúncio de Núcleo/Cofre do clan removido do mercado (vendedor "
+                        + listing.sellerName() + "; o item não vale mais nada).");
+            }
+        }
+        ClanChestStore clanChestStore = new ClanChestStore(this);
+        getServer().getPluginManager().registerEvents(clanChestStore, this);
+        baseBlocks = new BaseBlocks(this, clanBaseManager, claimManager, combatManager, baseItems, explosionOwners,
+                clanChestStore);
+        moneyCommand.setClanVault(new MoneyCommand.ClanVault() {
+            @Override
+            public String tagOf(Player player) {
+                br.com.murilo.muriloplug.clan.Clan clan = clanManager.getClan(player.getUniqueId());
+                return clan == null ? null : clan.tag();
+            }
+
+            @Override
+            public void deposit(Player player, long amount) {
+                br.com.murilo.muriloplug.clan.Clan clan = clanManager.getClan(player.getUniqueId());
+                if (clan != null) {
+                    clanBaseManager.depositToVault(clan, amount);
+                }
+            }
+        });
         getServer().getPluginManager().registerEvents(baseBlocks, this);
         baseBlocks.start();
-        clanManager.setDisbandListener(baseBlocks::onDisband);
+        clanManager.setDisbandListener(clan -> {
+            baseBlocks.onDisband(clan);
+            if (maquinaManager != null) {
+                maquinaManager.onDisband(clan);
+            }
+        });
         clanManager.setCreateListener(baseBlocks::onClanCreated);
         claimCommand.setSizeMenu(clanBaseManager.settings()::sizeMenu, clanBaseManager::upkeepPreview);
         getServer().getPluginManager().registerEvents(new br.com.murilo.muriloplug.claim.ClaimSizeMenu.Clicks(this), this);
@@ -503,6 +559,26 @@ public final class MinePlug extends JavaPlugin {
         sentinelaManager.load();
         getServer().getPluginManager().registerEvents(sentinelaManager, this);
         sentinelaManager.start();
+
+        // Máquinas do clan: valores em maquinas.yml (MaquinasConfig), máquinas colocadas em maquinas-dados.yml.
+        MaquinasConfig maquinasConfig = new MaquinasConfig(this);
+        maquinasConfig.load();
+        MaquinaHologramas maquinaHologramas = new MaquinaHologramas(this);
+        getServer().getPluginManager().registerEvents(maquinaHologramas, this);
+        maquinaManager = new MaquinaManager(this, maquinasConfig, new MaquinaItens(this, maquinasConfig),
+                maquinaHologramas, clanManager, clanBaseManager, claimManager, baseBlocks, clanChestStore, sellPrices,
+                combatManager, classManager, engenheiroEnergia, engenheiroAcoes, raidManager);
+        maquinaManager.load();
+        getServer().getPluginManager().registerEvents(maquinaManager, this);
+        maquinaManager.start();
+        MaquinasMenus maquinasMenus = new MaquinasMenus(this, maquinaManager);
+        getServer().getPluginManager().registerEvents(new MaquinasMenusListener(this), this);
+        getServer().getPluginManager().registerEvents(new MaquinaListener(maquinaManager, maquinasMenus), this);
+        PainelMaquinas painelMaquinas = new PainelMaquinas(this, maquinaManager, maquinasMenus);
+        getServer().getPluginManager().registerEvents(painelMaquinas, this);
+        MaquinasCommand maquinasCommand = new MaquinasCommand(maquinaManager, maquinasMenus, painelMaquinas);
+        getCommand("maquinas").setExecutor(maquinasCommand);
+        getCommand("maquinas").setTabCompleter(maquinasCommand);
         SuporteSettings suporteSettings = new SuporteSettings(this);
         SuporteItems suporteItems = new SuporteItems(this, suporteSettings);
         // Itens antigos do Suporte (Pergaminho de livro com pena, itens com usos): atualizados na loja e no mercado.
@@ -598,10 +674,15 @@ public final class MinePlug extends JavaPlugin {
         ClassCommand classCommand = new ClassCommand(classManager, combatManager, classItems, manaManager);
         getCommand("classe").setExecutor(classCommand);
         getCommand("classe").setTabCompleter(classCommand);
-        KitCommand kitCommand = new KitCommand(classItems);
+        // Itens do Servidor (não são de classe): o /kit admin entrega 1 de cada. Item novo: registrar aqui.
+        ServerItems serverItems = new ServerItems();
+        serverItems.register("clan.nucleo", () -> baseItems.create(BaseItems.Kind.CORE));
+        serverItems.register("clan.cofre", () -> baseItems.create(BaseItems.Kind.VAULT));
+        serverItems.register("clan.bau", () -> baseItems.create(BaseItems.Kind.CHEST));
+        KitCommand kitCommand = new KitCommand(classItems, serverItems);
         getCommand("kit").setExecutor(kitCommand);
         getCommand("kit").setTabCompleter(kitCommand);
-        getServer().getPluginManager().registerEvents(new KitMenusListener(classItems), this);
+        getServer().getPluginManager().registerEvents(new KitMenusListener(classItems, serverItems), this);
 
         PvpSettings pvp = PvpSettings.from(getConfig());
         attackSpeedManager = new AttackSpeedManager(this, pvp.noAttackCooldown());
@@ -629,6 +710,11 @@ public final class MinePlug extends JavaPlugin {
         bountyManager.setTestMode(testMode);
         bountyManager.load();
         ContractItems contractItems = new ContractItems(this, bountyManager);
+        for (int level = 1; level <= ContractItems.LEVELS; level++) {
+            int contractLevel = level;
+            serverItems.register("contrato." + level, () -> contractItems.create(contractLevel, 1));
+        }
+        serverItems.register("dinheiro.maco", () -> macos.create(10_000));
         bountyManager.setContracts(contractItems);
         getServer().getPluginManager().registerEvents(bountyManager, this);
         bountyManager.start();
@@ -823,6 +909,15 @@ public final class MinePlug extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new DummyListener(this, dummyManager, dummySettings, combatManager,
                 furyManager::isAreaDamage), this);
         dummyManager.start();
+
+        // /resetarconta: apaga os dados de um jogador em todos os sistemas (com backup antes).
+        ResetarContaCommand resetarConta = new ResetarContaCommand(this, new ResetarContaCommand.Systems(authManager,
+                claimManager, homeManager, clanManager, clanInvites, clanBaseManager, baseBlocks, clanChestStore,
+                economyManager, statsManager, classManager, grimoireManager, trocaEquivalente, marketManager, tpaManager,
+                sentinelaManager, buildManager, golemManager, bountyManager, raidManager, testMode));
+        getServer().getPluginManager().registerEvents(resetarConta, this);
+        getCommand("resetarconta").setExecutor(resetarConta);
+        getCommand("resetarconta").setTabCompleter(resetarConta);
     }
 
     @Override
@@ -836,6 +931,9 @@ public final class MinePlug extends JavaPlugin {
         }
         if (airdropManager != null) {
             airdropManager.shutdown();
+        }
+        if (maquinaManager != null) {
+            maquinaManager.shutdown();
         }
         if (raidManager != null) {
             raidManager.shutdown();
@@ -999,9 +1097,19 @@ public final class MinePlug extends JavaPlugin {
         changed |= SellPrices.addMissing(config);
         changed |= ReparoCommand.addMissing(config);
         changed |= BaseSettings.addMissing(config);
+        // O Núcleo não é mais removido ao chegar a 0 (fica desativado): a espera para recolocar não existe mais.
+        if (config.contains(BaseSettings.OLD_CORE_REPLACE_WAIT)) {
+            config.set(BaseSettings.OLD_CORE_REPLACE_WAIT, null);
+            changed = true;
+        }
         changed |= RaidManager.addMissing(config);
         changed |= AirdropManager.addMissing(config);
         changed |= BountyManager.addMissing(config);
+        // Vulnerabilidade do Núcleo passou de 30 para 10 minutos: só troca se ainda estiver no padrão antigo.
+        if (config.getInt(BaseSettings.CORE_VULNERABLE, 0) == 30) {
+            config.set(BaseSettings.CORE_VULNERABLE, 10);
+            changed = true;
+        }
         // /reparar é bloqueado em combate: entra na lista sem apagar o que já está lá.
         java.util.List<String> blocked = new java.util.ArrayList<>(config.getStringList(CombatCommandListener.PATH));
         if (blocked.stream().noneMatch(command -> command.trim().replaceFirst("^/", "").equalsIgnoreCase("reparar"))) {

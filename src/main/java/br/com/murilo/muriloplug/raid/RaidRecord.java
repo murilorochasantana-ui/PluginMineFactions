@@ -14,13 +14,15 @@ import java.util.Map;
 /** Resumo de um raid que já acabou (o que vai para o chat, para o menu e para o raids.yml). */
 public record RaidRecord(String defender, String defenderName, String claimName, String world, int x, int z,
                          long start, long end, int blocks, int containers, int coreDamage, int vaultDamage,
-                         boolean coreDestroyed, long moneyLost, List<String> attackers, List<String> attackerKeys) {
+                         boolean coreDestroyed, long moneyLost, List<String> attackers, List<String> attackerKeys,
+                         List<String> machines) {
 
     private static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("dd/MM HH:mm");
 
     public RaidRecord {
         attackers = List.copyOf(attackers);
         attackerKeys = List.copyOf(attackerKeys);
+        machines = List.copyOf(machines);
     }
 
     public String date() {
@@ -41,8 +43,11 @@ public record RaidRecord(String defender, String defenderName, String claimName,
         lines.add("§7Blocos destruídos: §f" + blocks);
         lines.add("§7Baús/containers destruídos ou abertos: §f" + containers);
         lines.add("§7Dano no Núcleo: §f" + coreDamage + " §7| no Cofre: §f" + vaultDamage);
-        lines.add("§7Núcleo destruído: " + (coreDestroyed ? "§cSim" : "§aNão"));
+        lines.add("§7Núcleo desativado: " + (coreDestroyed ? "§cSim" : "§aNão"));
         lines.add("§7Dinheiro perdido do Cofre: §f" + EconomyManager.format(moneyLost));
+        for (String machine : machines) {
+            lines.add("§7" + machine);
+        }
         lines.add("§7Atacantes: §c" + (attackers.isEmpty() ? "desconhecidos" : String.join("§7, §c", attackers)));
         return lines;
     }
@@ -65,6 +70,7 @@ public record RaidRecord(String defender, String defenderName, String claimName,
         map.put("dinheiro-perdido", moneyLost);
         map.put("atacantes", attackers);
         map.put("atacantes-chaves", attackerKeys);
+        map.put("maquinas", machines);
         return map;
     }
 
@@ -75,7 +81,7 @@ public record RaidRecord(String defender, String defenderName, String claimName,
                 number(map, "blocos").intValue(), number(map, "containers").intValue(),
                 number(map, "dano-nucleo").intValue(), number(map, "dano-cofre").intValue(),
                 Boolean.TRUE.equals(map.get("nucleo-destruido")), number(map, "dinheiro-perdido").longValue(),
-                strings(map.get("atacantes")), strings(map.get("atacantes-chaves")));
+                strings(map.get("atacantes")), strings(map.get("atacantes-chaves")), strings(map.get("maquinas")));
     }
 
     private static Number number(Map<?, ?> map, String key) {

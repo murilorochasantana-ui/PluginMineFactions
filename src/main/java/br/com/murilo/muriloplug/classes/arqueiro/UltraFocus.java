@@ -7,6 +7,7 @@ import br.com.murilo.muriloplug.classes.PlayerClass;
 import br.com.murilo.muriloplug.classes.PlayerClassChangeEvent;
 import br.com.murilo.muriloplug.shop.ShopUi;
 import org.bukkit.Bukkit;
+import org.bukkit.Color;
 import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
@@ -108,7 +109,7 @@ public final class UltraFocus implements Listener {
         armed.remove(id);
         changeListener.accept(id);
         player.getWorld().playSound(player.getLocation(), Sound.ENTITY_WITHER_SHOOT, 0.8f, 1.6f);
-        player.getWorld().spawnParticle(Particle.FLASH, player.getEyeLocation(), 1);
+        player.getWorld().spawnParticle(Particle.FLASH, player.getEyeLocation(), 1, Color.fromRGB(255, 200, 80));
         return true;
     }
 

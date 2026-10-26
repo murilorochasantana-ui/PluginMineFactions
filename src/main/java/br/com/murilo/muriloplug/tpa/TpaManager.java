@@ -323,4 +323,23 @@ public final class TpaManager implements Listener {
             }
         }
     }
+
+    public boolean isBlocked(UUID player) {
+        return blocked.contains(player);
+    }
+
+    /** Apaga o bloqueio de TPA e os pedidos enviados e recebidos pelo jogador (reset de conta). */
+    public void forget(UUID player) {
+        lastSentAt.remove(player);
+        sent.values().removeIf(request -> {
+            boolean involved = request.sender.equals(player) || request.target.equals(player);
+            if (involved && request.expiry != null) {
+                request.expiry.cancel();
+            }
+            return involved;
+        });
+        if (blocked.remove(player)) {
+            save();
+        }
+    }
 }

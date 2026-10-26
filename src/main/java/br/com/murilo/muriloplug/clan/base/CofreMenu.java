@@ -11,8 +11,8 @@ import org.bukkit.inventory.Inventory;
 import java.util.Locale;
 
 /**
- * Menu do Cofre do Clan (27 slots). Todos os membros depositam maços (sem taxa); só o líder saca, escolhendo o valor
- * com os botões +100/+1k/+10k (esquerdo soma, direito tira). Como é um {@link ClanHolder}, todo clique é cancelado
+ * Menu do Cofre do Clan (27 slots, só dinheiro). Todos os membros depositam maços (sem taxa) e sacam, escolhendo o
+ * valor com os botões +100/+1k/+10k (esquerdo soma, direito tira), sem deixar o saldo abaixo do mínimo. Como é um {@link ClanHolder}, todo clique é cancelado
  * pelo listener dos menus do clan; as ações ficam em {@link BaseBlocks}.
  */
 public final class CofreMenu implements ClanHolder {
@@ -58,7 +58,7 @@ public final class CofreMenu implements ClanHolder {
         amount = 0;
     }
 
-    void render(ClanBase base, BaseSettings settings) {
+    void render(ClanBase base, BaseSettings settings, long minimum) {
         inventory.clear();
         for (int slot = 0; slot < 27; slot++) {
             inventory.setItem(slot, ShopUi.filler());
@@ -69,11 +69,13 @@ public final class CofreMenu implements ClanHolder {
                 "§7Rende " + String.format(Locale.ROOT, "%.1f", settings.interestPerDay() * 100) + "% ao dia "
                         + "§8(até " + EconomyManager.format(settings.interestCap()) + ")",
                 "§7Rendendo agora: §f" + EconomyManager.format(rendendo),
+                "§7Mínimo: §f" + EconomyManager.format(minimum) + " §8(cresce com o Poder)",
+                base.vaultBalance() < minimum ? "§cAbaixo do mínimo: o clan está ENFRAQUECIDO!" : "§aAcima do mínimo.",
                 "§7Vida: §c" + base.vaultHp() + "/" + settings.vaultHp()));
         inventory.setItem(DEPOSIT_SLOT, ShopUi.button(Material.CHEST, "§aDepositar maços",
                 "§7Coloca TODOS os maços de dinheiro", "§7do seu inventário no Cofre (sem taxa)."));
         if (!leader) {
-            inventory.setItem(WITHDRAW_SLOT, ShopUi.button(Material.BARRIER, "§cSacar", "§7Só o líder pode sacar."));
+            inventory.setItem(WITHDRAW_SLOT, ShopUi.button(Material.BARRIER, "§cSacar", "§7Só membros do clan sacam."));
             return;
         }
         inventory.setItem(AMOUNT_SLOT, ShopUi.button(Material.NAME_TAG, "§eValor do saque: §a" + EconomyManager.format(amount)));

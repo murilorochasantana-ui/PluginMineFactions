@@ -26,11 +26,17 @@ public final class ShopMenusListener implements Listener {
     private final JavaPlugin plugin;
     private final ShopManager shop;
     private final EconomyManager economy;
+    /** Itens que nunca podem ir para a loja (Núcleo e Cofre do clan). */
+    private java.util.function.Predicate<ItemStack> forbidden = item -> false;
 
     public ShopMenusListener(JavaPlugin plugin, ShopManager shop, EconomyManager economy) {
         this.plugin = plugin;
         this.shop = shop;
         this.economy = economy;
+    }
+
+    public void setForbidden(java.util.function.Predicate<ItemStack> forbidden) {
+        this.forbidden = forbidden;
     }
 
     @EventHandler
@@ -67,7 +73,11 @@ public final class ShopMenusListener implements Listener {
             if (holder instanceof ItemEditorMenu editor && requireAdmin(player)) {
                 ItemStack picked = event.getCurrentItem();
                 if (picked != null && !picked.getType().isAir()) {
-                    editor.choose(picked);
+                    if (forbidden.test(picked)) {
+                        player.sendMessage("§cO Núcleo e o Cofre do clan não podem ser vendidos (só saem pelo /clan itens).");
+                    } else {
+                        editor.choose(picked);
+                    }
                 }
             }
             return;

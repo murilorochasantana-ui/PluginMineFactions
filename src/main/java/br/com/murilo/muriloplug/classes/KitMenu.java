@@ -18,11 +18,12 @@ public final class KitMenu implements InventoryHolder {
 
     private static final int SLOTS = 27;
     private static final int CENTER_SLOT = 13;
+    static final int SERVER_ITEMS_SLOT = 22;
 
     private final Inventory inventory;
     private final List<PlayerClass> classes;
 
-    private KitMenu(ClassItems items) {
+    private KitMenu(ClassItems items, ServerItems serverItems) {
         this.inventory = Bukkit.createInventory(this, SLOTS, Component.text("Kit de Classe (admin)"));
         this.classes = items.classesWithItems();
         // Uma entrada a cada 2 slots, centralizadas na fileira do meio.
@@ -30,10 +31,13 @@ public final class KitMenu implements InventoryHolder {
         for (int i = 0; i < classes.size(); i++) {
             inventory.setItem(first + i * 2, item(classes.get(i), items.kitSize(classes.get(i))));
         }
+        inventory.setItem(SERVER_ITEMS_SLOT, ShopUi.button(org.bukkit.Material.CHEST, "§eItens do Servidor",
+                "§7Itens que não são de classe: Núcleo,", "§7Cofre e Baú do Clan, Contratos,",
+                "§7dinheiro... §7(" + serverItems.size() + " itens)", "§eClique para pegar 1 de cada"));
     }
 
-    public static void open(Player player, ClassItems items) {
-        player.openInventory(new KitMenu(items).getInventory());
+    public static void open(Player player, ClassItems items, ServerItems serverItems) {
+        player.openInventory(new KitMenu(items, serverItems).getInventory());
     }
 
     /** Classe que está no slot, ou null. */

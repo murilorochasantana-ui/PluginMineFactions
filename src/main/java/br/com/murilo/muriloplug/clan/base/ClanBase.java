@@ -15,15 +15,29 @@ public final class ClanBase {
     long shieldUntil;
     BaseLoc vault;
     int vaultHp;
+    long vaultShieldUntil;
+    /** Baús do Clan colocados (id -> baú). */
+    final java.util.Map<String, ClanChest> chests = new java.util.LinkedHashMap<>();
     /** Dinheiro guardado no Cofre (continua guardado mesmo sem o bloco do Cofre). */
     long vaultBalance;
     /** Parte decimal dos juros que ainda não virou dinheiro. */
     double interestFraction;
     int power;
     long vulnerableUntil;
-    /** Antes disso não pode colocar outro Núcleo (depois de um Núcleo destruído). */
-    long replaceAllowedAt;
+    /** Núcleo em 0 de vida: continua no lugar, DESATIVADO, até este momento (0 = ativo). */
+    long coreDisabledUntil;
+    /** Núcleo recolhido: precisa ser colocado de novo até este momento (0 = sem prazo correndo). */
+    long coreReplaceDeadline;
+    /** Quem recolheu o Núcleo (vê a contagem do prazo na action bar). */
+    java.util.UUID corePickedBy;
+    /** O prazo acabou sem o Núcleo colocado: vulnerável até ele voltar (e pelo menos até {@link #vulnerableUntil}). */
+    boolean coreMissingPenalty;
     boolean freeCoreTaken;
+    /** Id do Núcleo/Cofre que vale agora (só o item com este id pode ser colocado; null = nenhum entregue). */
+    String coreItemId;
+    String vaultItemId;
+    /** Último dano no Cofre (para o /clan cofre recolher). Só em memória. */
+    long lastVaultAttack;
     /** Dívida da manutenção (0 = em dia). */
     long debt;
 
@@ -59,6 +73,10 @@ public final class ClanBase {
         return vaultHp;
     }
 
+    public java.util.Collection<ClanChest> chests() {
+        return java.util.List.copyOf(chests.values());
+    }
+
     public long vaultBalance() {
         return vaultBalance;
     }
@@ -71,8 +89,25 @@ public final class ClanBase {
         return debt;
     }
 
+    /** Vulnerável: Núcleo desativado (até reativar) ou punição por não recolocar o Núcleo a tempo. */
     public boolean isVulnerable() {
-        return vulnerableUntil > System.currentTimeMillis();
+        return coreMissingPenalty || vulnerableUntil > System.currentTimeMillis();
+    }
+
+    public boolean isCoreDisabled() {
+        return coreDisabledUntil > 0;
+    }
+
+    public long coreDisabledUntil() {
+        return coreDisabledUntil;
+    }
+
+    public long coreReplaceDeadline() {
+        return coreReplaceDeadline;
+    }
+
+    public boolean coreMissingPenalty() {
+        return coreMissingPenalty;
     }
 
     public long vulnerableUntil() {

@@ -337,4 +337,13 @@ public final class TrocaEquivalente implements Listener, CommandExecutor {
         statuses.remove(player.getUniqueId(), STATUS);
         removeModifier(player);
     }
+
+    /** Apaga o que está salvo do jogador (reset de conta): volta a ficar ligada e sem penalidade guardada. */
+    public void forget(UUID support) {
+        penaltyUntil.remove(support);
+        lastToggle.remove(support);
+        if (disabled.remove(support)) {
+            save();
+        }
+    }
 }

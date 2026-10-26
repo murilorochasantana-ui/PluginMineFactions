@@ -91,7 +91,7 @@ final class SupportSpells {
             }
         }
 
-        world.spawnParticle(Particle.FLASH, center, 1, 0, 0, 0, 0);
+        world.spawnParticle(Particle.FLASH, center, 1, 0, 0, 0, 0, Color.WHITE);
         world.spawnParticle(Particle.END_ROD, center, 80, radius / 3, radius / 4, radius / 3, 0.15);
         for (int i = 0; i < 32; i++) {
             double angle = Math.PI * 2 * i / 32;
